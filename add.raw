@@ -1,14 +1,103 @@
-print("[UCS add] загрузка v1.0...")
-local ACE = _G.UCS
-if not ACE then warn("[UCS add] _G.UCS пуст"); return end
+-- ============================================================
+-- UCS ADD v1.0 — FULL LOCALIZED (RU + EN)
+-- ============================================================
+local S = _G.UCS
+if not S then warn("[UCS add] _G.UCS is empty / _G.UCS пуст"); return end
 
-if _G._UCS_AddLoaded == ACE then
-	warn("[UCS add] уже загружен")
+-- ===== LOCALIZATION =====
+local L = {
+	ru = {
+		-- console
+		loading="[UCS add] загрузка v1.0...",
+		already="[UCS add] уже загружен",
+		freecam_exists="[UCS add] Freecam уже есть",
+		dumper_exists="[UCS add] Game Info Dumper уже есть",
+		search_ready="[UCS add] search+stars готовы, fun-rows: ",
+		done="[UCS add] готово v1.0",
+		-- freecam
+		freecam_name="Freecam",
+		freecam_on="Freecam: ВКЛ",
+		freecam_off="Freecam: ВЫКЛ",
+		-- player info
+		info_title="Инфо игрока",
+		info_name="Имя",
+		info_display="Ник",
+		info_userid="UserID",
+		info_hp="HP",
+		info_dist="Дист",
+		info_tool="Оружие",
+		info_account="Аккаунт",
+		info_days="дн.",
+		info_studs="студов",
+		info_none="—",
+		-- dumper
+		dumper_title="📊 Game Info Dumper",
+		dumper_copy="КОПИЯ",
+		dumper_rescan="РеСкан",
+		dumper_copied="Скопировано",
+		dumper_game_info="=== ИНФО ИГРЫ ===",
+		dumper_place="Место",
+		dumper_jobid="JobId",
+		dumper_remotes="=== РЕМОУТЫ",
+		dumper_modules="=== МОДУЛИ",
+		dumper_npc="=== NPC",
+		-- search
+		search_ph="🔍 поиск...",
+	},
+	en = {
+		-- console
+		loading="[UCS add] loading v1.0...",
+		already="[UCS add] already loaded",
+		freecam_exists="[UCS add] Freecam already exists",
+		dumper_exists="[UCS add] Game Info Dumper already exists",
+		search_ready="[UCS add] search+stars ready, fun-rows: ",
+		done="[UCS add] done v1.0",
+		-- freecam
+		freecam_name="Freecam",
+		freecam_on="Freecam: ON",
+		freecam_off="Freecam: OFF",
+		-- player info
+		info_title="Player Info",
+		info_name="Name",
+		info_display="Display",
+		info_userid="UserID",
+		info_hp="HP",
+		info_dist="Dist",
+		info_tool="Tool",
+		info_account="Account",
+		info_days="days",
+		info_studs="studs",
+		info_none="—",
+		-- dumper
+		dumper_title="📊 Game Info Dumper",
+		dumper_copy="COPY",
+		dumper_rescan="ReScan",
+		dumper_copied="Copied",
+		dumper_game_info="=== GAME INFO ===",
+		dumper_place="Place",
+		dumper_jobid="JobId",
+		dumper_remotes="=== REMOTES",
+		dumper_modules="=== MODULES",
+		dumper_npc="=== NPC",
+		-- search
+		search_ph="🔍 search...",
+	},
+}
+local function t(k)
+	local lang = (S and S.lang) or "en"
+	local tbl = L[lang] or L.en
+	return tbl[k] or L.en[k] or k
+end
+S.t_addon = t
+
+print(t("loading"))
+
+if _G._UCS_AddLoaded == S then
+	warn(t("already"))
 	return
 end
-_G._UCS_AddLoaded = ACE
+_G._UCS_AddLoaded = S
 
-local S = ACE
 local C = S.C
 local addR = S.addR
 local RS = game:GetService("RunService")
@@ -23,14 +112,14 @@ C.favKeys = C.favKeys or ""
 
 -- FAVORITES
 local function getFavs()
-	local t = {}
-	if C.favKeys == "" then return t end
-	for k in string.gmatch(C.favKeys, "([^,]+)") do t[k] = true end
-	return t
+	local out = {}
+	if C.favKeys == "" then return out end
+	for k in string.gmatch(C.favKeys, "([^,]+)") do out[k] = true end
+	return out
 end
-local function setFavs(t)
+local function setFavs(tbl)
 	local list = {}
-	for k in pairs(t) do table.insert(list, k) end
+	for k in pairs(tbl) do table.insert(list, k) end
 	C.favKeys = table.concat(list, ",")
 end
 local function toggleFav(key)
@@ -39,9 +128,11 @@ local function toggleFav(key)
 	setFavs(f)
 end
 
+-- ============================================================
 -- FREECAM
+-- ============================================================
 if S.toggles.freecam then
-	print("[UCS add] Freecam уже есть")
+	print(t("freecam_exists"))
 else
 	local fcConns = {}
 	local fcData = nil
@@ -91,13 +182,13 @@ else
 		return btn
 	end
 
-	createFreeBtn("W", -120, -170, function() if fcData then fcData.fwd=1 end end, function() if fcData then fcData.fwd=0 end end)
-	createFreeBtn("A", -180, -110, function() if fcData then fcData.left=1 end end, function() if fcData then fcData.left=0 end end)
-	createFreeBtn("S", -120, -110, function() if fcData then fcData.back=1 end end, function() if fcData then fcData.back=0 end end)
-	createFreeBtn("D", -60, -110, function() if fcData then fcData.right=1 end end, function() if fcData then fcData.right=0 end end)
-	createFreeBtn("↑", 60, -170, function() if fcData then fcData.up=1 end end, function() if fcData then fcData.up=0 end end)
-	createFreeBtn("↓", 60, -110, function() if fcData then fcData.down=1 end end, function() if fcData then fcData.down=0 end end)
-	createFreeBtn("×", 130, -140, function() S._setFreecam(false) end, nil)
+	createFreeBtn("W", -120, -170, function() if fcData then fcData.fwd=1 end end,   function() if fcData then fcData.fwd=0 end end)
+	createFreeBtn("A", -180, -110, function() if fcData then fcData.left=1 end end,  function() if fcData then fcData.left=0 end end)
+	createFreeBtn("S", -120, -110, function() if fcData then fcData.back=1 end end,  function() if fcData then fcData.back=0 end end)
+	createFreeBtn("D", -60,  -110, function() if fcData then fcData.right=1 end end, function() if fcData then fcData.right=0 end end)
+	createFreeBtn("↑",  60,  -170, function() if fcData then fcData.up=1 end end,    function() if fcData then fcData.up=0 end end)
+	createFreeBtn("↓",  60,  -110, function() if fcData then fcData.down=1 end end,  function() if fcData then fcData.down=0 end end)
+	createFreeBtn("×", 130,  -140, function() S._setFreecam(false) end, nil)
 
 	local function isOnFreeButton(pos)
 		for _, b in ipairs(freeButtons) do
@@ -202,9 +293,9 @@ else
 		local tog = S.toggles.freecam
 		if tog and tog.btn then
 			if on then
-				tog.btn.BackgroundColor3 = Color3.fromRGB(0,120,0); tog.btn.Text = "Freecam: ВКЛ"
+				tog.btn.BackgroundColor3 = Color3.fromRGB(0,120,0); tog.btn.Text = t("freecam_on")
 			else
-				tog.btn.BackgroundColor3 = Color3.fromRGB(50,50,50); tog.btn.Text = "Freecam: ВЫКЛ"
+				tog.btn.BackgroundColor3 = Color3.fromRGB(50,50,50); tog.btn.Text = t("freecam_off")
 			end
 		end
 		if on then
@@ -214,12 +305,14 @@ else
 		end
 	end
 
-	addR("Visual","Freecam",function(b)
+	addR("Visual", t("freecam_name"), function(b)
 		S._setFreecam(not C.freecam)
-	end,false,"freecam")
+	end, false, "freecam")
 end
 
+-- ============================================================
 -- PLAYER INFO
+-- ============================================================
 local infoPanel = Instance.new("Frame", SG)
 infoPanel.Size = UDim2.new(0,240,0,180)
 infoPanel.Position = UDim2.new(0.5,-120,0.5,-90)
@@ -231,7 +324,7 @@ Instance.new("UICorner", infoPanel).CornerRadius = UDim.new(0,8)
 Instance.new("UIStroke", infoPanel).Color = Color3.fromRGB(120,180,255)
 local ipTitle = Instance.new("TextLabel", infoPanel)
 ipTitle.Size = UDim2.new(1,0,0,28); ipTitle.BackgroundColor3 = Color3.fromRGB(42,42,42)
-ipTitle.BorderSizePixel = 0; ipTitle.Text = "Инфо игрока"
+ipTitle.BorderSizePixel = 0; ipTitle.Text = t("info_title")
 ipTitle.TextColor3 = Color3.fromRGB(120,180,255)
 ipTitle.Font = Enum.Font.SourceSansBold; ipTitle.TextSize = 12
 Instance.new("UICorner", ipTitle).CornerRadius = UDim.new(0,8)
@@ -265,21 +358,23 @@ local function showInfo(p)
 		if hrp and myHrp then dist = string.format("%.0f", (hrp.Position - myHrp.Position).Magnitude) end
 		local tool = ch and ch:FindFirstChildOfClass("Tool")
 		ipText.Text = table.concat({
-			"Имя: "..ipTarget.Name,
-			"Ник: "..ipTarget.DisplayName,
-			"UserID: "..ipTarget.UserId,
-			"HP: "..(hum and string.format("%d/%d", math.floor(hum.Health), math.floor(hum.MaxHealth)) or "?"),
-			"Дист: "..dist.." studs",
-			"Оружие: "..(tool and tool.Name or "—"),
-			"Аккаунт: "..(ipTarget.AccountAge or "?").." дн.",
+			t("info_name")..": "..ipTarget.Name,
+			t("info_display")..": "..ipTarget.DisplayName,
+			t("info_userid")..": "..ipTarget.UserId,
+			t("info_hp")..": "..(hum and string.format("%d/%d", math.floor(hum.Health), math.floor(hum.MaxHealth)) or "?"),
+			t("info_dist")..": "..dist.." "..t("info_studs"),
+			t("info_tool")..": "..(tool and tool.Name or t("info_none")),
+			t("info_account")..": "..(ipTarget.AccountAge or "?").." "..t("info_days"),
 		}, "\n")
 	end)
 end
 S._showPlayerInfo = showInfo
 
+-- ============================================================
 -- GAME INFO DUMPER
+-- ============================================================
 if S.toggles.gameDumper then
-	print("[UCS add] Game Info Dumper уже есть")
+	print(t("dumper_exists"))
 else
 	local dumperPanel = Instance.new("Frame", SG)
 	dumperPanel.Size = UDim2.new(0,320,0,400)
@@ -290,7 +385,7 @@ else
 	Instance.new("UIStroke", dumperPanel).Color = Color3.fromRGB(100,220,180)
 	local dpTitle = Instance.new("TextLabel", dumperPanel)
 	dpTitle.Size = UDim2.new(1,0,0,28); dpTitle.BackgroundColor3 = Color3.fromRGB(42,42,42)
-	dpTitle.BorderSizePixel = 0; dpTitle.Text = "Game Info Dumper"
+	dpTitle.BorderSizePixel = 0; dpTitle.Text = t("dumper_title")
 	dpTitle.TextColor3 = Color3.fromRGB(100,220,180)
 	dpTitle.Font = Enum.Font.SourceSansBold; dpTitle.TextSize = 12
 	Instance.new("UICorner", dpTitle).CornerRadius = UDim.new(0,8)
@@ -301,13 +396,13 @@ else
 	local dpCopy = Instance.new("TextButton", dumperPanel)
 	dpCopy.Size = UDim2.new(0,80,0,24); dpCopy.Position = UDim2.new(1,-90,0,32)
 	dpCopy.BackgroundColor3 = Color3.fromRGB(0,120,180); dpCopy.BorderSizePixel = 0
-	dpCopy.Text = "COPY"; dpCopy.TextColor3 = Color3.new(1,1,1)
+	dpCopy.Text = t("dumper_copy"); dpCopy.TextColor3 = Color3.new(1,1,1)
 	dpCopy.Font = Enum.Font.SourceSansBold; dpCopy.TextSize = 10
 	Instance.new("UICorner", dpCopy).CornerRadius = UDim.new(0,4)
 	local dpRescan = Instance.new("TextButton", dumperPanel)
 	dpRescan.Size = UDim2.new(0,80,0,24); dpRescan.Position = UDim2.new(1,-180,0,32)
 	dpRescan.BackgroundColor3 = Color3.fromRGB(60,60,80); dpRescan.BorderSizePixel = 0
-	dpRescan.Text = "ReScan"; dpRescan.TextColor3 = Color3.new(1,1,1)
+	dpRescan.Text = t("dumper_rescan"); dpRescan.TextColor3 = Color3.new(1,1,1)
 	dpRescan.Font = Enum.Font.SourceSansBold; dpRescan.TextSize = 10
 	Instance.new("UICorner", dpRescan).CornerRadius = UDim.new(0,4)
 	local dpScroll = Instance.new("ScrollingFrame", dumperPanel)
@@ -325,23 +420,28 @@ else
 	dpText.TextYAlignment = Enum.TextYAlignment.Top
 	dpText.TextWrapped = true
 	local function dumpGame()
-		local lines = {"=== GAME INFO ===","Place: "..tostring(game.PlaceId),"JobId: "..tostring(game.JobId),""}
+		local lines = {
+			t("dumper_game_info"),
+			t("dumper_place")..": "..tostring(game.PlaceId),
+			t("dumper_jobid")..": "..tostring(game.JobId),
+			""
+		}
 		local rs = game:GetService("ReplicatedStorage")
 		local remotes, modules = {}, {}
 		for _,o in ipairs(rs:GetDescendants()) do
 			if o:IsA("RemoteEvent") or o:IsA("RemoteFunction") then table.insert(remotes, o:GetFullName())
 			elseif o:IsA("ModuleScript") then table.insert(modules, o:GetFullName()) end
 		end
-		table.insert(lines, "=== REMOTES ("..#remotes..") ===")
+		table.insert(lines, t("dumper_remotes").." ("..#remotes..") ===")
 		for _,r in ipairs(remotes) do table.insert(lines, r) end
 		table.insert(lines, "")
-		table.insert(lines, "=== MODULES ("..#modules..") ===")
+		table.insert(lines, t("dumper_modules").." ("..#modules..") ===")
 		for _,m in ipairs(modules) do table.insert(lines, m) end
 		local npcCount = 0
 		for _,o in ipairs(workspace:GetDescendants()) do
 			if o:IsA("Humanoid") and not Players:GetPlayerFromCharacter(o.Parent) then npcCount = npcCount + 1 end
 		end
-		table.insert(lines, ""); table.insert(lines, "=== NPC: "..npcCount.." ===")
+		table.insert(lines, ""); table.insert(lines, t("dumper_npc")..": "..npcCount.." ===")
 		return table.concat(lines, "\n")
 	end
 	local lastDump = nil
@@ -349,17 +449,23 @@ else
 	dpRescan.MouseButton1Click:Connect(refreshDump)
 	dpCopy.MouseButton1Click:Connect(function()
 		if not lastDump then refreshDump() end
-		if setclipboard then pcall(function() setclipboard(lastDump) end); S.notify("Скопировано",Color3.fromRGB(0,180,0))
-		else print(lastDump) end
+		if setclipboard then
+			pcall(function() setclipboard(lastDump) end)
+			S.notify(t("dumper_copied"), Color3.fromRGB(0,180,0))
+		else
+			print(lastDump)
+		end
 	end)
 	dpClose.MouseButton1Click:Connect(function() dumperPanel.Visible = false end)
-	addR("Settings","📊 Game Info Dumper",function(b)
+	addR("Settings", t("dumper_title"), function(b)
 		if not dumperPanel.Visible then refreshDump(); dumperPanel.Visible = true
 		else dumperPanel.Visible = false end
-	end,false,"gameDumper")
+	end, false, "gameDumper")
 end
 
+-- ============================================================
 -- SEARCH + STARS
+-- ============================================================
 local funRows = {}
 local rowOrder = {}
 
@@ -388,8 +494,8 @@ local function indexRows()
 			fixTabOrder(tab)
 			for _, child in ipairs(tab:GetChildren()) do
 				if child:IsA("Frame") then
-					for k, t in pairs(S.toggles) do
-						if t.btn and t.btn.Parent == child then
+					for k, tg in pairs(S.toggles) do
+						if tg.btn and tg.btn.Parent == child then
 							funRows[child] = k
 							break
 						end
@@ -469,7 +575,7 @@ local function addSearchToTab(tabName)
 	box.Size = UDim2.new(1, -5, 0, 28)
 	box.BackgroundColor3 = Color3.fromRGB(45,45,45)
 	box.BorderSizePixel = 0
-	box.PlaceholderText = "🔍 поиск..."
+	box.PlaceholderText = t("search_ph")
 	box.Text = ""
 	box.TextColor3 = Color3.new(1,1,1)
 	box.PlaceholderColor3 = Color3.fromRGB(140,140,140)
@@ -507,7 +613,7 @@ task.spawn(function()
 	reorderAll()
 	local n = 0
 	for _ in pairs(funRows) do n = n + 1 end
-	print("[UCS add] search+stars готовы, fun-rows: "..n)
+	print(t("search_ready")..n)
 end)
 
 S._extrasCleanup = function()
@@ -519,4 +625,4 @@ S._extrasCleanup = function()
 	if infoPanel then infoPanel:Destroy() end
 end
 
-print("[UCS add] готово v1.0")
+print(t("done"))
