@@ -1,10 +1,9 @@
-print("[ACE extras] загрузка v2.3...")
+print("[ACE extras] загрузка v3.0...")
 local ACE = _G.ACE
 if not ACE then warn("[ACE extras] _G.ACE пуст"); return end
 
--- защита от двойной загрузки
 if _G._ACE_ExtrasLoaded == ACE then
-	warn("[ACE extras] уже загружен для этого ACE")
+	warn("[ACE extras] уже загружен")
 	return
 end
 _G._ACE_ExtrasLoaded = ACE
@@ -43,7 +42,7 @@ end
 
 -- ===== ITEM ESP =====
 if S.toggles.itemEsp then
-	print("[ACE extras] Item ESP уже есть, скип")
+	print("[ACE extras] Item ESP уже есть")
 else
 	local itemHl = {}
 	local ITEM_NAMES = {"drop","item","pickup","loot","resource","coin","gem","gold","wood","scrap","candy","ore","chest","crate","food","potion","ingot","bar"}
@@ -101,7 +100,7 @@ end
 
 -- ===== FREECAM =====
 if S.toggles.freecam then
-	print("[ACE extras] Freecam уже есть, скип")
+	print("[ACE extras] Freecam уже есть")
 else
 	local fcConns = {}
 	local fcData = nil
@@ -154,17 +153,14 @@ else
 		return btn
 	end
 
-	-- движение
 	createFreeBtn("W", -120, -170, function() if fcData then fcData.fwd=1 end end, function() if fcData then fcData.fwd=0 end end)
 	createFreeBtn("A", -180, -110, function() if fcData then fcData.left=1 end end, function() if fcData then fcData.left=0 end end)
 	createFreeBtn("S", -120, -110, function() if fcData then fcData.back=1 end end, function() if fcData then fcData.back=0 end end)
 	createFreeBtn("D", -60, -110, function() if fcData then fcData.right=1 end end, function() if fcData then fcData.right=0 end end)
-	-- поворот
 	createFreeBtn("◄", -30, -170, function() if fcData then fcData.yawL=1 end end, function() if fcData then fcData.yawL=0 end end)
 	createFreeBtn("►", 30, -170, function() if fcData then fcData.yawR=1 end end, function() if fcData then fcData.yawR=0 end end)
 	createFreeBtn("▲", -30, -110, function() if fcData then fcData.pitchU=1 end end, function() if fcData then fcData.pitchU=0 end end)
 	createFreeBtn("▼", 30, -110, function() if fcData then fcData.pitchD=1 end end, function() if fcData then fcData.pitchD=0 end end)
-	-- вертикаль + выход
 	createFreeBtn("↑", 100, -170, function() if fcData then fcData.up=1 end end, function() if fcData then fcData.up=0 end end)
 	createFreeBtn("↓", 100, -110, function() if fcData then fcData.down=1 end end, function() if fcData then fcData.down=0 end end)
 	createFreeBtn("×", 160, -140, function() S._setFreecam(false) end, nil)
@@ -216,10 +212,8 @@ else
 		fcConns[4] = RS.RenderStepped:Connect(function(dt)
 			if not fcData then return end
 			local rotSpd = 1.5 * dt
-			-- исправленное направление: yawL увеличивает yaw (влево), yawR уменьшает (вправо)
 			fcData.yaw = fcData.yaw + (fcData.yawL - fcData.yawR) * rotSpd
 			fcData.pitch = math.clamp(fcData.pitch + (fcData.pitchU - fcData.pitchD) * rotSpd, -math.pi/2+0.01, math.pi/2-0.01)
-
 			local spd = C.freecamSpeed * dt
 			local look = CFrame.fromEulerAnglesYXZ(fcData.pitch, fcData.yaw, 0)
 			local mv = Vector3.zero
@@ -267,207 +261,6 @@ else
 		S._setFreecam(not C.freecam)
 	end,false,"freecam")
 end
-
--- ===== SEARCH + STARS =====
-local funRows = {}
-local rowOrder = {}
-
-local function indexRows()
-	funRows = {}
-	rowOrder = {}
-	for _, tabName in ipairs({"Main","Func","Visual","WP","Addons","Settings"}) do
-		local tab = S.Tabs[tabName]
-		if tab then
-			local idx = 0
-			for _, child in ipairs(tab:GetChildren()) do
-				idx = idx + 1
-				rowOrder[child] = idx
-				if child:IsA("Frame") then
-					for k, t in pairs(S.toggles) do
-						if t.btn and t.btn.Parent == child then
-							funRows[child] = k
-							break
-						end
-					end
-				end
-			end
-		end
-	end
-end
-
--- физическая перестановка элементов через .Parent = nil / = tab
-local function reorderTab(tab)
-	if not tab then return end
-	local favs = getFavs()
-	local children = tab:GetChildren()
-	
-	local searchBox = nil
-	for _, c in ipairs(children) do
-		if c.Name == "ACE_SearchBox" then searchBox = c; break end
-	end
-	
-	local funList, nonFun = {}, {}
-	for _, c in ipairs(children) do
-		if c ~= searchBox then
-			if funRows[c] then table.insert(funList, c)
-			else table.insert(nonFun, c) end
-		end
-	end
-	
-	-- сортировка: favorites первыми, потом по оригинальному порядку
-	local function sortFun(a,b)
-		local fa = favs[funRows[a]] and 1 or 0
-		local fb = favs[funRows[b]] and 1 or 0
-		if fa ~= fb then return fa > fb end
-		return (rowOrder[a] or 0) < (rowOrder[b] or 0)
-	end
-	table.sort(funList, sortFun)
-	table.sort(nonFun, function(a,b) return (rowOrder[a] or 0) < (rowOrder[b] or 0) end)
-	
-	-- найти первый funRow по оригинальному порядку
-	local firstFunIdx = math.huge
-	for _, c in ipairs(funList) do
-		local i = rowOrder[c] or 0
-		if i < firstFunIdx then firstFunIdx = i end
-	end
-	
-	-- разделить nonFun на "до" и "после"
-	local before, after = {}, {}
-	for _, c in ipairs(nonFun) do
-		if (rowOrder[c] or 0) < firstFunIdx then
-			table.insert(before, c)
-		else
-			table.insert(after, c)
-		end
-	end
-	
-	-- собрать финальный порядок
-	local final = {}
-	if searchBox then table.insert(final, searchBox) end
-	for _, c in ipairs(before) do table.insert(final, c) end
-	for _, c in ipairs(funList) do table.insert(final, c) end
-	for _, c in ipairs(after) do table.insert(final, c) end
-	
-	-- переустановить: отсоединить всех, присоединить в нужном порядке
-	for _, c in ipairs(tab:GetChildren()) do c.Parent = nil end
-	for i, c in ipairs(final) do
-		c.LayoutOrder = i
-		c.Parent = tab
-	end
-end
-
-local function reorderAll()
-	for _, tabName in ipairs({"Main","Func","Visual","WP","Addons","Settings"}) do
-		reorderTab(S.Tabs[tabName])
-	end
-end
-
-local function addStar(row, key)
-	if row:FindFirstChild("ACE_FavStar") then return end
-
-	local mainBtn, sldMinus, sldPlus = nil, nil, nil
-	for _, c in ipairs(row:GetChildren()) do
-		if c:IsA("TextButton") and c.Name ~= "ACE_FavStar" then
-			if not mainBtn then mainBtn = c
-			elseif not sldMinus then sldMinus = c
-			else sldPlus = c end
-		end
-	end
-	if not mainBtn then return end
-
-	if sldPlus then
-		mainBtn.Size = UDim2.new(1, -88, 1, 0)
-		sldMinus.Size = UDim2.new(0, 25, 1, 0); sldMinus.Position = UDim2.new(1, -86, 0, 0)
-		sldPlus.Size = UDim2.new(0, 25, 1, 0);  sldPlus.Position = UDim2.new(1, -58, 0, 0)
-	else
-		mainBtn.Size = UDim2.new(1, -32, 1, 0)
-	end
-
-	local star = Instance.new("TextButton", row)
-	star.Name = "ACE_FavStar"
-	star.Size = UDim2.new(0, 26, 1, 0)
-	star.Position = UDim2.new(1, -28, 0, 0)
-	star.BackgroundColor3 = Color3.fromRGB(60,60,60)
-	star.BorderSizePixel = 0
-	star.Text = "☆"
-	star.TextColor3 = Color3.fromRGB(255,220,80)
-	star.Font = Enum.Font.SourceSansBold
-	star.TextSize = 14
-	star.ZIndex = 5
-	Instance.new("UICorner", star).CornerRadius = UDim.new(0,4)
-
-	local function refreshStar()
-		local favs = getFavs()
-		if favs[key] then
-			star.Text = "★"; star.BackgroundColor3 = Color3.fromRGB(180,140,20)
-		else
-			star.Text = "☆"; star.BackgroundColor3 = Color3.fromRGB(60,60,60)
-		end
-	end
-	refreshStar()
-	star.MouseButton1Click:Connect(function()
-		toggleFav(key)
-		refreshStar()
-		reorderAll()
-	end)
-end
-
-local function addSearchToTab(tabName)
-	local tab = S.Tabs[tabName]
-	if not tab or tab:FindFirstChild("ACE_SearchBox") then return end
-
-	local box = Instance.new("TextBox", tab)
-	box.Name = "ACE_SearchBox"
-	box.Size = UDim2.new(1, -5, 0, 28)
-	box.BackgroundColor3 = Color3.fromRGB(45,45,45)
-	box.BorderSizePixel = 0
-	box.PlaceholderText = "🔍 поиск..."
-	box.Text = ""
-	box.TextColor3 = Color3.new(1,1,1)
-	box.PlaceholderColor3 = Color3.fromRGB(140,140,140)
-	box.Font = Enum.Font.SourceSansBold
-	box.TextSize = 11
-	box.ClearTextOnFocus = false
-	box.LayoutOrder = -9999
-	Instance.new("UICorner", box).CornerRadius = UDim.new(0,4)
-
-	box:GetPropertyChangedSignal("Text"):Connect(function()
-		local q = string.lower(box.Text or "")
-		for row, _ in pairs(funRows) do
-			if row and row.Parent == tab then
-				local mainBtn = nil
-				for _, c in ipairs(row:GetChildren()) do
-					if c:IsA("TextButton") and c.Name ~= "ACE_FavStar" then
-						mainBtn = c; break
-					end
-				end
-				if mainBtn then
-					local txt = string.lower(mainBtn.Text or "")
-					row.Visible = (q == "") or (string.find(txt, q, 1, true) ~= nil)
-				end
-			end
-		end
-	end)
-end
-
-task.spawn(function()
-	task.wait(0.6)
-	indexRows()
-
-	for _, tabName in ipairs({"Main","Func","Visual","WP","Addons","Settings"}) do
-		addSearchToTab(tabName)
-	end
-	-- пересобрать индексы, т.к. добавили searchBox
-	indexRows()
-
-	for row, key in pairs(funRows) do
-		if row and row.Parent then
-			addStar(row, key)
-		end
-	end
-	reorderAll()
-	print("[ACE extras] search+stars готовы, fun-rows: "..(function() local n=0 for _ in pairs(funRows) do n=n+1 end return n end)())
-end)
 
 -- ===== PLAYER INFO =====
 local infoPanel = Instance.new("Frame", SG)
@@ -529,7 +322,7 @@ S._showPlayerInfo = showInfo
 
 -- ===== GAME INFO DUMPER =====
 if S.toggles.gameDumper then
-	print("[ACE extras] Game Info Dumper уже есть, скип")
+	print("[ACE extras] Game Info Dumper уже есть")
 else
 	local dumperPanel = Instance.new("Frame", SG)
 	dumperPanel.Size = UDim2.new(0,320,0,400)
@@ -609,6 +402,170 @@ else
 	end,false,"gameDumper")
 end
 
+-- ===== SEARCH + STARS =====
+local funRows = {}    -- row -> key
+local rowOrder = {}   -- row -> фиксированная позиция (1,2,3...)
+
+local function fixTabOrder(tab)
+	-- фиксируем текущий порядок элементов через LayoutOrder
+	-- и включаем сортировку по LayoutOrder
+	local lay = tab:FindFirstChildOfClass("UIListLayout")
+	if lay then
+		lay.SortOrder = Enum.SortOrder.LayoutOrder
+	end
+	local idx = 0
+	for _, child in ipairs(tab:GetChildren()) do
+		if child.Name ~= "ACE_SearchBox" then
+			idx = idx + 1
+			rowOrder[child] = idx
+			child.LayoutOrder = idx
+		end
+	end
+end
+
+local function indexRows()
+	funRows = {}
+	rowOrder = {}
+
+	for _, tabName in ipairs({"Main","Func","Visual","WP","Addons","Settings"}) do
+		local tab = S.Tabs[tabName]
+		if tab then
+			fixTabOrder(tab)
+			-- найти fun-rows
+			for _, child in ipairs(tab:GetChildren()) do
+				if child:IsA("Frame") then
+					for k, t in pairs(S.toggles) do
+						if t.btn and t.btn.Parent == child then
+							funRows[child] = k
+							break
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+local function reorderAll()
+	local favs = getFavs()
+	local favIdx = 0
+	for row, key in pairs(funRows) do
+		if row and row.Parent then
+			if favs[key] then
+				favIdx = favIdx + 1
+				row.LayoutOrder = -10000 + favIdx
+			else
+				row.LayoutOrder = rowOrder[row] or 99999
+			end
+		end
+	end
+end
+
+local function addStar(row, key)
+	if row:FindFirstChild("ACE_FavStar") then return end
+
+	local mainBtn, sldMinus, sldPlus = nil, nil, nil
+	for _, c in ipairs(row:GetChildren()) do
+		if c:IsA("TextButton") and c.Name ~= "ACE_FavStar" then
+			if not mainBtn then mainBtn = c
+			elseif not sldMinus then sldMinus = c
+			else sldPlus = c end
+		end
+	end
+	if not mainBtn then return end
+
+	if sldPlus then
+		mainBtn.Size = UDim2.new(1, -88, 1, 0)
+		sldMinus.Size = UDim2.new(0, 25, 1, 0); sldMinus.Position = UDim2.new(1, -86, 0, 0)
+		sldPlus.Size = UDim2.new(0, 25, 1, 0);  sldPlus.Position = UDim2.new(1, -58, 0, 0)
+	else
+		mainBtn.Size = UDim2.new(1, -32, 1, 0)
+	end
+
+	local star = Instance.new("TextButton", row)
+	star.Name = "ACE_FavStar"
+	star.Size = UDim2.new(0, 26, 1, 0)
+	star.Position = UDim2.new(1, -28, 0, 0)
+	star.BackgroundColor3 = Color3.fromRGB(60,60,60)
+	star.BorderSizePixel = 0
+	star.Text = "☆"
+	star.TextColor3 = Color3.fromRGB(255,220,80)
+	star.Font = Enum.Font.SourceSansBold
+	star.TextSize = 14
+	star.ZIndex = 5
+	Instance.new("UICorner", star).CornerRadius = UDim.new(0,4)
+
+	local function refreshStar()
+		local favs = getFavs()
+		if favs[key] then
+			star.Text = "★"; star.BackgroundColor3 = Color3.fromRGB(180,140,20)
+		else
+			star.Text = "☆"; star.BackgroundColor3 = Color3.fromRGB(60,60,60)
+		end
+	end
+	refreshStar()
+	star.MouseButton1Click:Connect(function()
+		toggleFav(key)
+		refreshStar()
+		reorderAll()
+	end)
+end
+
+local function addSearchToTab(tabName)
+	local tab = S.Tabs[tabName]
+	if not tab or tab:FindFirstChild("ACE_SearchBox") then return end
+
+	local box = Instance.new("TextBox", tab)
+	box.Name = "ACE_SearchBox"
+	box.Size = UDim2.new(1, -5, 0, 28)
+	box.BackgroundColor3 = Color3.fromRGB(45,45,45)
+	box.BorderSizePixel = 0
+	box.PlaceholderText = "🔍 поиск..."
+	box.Text = ""
+	box.TextColor3 = Color3.new(1,1,1)
+	box.PlaceholderColor3 = Color3.fromRGB(140,140,140)
+	box.Font = Enum.Font.SourceSansBold
+	box.TextSize = 11
+	box.ClearTextOnFocus = false
+	box.LayoutOrder = -99999
+	Instance.new("UICorner", box).CornerRadius = UDim.new(0,4)
+
+	box:GetPropertyChangedSignal("Text"):Connect(function()
+		local q = string.lower(box.Text or "")
+		for row, _ in pairs(funRows) do
+			if row and row.Parent == tab then
+				local mainBtn = nil
+				for _, c in ipairs(row:GetChildren()) do
+					if c:IsA("TextButton") and c.Name ~= "ACE_FavStar" then
+						mainBtn = c; break
+					end
+				end
+				if mainBtn then
+					local txt = string.lower(mainBtn.Text or "")
+					row.Visible = (q == "") or (string.find(txt, q, 1, true) ~= nil)
+				end
+			end
+		end
+	end)
+end
+
+task.spawn(function()
+	task.wait(0.6)
+	indexRows()
+
+	for _, tabName in ipairs({"Main","Func","Visual","WP","Addons","Settings"}) do
+		addSearchToTab(tabName)
+	end
+
+	for row, key in pairs(funRows) do
+		if row and row.Parent then
+			addStar(row, key)
+		end
+	end
+	reorderAll()
+	print("[ACE extras] search+stars готовы, fun-rows: "..(function() local n=0 for _ in pairs(funRows) do n=n+1 end return n end)())
+end)
+
 -- ===== CLEANUP =====
 S._extrasCleanup = function()
 	S.delT("ItemEspSync")
@@ -620,4 +577,4 @@ S._extrasCleanup = function()
 	if infoPanel then infoPanel:Destroy() end
 end
 
-print("[ACE extras] готово v2.3")
+print("[ACE extras] готово v3.0")
