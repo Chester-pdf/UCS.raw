@@ -1,4 +1,4 @@
-print("[ACE extras] загрузка v2.1...")
+print("[ACE extras] загрузка v2.2...")
 local ACE = _G.ACE
 if not ACE then warn("[ACE extras] _G.ACE пуст"); return end
 local S = ACE
@@ -12,7 +12,7 @@ local SG = S.SG
 
 C.itemEsp = C.itemEsp or false
 C.freecam = C.freecam or false
-C.freecamSpeed = C.freecamSpeed or 50
+C.freecamSpeed = C.freecamSpeed or 15
 C.favKeys = C.favKeys or ""
 
 -- ===== FAVORITES =====
@@ -33,219 +33,286 @@ local function toggleFav(key)
 	setFavs(f)
 end
 
--- ===== ITEM ESP =====
-local itemHl = {}
-local ITEM_NAMES = {"drop","item","pickup","loot","resource","coin","gem","gold","wood","scrap","candy","ore","chest","crate","food","potion","ingot","bar"}
-local function isItemObj(o)
-	if not o or not o.Parent then return false end
-	if o:IsA("Tool") then return true end
-	if o:IsA("Model") or o:IsA("BasePart") then
-		local n = string.lower(o.Name)
-		for _,p in ipairs(ITEM_NAMES) do
-			if string.find(n,p,1,true) then return true end
+-- ===== ITEM ESP (защита от дублирования) =====
+if S.toggles.itemEsp then
+	print("[ACE extras] Item ESP уже существует, скип")
+else
+	local itemHl = {}
+	local ITEM_NAMES = {"drop","item","pickup","loot","resource","coin","gem","gold","wood","scrap","candy","ore","chest","crate","food","potion","ingot","bar"}
+	local function isItemObj(o)
+		if not o or not o.Parent then return false end
+		if o:IsA("Tool") then return true end
+		if o:IsA("Model") or o:IsA("BasePart") then
+			local n = string.lower(o.Name)
+			for _,p in ipairs(ITEM_NAMES) do
+				if string.find(n,p,1,true) then return true end
+			end
+		end
+		return false
+	end
+	local function addItemHL(o)
+		if itemHl[o] then return end
+		local hl = Instance.new("Highlight",o)
+		hl.Name = "ACE_ITEM_HL"
+		hl.FillColor = Color3.fromRGB(255,200,0)
+		hl.FillTransparency = 0.5
+		hl.OutlineColor = Color3.fromRGB(255,255,100)
+		itemHl[o] = hl
+	end
+	local function clearItems()
+		for o,hl in pairs(itemHl) do pcall(function() hl:Destroy() end) end
+		itemHl = {}
+	end
+	local function scanItems()
+		for _,o in ipairs(workspace:GetDescendants()) do
+			if isItemObj(o) then addItemHL(o) end
 		end
 	end
-	return false
+	addR("Visual","Item ESP",function(b)
+		C.itemEsp = not C.itemEsp
+		if C.itemEsp then
+			b.BackgroundColor3 = Color3.fromRGB(0,120,0)
+			b.Text = "Item ESP: ВКЛ"
+			scanItems()
+			S.addT("ItemEspSync",function()
+				for _,o in ipairs(workspace:GetDescendants()) do
+					if isItemObj(o) and not itemHl[o] then addItemHL(o) end
+				end
+				for o,hl in pairs(itemHl) do
+					if not o.Parent then pcall(function() hl:Destroy() end); itemHl[o]=nil end
+				end
+			end,0.5)
+		else
+			b.BackgroundColor3 = Color3.fromRGB(50,50,50)
+			b.Text = "Item ESP: ВЫКЛ"
+			S.delT("ItemEspSync")
+			clearItems()
+		end
+	end,false,"itemEsp")
 end
-local function addItemHL(o)
-	if itemHl[o] then return end
-	local hl = Instance.new("Highlight",o)
-	hl.Name = "ACE_ITEM_HL"
-	hl.FillColor = Color3.fromRGB(255,200,0)
-	hl.FillTransparency = 0.5
-	hl.OutlineColor = Color3.fromRGB(255,255,100)
-	itemHl[o] = hl
-end
-local function clearItems()
-	for o,hl in pairs(itemHl) do pcall(function() hl:Destroy() end) end
-	itemHl = {}
-end
-local function scanItems()
-	for _,o in ipairs(workspace:GetDescendants()) do
-		if isItemObj(o) then addItemHL(o) end
-	end
-end
-addR("Visual","Item ESP",function(b)
-	C.itemEsp = not C.itemEsp
-	if C.itemEsp then
-		b.BackgroundColor3 = Color3.fromRGB(0,120,0)
-		b.Text = "Item ESP: ВКЛ"
-		scanItems()
-		S.addT("ItemEspSync",function()
-			for _,o in ipairs(workspace:GetDescendants()) do
-				if isItemObj(o) and not itemHl[o] then addItemHL(o) end
-			end
-			for o,hl in pairs(itemHl) do
-				if not o.Parent then pcall(function() hl:Destroy() end); itemHl[o]=nil end
-			end
-		end,0.5)
-	else
-		b.BackgroundColor3 = Color3.fromRGB(50,50,50)
-		b.Text = "Item ESP: ВЫКЛ"
-		S.delT("ItemEspSync")
-		clearItems()
-	end
-end,false,"itemEsp")
 
 -- ===== FREECAM =====
-local fcConns = {}
-local fcData = nil
-local freeButtons = {}
+if S.toggles.freecam then
+	print("[ACE extras] Freecam уже существует, скип")
+else
+	local fcConns = {}
+	local fcData = nil
+	local freeButtons = {}
 
-local function hideHotkeysForFreecam()
-	for _,e in ipairs(S.screenButtons) do
-		if e.btn and e.btn.Parent then e.btn.Visible = false end
+	local function hideHotkeysForFreecam()
+		for _,e in ipairs(S.screenButtons) do
+			if e.btn and e.btn.Parent then e.btn.Visible = false end
+		end
+		if S._customJumpBtn and S._customJumpBtn.Parent then S._customJumpBtn.Visible = false end
 	end
-	if S._customJumpBtn and S._customJumpBtn.Parent then S._customJumpBtn.Visible = false end
-end
-local function restoreHotkeys()
-	S.refreshScreenButtons()
-	if S._customJumpBtn and S._customJumpBtn.Parent then
-		S._customJumpBtn.Visible = not S.C.stealthHidden
+	local function restoreHotkeys()
+		S.refreshScreenButtons()
+		if S._customJumpBtn and S._customJumpBtn.Parent then
+			S._customJumpBtn.Visible = not S.C.stealthHidden
+		end
 	end
-end
-local function showFreeButtons()
-	for _,b in ipairs(freeButtons) do b.Visible = true end
-end
-local function hideFreeButtons()
-	for _,b in ipairs(freeButtons) do b.Visible = false end
-end
+	local function showFreeButtons()
+		for _,b in ipairs(freeButtons) do b.Visible = true end
+	end
+	local function hideFreeButtons()
+		for _,b in ipairs(freeButtons) do b.Visible = false end
+	end
 
-local function createFreeBtn(text, x, y, onDown, onUp)
-	local btn = Instance.new("TextButton", SG)
-	btn.Size = UDim2.new(0, 55, 0, 55)
-	btn.Position = UDim2.new(0.5, x, 1, y)
-	btn.BackgroundColor3 = Color3.fromRGB(40, 90, 130)
-	btn.BackgroundTransparency = 0.2
-	btn.Text = text
-	btn.TextColor3 = Color3.fromRGB(180, 230, 255)
-	btn.Font = Enum.Font.SourceSansBold
-	btn.TextSize = 22
-	btn.AutoButtonColor = false
-	btn.Visible = false
-	btn.ZIndex = 60
-	Instance.new("UICorner", btn).CornerRadius = UDim.new(0.5, 0)
-	local st = Instance.new("UIStroke", btn)
-	st.Color = Color3.fromRGB(120, 200, 255); st.Thickness = 2
-	btn.MouseButton1Down:Connect(function()
-		btn.BackgroundColor3 = Color3.fromRGB(70, 140, 190)
-		if onDown then onDown() end
-	end)
-	btn.MouseButton1Up:Connect(function()
+	local function createFreeBtn(text, x, y, size, onDown, onUp)
+		local btn = Instance.new("TextButton", SG)
+		btn.Size = UDim2.new(0, size or 50, 0, size or 50)
+		btn.Position = UDim2.new(0.5, x, 1, y)
 		btn.BackgroundColor3 = Color3.fromRGB(40, 90, 130)
-		if onUp then onUp() end
-	end)
-	table.insert(freeButtons, btn)
-	return btn
-end
-
-createFreeBtn("W", -30, -180, function() if fcData then fcData.fwd=1 end end, function() if fcData then fcData.fwd=0 end end)
-createFreeBtn("A", -90, -120, function() if fcData then fcData.left=1 end end, function() if fcData then fcData.left=0 end end)
-createFreeBtn("S", -30, -120, function() if fcData then fcData.back=1 end end, function() if fcData then fcData.back=0 end end)
-createFreeBtn("D",  30, -120, function() if fcData then fcData.right=1 end end, function() if fcData then fcData.right=0 end end)
-createFreeBtn("↑",  90, -180, function() if fcData then fcData.up=1 end end, function() if fcData then fcData.up=0 end end)
-createFreeBtn("↓",  90, -120, function() if fcData then fcData.down=1 end end, function() if fcData then fcData.down=0 end end)
-createFreeBtn("×",  90, -60,  function() S._setFreecam(false) end, nil)
-
-local function startFreecam()
-	local cam = workspace.CurrentCamera
-	local cf = cam.CFrame
-	fcData = {
-		cam = cam, pos = cf.Position,
-		yaw = math.atan2(-cf.LookVector.X, -cf.LookVector.Z),
-		pitch = math.asin(math.clamp(cf.LookVector.Y,-1,1)),
-		fwd=0,back=0,left=0,right=0,up=0,down=0
-	}
-	UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
-	local ch = LP.Character
-	if ch then
-		local hum = ch:FindFirstChildOfClass("Humanoid")
-		if hum then cam.CameraSubject = nil end
+		btn.BackgroundTransparency = 0.2
+		btn.Text = text
+		btn.TextColor3 = Color3.fromRGB(180, 230, 255)
+		btn.Font = Enum.Font.SourceSansBold
+		btn.TextSize = 20
+		btn.AutoButtonColor = false
+		btn.Visible = false
+		btn.ZIndex = 60
+		Instance.new("UICorner", btn).CornerRadius = UDim.new(0.5, 0)
+		local st = Instance.new("UIStroke", btn)
+		st.Color = Color3.fromRGB(120, 200, 255); st.Thickness = 2
+		btn.MouseButton1Down:Connect(function()
+			btn.BackgroundColor3 = Color3.fromRGB(70, 140, 190)
+			if onDown then onDown() end
+		end)
+		btn.MouseButton1Up:Connect(function()
+			btn.BackgroundColor3 = Color3.fromRGB(40, 90, 130)
+			if onUp then onUp() end
+		end)
+		table.insert(freeButtons, btn)
+		return btn
 	end
-	fcConns[1] = UIS.InputChanged:Connect(function(i)
-		if i.UserInputType == Enum.UserInputType.MouseMovement then
-			fcData.yaw = fcData.yaw - math.rad(i.Delta.X)*0.3
-			fcData.pitch = math.clamp(fcData.pitch - math.rad(i.Delta.Y)*0.3, -math.pi/2+0.01, math.pi/2-0.01)
+
+	-- Движение (левая группа)
+	createFreeBtn("W", -110, -170, 50,
+		function() if fcData then fcData.fwd=1 end end,
+		function() if fcData then fcData.fwd=0 end end)
+	createFreeBtn("A", -170, -110, 50,
+		function() if fcData then fcData.left=1 end end,
+		function() if fcData then fcData.left=0 end end)
+	createFreeBtn("S", -110, -110, 50,
+		function() if fcData then fcData.back=1 end end,
+		function() if fcData then fcData.back=0 end end)
+	createFreeBtn("D", -50, -110, 50,
+		function() if fcData then fcData.right=1 end end,
+		function() if fcData then fcData.right=0 end end)
+
+	-- Поворот (центральная группа)
+	createFreeBtn("◄", -30, -170, 50,
+		function() if fcData then fcData.yawL=1 end end,
+		function() if fcData then fcData.yawL=0 end end)
+	createFreeBtn("►", 30, -170, 50,
+		function() if fcData then fcData.yawR=1 end end,
+		function() if fcData then fcData.yawR=0 end end)
+	createFreeBtn("▲", -30, -110, 50,
+		function() if fcData then fcData.pitchU=1 end end,
+		function() if fcData then fcData.pitchU=0 end end)
+	createFreeBtn("▼", 30, -110, 50,
+		function() if fcData then fcData.pitchD=1 end end,
+		function() if fcData then fcData.pitchD=0 end end)
+
+	-- Вертикаль + выход (правая группа)
+	createFreeBtn("↑", 90, -170, 50,
+		function() if fcData then fcData.up=1 end end,
+		function() if fcData then fcData.up=0 end end)
+	createFreeBtn("↓", 90, -110, 50,
+		function() if fcData then fcData.down=1 end end,
+		function() if fcData then fcData.down=0 end end)
+	createFreeBtn("×", 150, -140, 50,
+		function() S._setFreecam(false) end, nil)
+
+	local function startFreecam()
+		local cam = workspace.CurrentCamera
+		local cf = cam.CFrame
+		fcData = {
+			cam = cam, pos = cf.Position,
+			yaw = math.atan2(-cf.LookVector.X, -cf.LookVector.Z),
+			pitch = math.asin(math.clamp(cf.LookVector.Y,-1,1)),
+			fwd=0,back=0,left=0,right=0,up=0,down=0,
+			yawL=0,yawR=0,pitchU=0,pitchD=0
+		}
+		UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
+		local ch = LP.Character
+		if ch then
+			local hum = ch:FindFirstChildOfClass("Humanoid")
+			if hum then cam.CameraSubject = nil end
 		end
-	end)
-	fcConns[2] = UIS.InputBegan:Connect(function(i,gp)
-		if gp or not fcData then return end
-		if i.KeyCode==Enum.KeyCode.W then fcData.fwd=1
-		elseif i.KeyCode==Enum.KeyCode.S then fcData.back=1
-		elseif i.KeyCode==Enum.KeyCode.A then fcData.left=1
-		elseif i.KeyCode==Enum.KeyCode.D then fcData.right=1
-		elseif i.KeyCode==Enum.KeyCode.Space then fcData.up=1
-		elseif i.KeyCode==Enum.KeyCode.LeftControl then fcData.down=1 end
-	end)
-	fcConns[3] = UIS.InputEnded:Connect(function(i)
-		if not fcData then return end
-		if i.KeyCode==Enum.KeyCode.W then fcData.fwd=0
-		elseif i.KeyCode==Enum.KeyCode.S then fcData.back=0
-		elseif i.KeyCode==Enum.KeyCode.A then fcData.left=0
-		elseif i.KeyCode==Enum.KeyCode.D then fcData.right=0
-		elseif i.KeyCode==Enum.KeyCode.Space then fcData.up=0
-		elseif i.KeyCode==Enum.KeyCode.LeftControl then fcData.down=0 end
-	end)
-	fcConns[4] = RS.RenderStepped:Connect(function(dt)
-		if not fcData then return end
-		local spd = C.freecamSpeed * dt * 10
-		local look = CFrame.fromEulerAnglesYXZ(fcData.pitch, fcData.yaw, 0)
-		local mv = Vector3.zero
-		mv = mv + look.LookVector * (fcData.fwd - fcData.back) * spd
-		mv = mv + look.RightVector * (fcData.right - fcData.left) * spd
-		mv = mv + Vector3.new(0,1,0) * (fcData.up - fcData.down) * spd
-		fcData.pos = fcData.pos + mv
-		cam.CFrame = CFrame.new(fcData.pos) * look
-	end)
-end
-local function stopFreecam()
-	for _,c in ipairs(fcConns) do pcall(function() c:Disconnect() end) end
-	fcConns = {}
-	fcData = nil
-	UIS.MouseBehavior = Enum.MouseBehavior.Default
-	local ch = LP.Character
-	if ch then
-		local hum = ch:FindFirstChildOfClass("Humanoid")
-		if hum then workspace.CurrentCamera.CameraSubject = hum end
-	end
-end
-S._startFreecam = startFreecam
-S._stopFreecam = stopFreecam
+		fcConns[1] = UIS.InputChanged:Connect(function(i)
+			if i.UserInputType == Enum.UserInputType.MouseMovement then
+				fcData.yaw = fcData.yaw - math.rad(i.Delta.X)*0.3
+				fcData.pitch = math.clamp(fcData.pitch - math.rad(i.Delta.Y)*0.3, -math.pi/2+0.01, math.pi/2-0.01)
+			end
+		end)
+		fcConns[2] = UIS.InputBegan:Connect(function(i,gp)
+			if gp or not fcData then return end
+			if i.KeyCode==Enum.KeyCode.W then fcData.fwd=1
+			elseif i.KeyCode==Enum.KeyCode.S then fcData.back=1
+			elseif i.KeyCode==Enum.KeyCode.A then fcData.left=1
+			elseif i.KeyCode==Enum.KeyCode.D then fcData.right=1
+			elseif i.KeyCode==Enum.KeyCode.Space then fcData.up=1
+			elseif i.KeyCode==Enum.KeyCode.LeftControl then fcData.down=1
+			elseif i.KeyCode==Enum.KeyCode.Q then fcData.yawL=1
+			elseif i.KeyCode==Enum.KeyCode.E then fcData.yawR=1 end
+		end)
+		fcConns[3] = UIS.InputEnded:Connect(function(i)
+			if not fcData then return end
+			if i.KeyCode==Enum.KeyCode.W then fcData.fwd=0
+			elseif i.KeyCode==Enum.KeyCode.S then fcData.back=0
+			elseif i.KeyCode==Enum.KeyCode.A then fcData.left=0
+			elseif i.KeyCode==Enum.KeyCode.D then fcData.right=0
+			elseif i.KeyCode==Enum.KeyCode.Space then fcData.up=0
+			elseif i.KeyCode==Enum.KeyCode.LeftControl then fcData.down=0
+			elseif i.KeyCode==Enum.KeyCode.Q then fcData.yawL=0
+			elseif i.KeyCode==Enum.KeyCode.E then fcData.yawR=0 end
+		end)
+		fcConns[4] = RS.RenderStepped:Connect(function(dt)
+			if not fcData then return end
+			-- поворот через кнопки (1.2 рад/сек)
+			local rotSpd = 1.2 * dt
+			fcData.yaw = fcData.yaw + (fcData.yawR - fcData.yawL) * rotSpd
+			fcData.pitch = math.clamp(fcData.pitch + (fcData.pitchU - fcData.pitchD) * rotSpd, -math.pi/2+0.01, math.pi/2-0.01)
 
-function S._setFreecam(on)
-	if on == C.freecam then return end
-	C.freecam = on
-	local tog = S.toggles.freecam
-	if tog and tog.btn then
+			-- движение — нормальная скорость
+			local spd = C.freecamSpeed * dt
+			local look = CFrame.fromEulerAnglesYXZ(fcData.pitch, fcData.yaw, 0)
+			local mv = Vector3.zero
+			mv = mv + look.LookVector * (fcData.fwd - fcData.back) * spd
+			mv = mv + look.RightVector * (fcData.right - fcData.left) * spd
+			mv = mv + Vector3.new(0,1,0) * (fcData.up - fcData.down) * spd
+			fcData.pos = fcData.pos + mv
+			cam.CFrame = CFrame.new(fcData.pos) * look
+		end)
+	end
+	local function stopFreecam()
+		for _,c in ipairs(fcConns) do pcall(function() c:Disconnect() end) end
+		fcConns = {}
+		fcData = nil
+		UIS.MouseBehavior = Enum.MouseBehavior.Default
+		local ch = LP.Character
+		if ch then
+			local hum = ch:FindFirstChildOfClass("Humanoid")
+			if hum then workspace.CurrentCamera.CameraSubject = hum end
+		end
+	end
+	S._startFreecam = startFreecam
+	S._stopFreecam = stopFreecam
+	S._freeButtons = freeButtons
+
+	function S._setFreecam(on)
+		if on == C.freecam then return end
+		C.freecam = on
+		local tog = S.toggles.freecam
+		if tog and tog.btn then
+			if on then
+				tog.btn.BackgroundColor3 = Color3.fromRGB(0,120,0); tog.btn.Text = "Freecam: ВКЛ"
+			else
+				tog.btn.BackgroundColor3 = Color3.fromRGB(50,50,50); tog.btn.Text = "Freecam: ВЫКЛ"
+			end
+		end
 		if on then
-			tog.btn.BackgroundColor3 = Color3.fromRGB(0,120,0); tog.btn.Text = "Freecam: ВКЛ"
+			startFreecam(); hideHotkeysForFreecam(); showFreeButtons()
 		else
-			tog.btn.BackgroundColor3 = Color3.fromRGB(50,50,50); tog.btn.Text = "Freecam: ВЫКЛ"
+			stopFreecam(); restoreHotkeys(); hideFreeButtons()
 		end
 	end
-	if on then
-		startFreecam(); hideHotkeysForFreecam(); showFreeButtons()
-	else
-		stopFreecam(); restoreHotkeys(); hideFreeButtons()
-	end
+
+	addR("Visual","Freecam",function(b)
+		S._setFreecam(not C.freecam)
+	end,false,"freecam")
 end
 
-addR("Visual","Freecam",function(b)
-	S._setFreecam(not C.freecam)
-end,false,"freecam")
+-- ===== SEARCH + STARS (правильные LayoutOrder диапазоны) =====
+-- Диапазоны LayoutOrder:
+--   SearchBox: -100000
+--   Избранное: -50000 + 1..N
+--   Обычные:   оригинальный LayoutOrder (по умолчанию 0)
+local SEARCH_LO = -100000
+local FAV_BASE  = -50000
 
--- ===== SEARCH + STARS =====
--- Собираем все fun-rows, чтобы фильтр не трогал служебные элементы
-local funRows = {}   -- row -> key
-local rowOrder = {}  -- row -> оригинальный LayoutOrder
+local funRows = {}
+local rowOrder = {}
 
 local function indexRows()
-	for k, t in pairs(S.toggles) do
-		if t.btn and t.btn.Parent then
-			local row = t.btn.Parent
-			funRows[row] = k
-			if rowOrder[row] == nil then
-				rowOrder[row] = row.LayoutOrder
+	funRows = {}
+	rowOrder = {}
+	for _, tabName in ipairs({"Main","Func","Visual","WP","Addons","Settings"}) do
+		local tab = S.Tabs[tabName]
+		if tab then
+			for _, child in ipairs(tab:GetChildren()) do
+				if child:IsA("Frame") then
+					if funRows[child] == nil then
+						for k, t in pairs(S.toggles) do
+							if t.btn and t.btn.Parent == child then
+								funRows[child] = k
+								rowOrder[child] = child.LayoutOrder
+								break
+							end
+						end
+					end
+				end
 			end
 		end
 	end
@@ -253,13 +320,12 @@ end
 
 local function updateRowOrder()
 	local favs = getFavs()
-	-- fav rows получают отрицательные LayoutOrder, остальные возвращаются к оригиналу
-	local idx = 0
+	local favCount = 0
 	for row, key in pairs(funRows) do
 		if row and row.Parent then
 			if favs[key] then
-				idx = idx + 1
-				row.LayoutOrder = -1000 + idx
+				favCount = favCount + 1
+				row.LayoutOrder = FAV_BASE + favCount
 			else
 				row.LayoutOrder = rowOrder[row] or 0
 			end
@@ -270,10 +336,9 @@ end
 local function addStar(row, key)
 	if row:FindFirstChild("ACE_FavStar") then return end
 
-	-- найти все элементы row: главная кнопка + (если есть) слайдеры
 	local mainBtn, sldMinus, sldPlus = nil, nil, nil
 	for _, c in ipairs(row:GetChildren()) do
-		if c:IsA("TextButton") then
+		if c:IsA("TextButton") and c.Name ~= "ACE_FavStar" then
 			if not mainBtn then mainBtn = c
 			elseif not sldMinus then sldMinus = c
 			else sldPlus = c end
@@ -281,14 +346,12 @@ local function addStar(row, key)
 	end
 	if not mainBtn then return end
 
-	-- пересчет размеров, чтобы поместилась звезда
+	-- освободить место справа под звезду
 	if sldPlus then
-		-- hasS: mainBtn + "-" + "+" + star
 		mainBtn.Size = UDim2.new(1, -88, 1, 0)
 		sldMinus.Size = UDim2.new(0, 25, 1, 0); sldMinus.Position = UDim2.new(1, -86, 0, 0)
 		sldPlus.Size = UDim2.new(0, 25, 1, 0);  sldPlus.Position = UDim2.new(1, -58, 0, 0)
 	else
-		-- просто mainBtn + star
 		mainBtn.Size = UDim2.new(1, -32, 1, 0)
 	end
 
@@ -337,13 +400,12 @@ local function addSearchToTab(tabName)
 	box.Font = Enum.Font.SourceSansBold
 	box.TextSize = 11
 	box.ClearTextOnFocus = false
-	box.LayoutOrder = -9999
+	box.LayoutOrder = SEARCH_LO
 	Instance.new("UICorner", box).CornerRadius = UDim.new(0,4)
 
 	box:GetPropertyChangedSignal("Text"):Connect(function()
 		local q = string.lower(box.Text or "")
-		-- пройтись ТОЛЬКО по fun-rows
-		for row, key in pairs(funRows) do
+		for row, _ in pairs(funRows) do
 			if row and row.Parent == tab then
 				local mainBtn = nil
 				for _, c in ipairs(row:GetChildren()) do
@@ -360,14 +422,8 @@ local function addSearchToTab(tabName)
 	end)
 end
 
-local function isFunRowExists(tab)
-	for row, _ in pairs(funRows) do
-		if row.Parent == tab then return true end
-	end
-	return false
-end
-
-local function initSearchAndStars()
+task.spawn(function()
+	task.wait(0.6)
 	indexRows()
 
 	for _, tabName in ipairs({"Main","Func","Visual","WP","Addons","Settings"}) do
@@ -380,12 +436,7 @@ local function initSearchAndStars()
 		end
 	end
 	updateRowOrder()
-	print("[ACE extras] search+stars готовы, fun-rows: "..#(function() local n=0 for _ in pairs(funRows) do n=n+1 end return {tostring(n)} end)())
-end
-
-task.spawn(function()
-	task.wait(0.6)
-	initSearchAndStars()
+	print("[ACE extras] search+stars готовы")
 end)
 
 -- ===== PLAYER INFO =====
@@ -446,94 +497,97 @@ local function showInfo(p)
 end
 S._showPlayerInfo = showInfo
 
--- ===== GAME INFO DUMPER =====
-local dumperPanel = Instance.new("Frame", SG)
-dumperPanel.Size = UDim2.new(0,320,0,400)
-dumperPanel.Position = UDim2.new(0.5,-160,0.5,-200)
-dumperPanel.BackgroundColor3 = Color3.fromRGB(20,20,26)
-dumperPanel.BorderSizePixel = 0; dumperPanel.Visible = false; dumperPanel.ZIndex = 100
-Instance.new("UICorner", dumperPanel).CornerRadius = UDim.new(0,8)
-Instance.new("UIStroke", dumperPanel).Color = Color3.fromRGB(100,220,180)
-local dpTitle = Instance.new("TextLabel", dumperPanel)
-dpTitle.Size = UDim2.new(1,0,0,28); dpTitle.BackgroundColor3 = Color3.fromRGB(42,42,42)
-dpTitle.BorderSizePixel = 0; dpTitle.Text = "Game Info Dumper"
-dpTitle.TextColor3 = Color3.fromRGB(100,220,180)
-dpTitle.Font = Enum.Font.SourceSansBold; dpTitle.TextSize = 12
-Instance.new("UICorner", dpTitle).CornerRadius = UDim.new(0,8)
-local dpClose = Instance.new("TextButton", dumperPanel)
-dpClose.Size = UDim2.new(0,28,0,28); dpClose.Position = UDim2.new(1,-28,0,0)
-dpClose.BackgroundTransparency = 1; dpClose.Text = "×"
-dpClose.TextColor3 = Color3.new(1,1,1); dpClose.Font = Enum.Font.SourceSansBold; dpClose.TextSize = 16
-local dpCopy = Instance.new("TextButton", dumperPanel)
-dpCopy.Size = UDim2.new(0,80,0,24); dpCopy.Position = UDim2.new(1,-90,0,32)
-dpCopy.BackgroundColor3 = Color3.fromRGB(0,120,180); dpCopy.BorderSizePixel = 0
-dpCopy.Text = "COPY"; dpCopy.TextColor3 = Color3.new(1,1,1)
-dpCopy.Font = Enum.Font.SourceSansBold; dpCopy.TextSize = 10
-Instance.new("UICorner", dpCopy).CornerRadius = UDim.new(0,4)
-local dpRescan = Instance.new("TextButton", dumperPanel)
-dpRescan.Size = UDim2.new(0,80,0,24); dpRescan.Position = UDim2.new(1,-180,0,32)
-dpRescan.BackgroundColor3 = Color3.fromRGB(60,60,80); dpRescan.BorderSizePixel = 0
-dpRescan.Text = "ReScan"; dpRescan.TextColor3 = Color3.new(1,1,1)
-dpRescan.Font = Enum.Font.SourceSansBold; dpRescan.TextSize = 10
-Instance.new("UICorner", dpRescan).CornerRadius = UDim.new(0,4)
-local dpScroll = Instance.new("ScrollingFrame", dumperPanel)
-dpScroll.Size = UDim2.new(1,-16,1,-70); dpScroll.Position = UDim2.new(0,8,0,62)
-dpScroll.BackgroundColor3 = Color3.fromRGB(12,12,16); dpScroll.BorderSizePixel = 0
-dpScroll.ScrollBarThickness = 4; dpScroll.CanvasSize = UDim2.new(0,0,0,0)
-dpScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-Instance.new("UICorner", dpScroll).CornerRadius = UDim.new(0,4)
-local dpText = Instance.new("TextLabel", dpScroll)
-dpText.Size = UDim2.new(1,-8,0,0); dpText.Position = UDim2.new(0,4,0,4)
-dpText.AutomaticSize = Enum.AutomaticSize.Y; dpText.BackgroundTransparency = 1
-dpText.TextColor3 = Color3.fromRGB(200,200,200)
-dpText.Font = Enum.Font.Code; dpText.TextSize = 10
-dpText.TextXAlignment = Enum.TextXAlignment.Left
-dpText.TextYAlignment = Enum.TextYAlignment.Top
-dpText.TextWrapped = true
-local function dumpGame()
-	local lines = {"=== GAME INFO ===","Place: "..tostring(game.PlaceId),"JobId: "..tostring(game.JobId),""}
-	local rs = game:GetService("ReplicatedStorage")
-	local remotes, modules = {}, {}
-	for _,o in ipairs(rs:GetDescendants()) do
-		if o:IsA("RemoteEvent") or o:IsA("RemoteFunction") then table.insert(remotes, o:GetFullName())
-		elseif o:IsA("ModuleScript") then table.insert(modules, o:GetFullName()) end
+-- ===== GAME INFO DUMPER (защита от дублирования) =====
+if S.toggles.gameDumper then
+	print("[ACE extras] Game Info Dumper уже существует, скип")
+else
+	local dumperPanel = Instance.new("Frame", SG)
+	dumperPanel.Size = UDim2.new(0,320,0,400)
+	dumperPanel.Position = UDim2.new(0.5,-160,0.5,-200)
+	dumperPanel.BackgroundColor3 = Color3.fromRGB(20,20,26)
+	dumperPanel.BorderSizePixel = 0; dumperPanel.Visible = false; dumperPanel.ZIndex = 100
+	Instance.new("UICorner", dumperPanel).CornerRadius = UDim.new(0,8)
+	Instance.new("UIStroke", dumperPanel).Color = Color3.fromRGB(100,220,180)
+	local dpTitle = Instance.new("TextLabel", dumperPanel)
+	dpTitle.Size = UDim2.new(1,0,0,28); dpTitle.BackgroundColor3 = Color3.fromRGB(42,42,42)
+	dpTitle.BorderSizePixel = 0; dpTitle.Text = "Game Info Dumper"
+	dpTitle.TextColor3 = Color3.fromRGB(100,220,180)
+	dpTitle.Font = Enum.Font.SourceSansBold; dpTitle.TextSize = 12
+	Instance.new("UICorner", dpTitle).CornerRadius = UDim.new(0,8)
+	local dpClose = Instance.new("TextButton", dumperPanel)
+	dpClose.Size = UDim2.new(0,28,0,28); dpClose.Position = UDim2.new(1,-28,0,0)
+	dpClose.BackgroundTransparency = 1; dpClose.Text = "×"
+	dpClose.TextColor3 = Color3.new(1,1,1); dpClose.Font = Enum.Font.SourceSansBold; dpClose.TextSize = 16
+	local dpCopy = Instance.new("TextButton", dumperPanel)
+	dpCopy.Size = UDim2.new(0,80,0,24); dpCopy.Position = UDim2.new(1,-90,0,32)
+	dpCopy.BackgroundColor3 = Color3.fromRGB(0,120,180); dpCopy.BorderSizePixel = 0
+	dpCopy.Text = "COPY"; dpCopy.TextColor3 = Color3.new(1,1,1)
+	dpCopy.Font = Enum.Font.SourceSansBold; dpCopy.TextSize = 10
+	Instance.new("UICorner", dpCopy).CornerRadius = UDim.new(0,4)
+	local dpRescan = Instance.new("TextButton", dumperPanel)
+	dpRescan.Size = UDim2.new(0,80,0,24); dpRescan.Position = UDim2.new(1,-180,0,32)
+	dpRescan.BackgroundColor3 = Color3.fromRGB(60,60,80); dpRescan.BorderSizePixel = 0
+	dpRescan.Text = "ReScan"; dpRescan.TextColor3 = Color3.new(1,1,1)
+	dpRescan.Font = Enum.Font.SourceSansBold; dpRescan.TextSize = 10
+	Instance.new("UICorner", dpRescan).CornerRadius = UDim.new(0,4)
+	local dpScroll = Instance.new("ScrollingFrame", dumperPanel)
+	dpScroll.Size = UDim2.new(1,-16,1,-70); dpScroll.Position = UDim2.new(0,8,0,62)
+	dpScroll.BackgroundColor3 = Color3.fromRGB(12,12,16); dpScroll.BorderSizePixel = 0
+	dpScroll.ScrollBarThickness = 4; dpScroll.CanvasSize = UDim2.new(0,0,0,0)
+	dpScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	Instance.new("UICorner", dpScroll).CornerRadius = UDim.new(0,4)
+	local dpText = Instance.new("TextLabel", dpScroll)
+	dpText.Size = UDim2.new(1,-8,0,0); dpText.Position = UDim2.new(0,4,0,4)
+	dpText.AutomaticSize = Enum.AutomaticSize.Y; dpText.BackgroundTransparency = 1
+	dpText.TextColor3 = Color3.fromRGB(200,200,200)
+	dpText.Font = Enum.Font.Code; dpText.TextSize = 10
+	dpText.TextXAlignment = Enum.TextXAlignment.Left
+	dpText.TextYAlignment = Enum.TextYAlignment.Top
+	dpText.TextWrapped = true
+	local function dumpGame()
+		local lines = {"=== GAME INFO ===","Place: "..tostring(game.PlaceId),"JobId: "..tostring(game.JobId),""}
+		local rs = game:GetService("ReplicatedStorage")
+		local remotes, modules = {}, {}
+		for _,o in ipairs(rs:GetDescendants()) do
+			if o:IsA("RemoteEvent") or o:IsA("RemoteFunction") then table.insert(remotes, o:GetFullName())
+			elseif o:IsA("ModuleScript") then table.insert(modules, o:GetFullName()) end
+		end
+		table.insert(lines, "=== REMOTES ("..#remotes..") ===")
+		for _,r in ipairs(remotes) do table.insert(lines, r) end
+		table.insert(lines, "")
+		table.insert(lines, "=== MODULES ("..#modules..") ===")
+		for _,m in ipairs(modules) do table.insert(lines, m) end
+		local npcCount = 0
+		for _,o in ipairs(workspace:GetDescendants()) do
+			if o:IsA("Humanoid") and not Players:GetPlayerFromCharacter(o.Parent) then npcCount = npcCount + 1 end
+		end
+		table.insert(lines, ""); table.insert(lines, "=== NPC: "..npcCount.." ===")
+		return table.concat(lines, "\n")
 	end
-	table.insert(lines, "=== REMOTES ("..#remotes..") ===")
-	for _,r in ipairs(remotes) do table.insert(lines, r) end
-	table.insert(lines, "")
-	table.insert(lines, "=== MODULES ("..#modules..") ===")
-	for _,m in ipairs(modules) do table.insert(lines, m) end
-	local npcCount = 0
-	for _,o in ipairs(workspace:GetDescendants()) do
-		if o:IsA("Humanoid") and not Players:GetPlayerFromCharacter(o.Parent) then npcCount = npcCount + 1 end
-	end
-	table.insert(lines, "")
-	table.insert(lines, "=== NPC: "..npcCount.." ===")
-	return table.concat(lines, "\n")
+	local lastDump = nil
+	local function refreshDump() lastDump = dumpGame(); dpText.Text = lastDump end
+	dpRescan.MouseButton1Click:Connect(refreshDump)
+	dpCopy.MouseButton1Click:Connect(function()
+		if not lastDump then refreshDump() end
+		if setclipboard then pcall(function() setclipboard(lastDump) end); S.notify("Скопировано",Color3.fromRGB(0,180,0))
+		else print(lastDump) end
+	end)
+	dpClose.MouseButton1Click:Connect(function() dumperPanel.Visible = false end)
+	addR("Settings","📊 Game Info Dumper",function(b)
+		if not dumperPanel.Visible then refreshDump(); dumperPanel.Visible = true
+		else dumperPanel.Visible = false end
+	end,false,"gameDumper")
 end
-local lastDump = nil
-local function refreshDump() lastDump = dumpGame(); dpText.Text = lastDump end
-dpRescan.MouseButton1Click:Connect(refreshDump)
-dpCopy.MouseButton1Click:Connect(function()
-	if not lastDump then refreshDump() end
-	if setclipboard then pcall(function() setclipboard(lastDump) end); S.notify("Скопировано",Color3.fromRGB(0,180,0))
-	else print(lastDump) end
-end)
-dpClose.MouseButton1Click:Connect(function() dumperPanel.Visible = false end)
-addR("Settings","📊 Game Info Dumper",function(b)
-	if not dumperPanel.Visible then refreshDump(); dumperPanel.Visible = true
-	else dumperPanel.Visible = false end
-end,false)
 
 -- ===== CLEANUP =====
 S._extrasCleanup = function()
 	S.delT("ItemEspSync")
-	clearItems()
-	if C.freecam then S._setFreecam(false) end
+	if S._setFreecam and C.freecam then S._setFreecam(false) end
 	if ipConn then ipConn:Disconnect() end
-	for _,b in ipairs(freeButtons) do pcall(function() b:Destroy() end) end
-	if dumperPanel then dumperPanel:Destroy() end
+	if S._freeButtons then
+		for _,b in ipairs(S._freeButtons) do pcall(function() b:Destroy() end) end
+	end
 	if infoPanel then infoPanel:Destroy() end
 end
 
-print("[ACE extras] готово v2.1")
+print("[ACE extras] готово v2.2")
