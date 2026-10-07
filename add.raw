@@ -1,12 +1,12 @@
-print("[ACE extras] загрузка v3.4...")
-local ACE = _G.ACE
-if not ACE then warn("[ACE extras] _G.ACE пуст"); return end
+print("[UCS add] загрузка v1.0...")
+local ACE = _G.UCS
+if not ACE then warn("[UCS add] _G.UCS пуст"); return end
 
-if _G._ACE_ExtrasLoaded == ACE then
-	warn("[ACE extras] уже загружен")
+if _G._UCS_AddLoaded == ACE then
+	warn("[UCS add] уже загружен")
 	return
 end
-_G._ACE_ExtrasLoaded = ACE
+_G._UCS_AddLoaded = ACE
 
 local S = ACE
 local C = S.C
@@ -21,7 +21,7 @@ C.freecam = C.freecam or false
 C.freecamSpeed = C.freecamSpeed or 15
 C.favKeys = C.favKeys or ""
 
--- ===== FAVORITES =====
+-- FAVORITES
 local function getFavs()
 	local t = {}
 	if C.favKeys == "" then return t end
@@ -39,9 +39,9 @@ local function toggleFav(key)
 	setFavs(f)
 end
 
--- ===== FREECAM =====
+-- FREECAM
 if S.toggles.freecam then
-	print("[ACE extras] Freecam уже есть")
+	print("[UCS add] Freecam уже есть")
 else
 	local fcConns = {}
 	local fcData = nil
@@ -127,7 +127,6 @@ else
 			local hum = ch:FindFirstChildOfClass("Humanoid")
 			if hum then cam.CameraSubject = nil end
 		end
-
 		fcConns[1] = UIS.InputChanged:Connect(function(i)
 			if i.UserInputType == Enum.UserInputType.MouseMovement and not touchLook then
 				fcData.yaw = fcData.yaw - math.rad(i.Delta.X)*0.3
@@ -220,7 +219,7 @@ else
 	end,false,"freecam")
 end
 
--- ===== PLAYER INFO =====
+-- PLAYER INFO
 local infoPanel = Instance.new("Frame", SG)
 infoPanel.Size = UDim2.new(0,240,0,180)
 infoPanel.Position = UDim2.new(0.5,-120,0.5,-90)
@@ -278,9 +277,9 @@ local function showInfo(p)
 end
 S._showPlayerInfo = showInfo
 
--- ===== GAME INFO DUMPER =====
+-- GAME INFO DUMPER
 if S.toggles.gameDumper then
-	print("[ACE extras] Game Info Dumper уже есть")
+	print("[UCS add] Game Info Dumper уже есть")
 else
 	local dumperPanel = Instance.new("Frame", SG)
 	dumperPanel.Size = UDim2.new(0,320,0,400)
@@ -360,7 +359,7 @@ else
 	end,false,"gameDumper")
 end
 
--- ===== SEARCH + STARS =====
+-- SEARCH + STARS
 local funRows = {}
 local rowOrder = {}
 
@@ -369,7 +368,7 @@ local function fixTabOrder(tab)
 	if lay then lay.SortOrder = Enum.SortOrder.LayoutOrder end
 	local idx = 0
 	for _, child in ipairs(tab:GetChildren()) do
-		if child.Name ~= "ACE_SearchBox" and child:IsA("GuiObject") then
+		if child.Name ~= "UCS_SearchBox" and child.Name ~= "ACE_SearchBox" and child:IsA("GuiObject") then
 			local ok = pcall(function() return child.LayoutOrder end)
 			if ok then
 				idx = idx + 1
@@ -417,10 +416,10 @@ local function reorderAll()
 end
 
 local function addStar(row, key)
-	if row:FindFirstChild("ACE_FavStar") then return end
+	if row:FindFirstChild("UCS_FavStar") then return end
 	local mainBtn, sldMinus, sldPlus = nil, nil, nil
 	for _, c in ipairs(row:GetChildren()) do
-		if c:IsA("TextButton") and c.Name ~= "ACE_FavStar" then
+		if c:IsA("TextButton") and c.Name ~= "UCS_FavStar" then
 			if not mainBtn then mainBtn = c
 			elseif not sldMinus then sldMinus = c
 			else sldPlus = c end
@@ -437,7 +436,7 @@ local function addStar(row, key)
 	end
 
 	local star = Instance.new("TextButton", row)
-	star.Name = "ACE_FavStar"
+	star.Name = "UCS_FavStar"
 	star.Size = UDim2.new(0, 26, 1, 0)
 	star.Position = UDim2.new(1, -28, 0, 0)
 	star.BackgroundColor3 = Color3.fromRGB(60,60,60)
@@ -464,9 +463,9 @@ end
 
 local function addSearchToTab(tabName)
 	local tab = S.Tabs[tabName]
-	if not tab or tab:FindFirstChild("ACE_SearchBox") then return end
+	if not tab or tab:FindFirstChild("UCS_SearchBox") then return end
 	local box = Instance.new("TextBox", tab)
-	box.Name = "ACE_SearchBox"
+	box.Name = "UCS_SearchBox"
 	box.Size = UDim2.new(1, -5, 0, 28)
 	box.BackgroundColor3 = Color3.fromRGB(45,45,45)
 	box.BorderSizePixel = 0
@@ -485,7 +484,7 @@ local function addSearchToTab(tabName)
 			if row and row.Parent == tab then
 				local mainBtn = nil
 				for _, c in ipairs(row:GetChildren()) do
-					if c:IsA("TextButton") and c.Name ~= "ACE_FavStar" then mainBtn = c; break end
+					if c:IsA("TextButton") and c.Name ~= "UCS_FavStar" then mainBtn = c; break end
 				end
 				if mainBtn then
 					local txt = string.lower(mainBtn.Text or "")
@@ -508,10 +507,9 @@ task.spawn(function()
 	reorderAll()
 	local n = 0
 	for _ in pairs(funRows) do n = n + 1 end
-	print("[ACE extras] search+stars готовы, fun-rows: "..n)
+	print("[UCS add] search+stars готовы, fun-rows: "..n)
 end)
 
--- ===== CLEANUP =====
 S._extrasCleanup = function()
 	if S._setFreecam and C.freecam then S._setFreecam(false) end
 	if ipConn then ipConn:Disconnect() end
@@ -521,4 +519,4 @@ S._extrasCleanup = function()
 	if infoPanel then infoPanel:Destroy() end
 end
 
-print("[ACE extras] готово v3.4")
+print("[UCS add] готово v1.0")
