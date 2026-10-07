@@ -1,4 +1,4 @@
-print("[ACE] старт v11.10")
+print("[ACE] старт v11.11")
 if _G.ACE_Unload then pcall(_G.ACE_Unload) end
 _G.ACE = nil
 task.wait(0.1)
@@ -86,7 +86,7 @@ Instance.new("UIStroke",MF).Color=Color3.fromRGB(255,140,0)
 S.MF=MF
 local Tl=Instance.new("TextLabel",MF)
 Tl.Size=UDim2.new(1,-40,0,35); Tl.BackgroundColor3=Color3.fromRGB(42,42,42)
-Tl.BorderSizePixel=0; Tl.Text="ABSOLUTE CHEAT ENGINE v11.10"
+Tl.BorderSizePixel=0; Tl.Text="ABSOLUTE CHEAT ENGINE v11.11"
 Tl.TextColor3=Color3.fromRGB(255,140,0); Tl.Font=Enum.Font.SourceSansBold; Tl.TextSize=10
 S.MFHeader=Tl
 local Cl=Instance.new("TextButton",MF)
@@ -564,18 +564,16 @@ addR("Func","Фаст Интеракт",function(b)
 		for o in pairs(promptCache) do fiRestorePrompt(o) end end
 end,false,"fiEn")
 
--- ===== OneShot+ (Killer + Remote spam) =====
+-- OneShot+
 local oneShotConns={}
 local oneShotLastFire=0
 local oneShotRemoteCache=nil
 local oneShotRange=60
-
 local function rapidFire()
 	local char=LP.Character; if not char then return end
 	local tool=char:FindFirstChildOfClass("Tool")
 	if tool then pcall(function() tool:Activate() end) end
 end
-
 local function getDamageRemote()
 	if oneShotRemoteCache and oneShotRemoteCache.Parent then return oneShotRemoteCache end
 	local rem=game:GetService("ReplicatedStorage"):FindFirstChild("Modules")
@@ -584,7 +582,6 @@ local function getDamageRemote()
 	if ok and result then oneShotRemoteCache=result; return result end
 	return nil
 end
-
 local function findNearest(range)
 	local myChar=LP.Character
 	local myRoot=myChar and myChar:FindFirstChild("HumanoidRootPart")
@@ -604,7 +601,6 @@ local function findNearest(range)
 	end
 	return nearest
 end
-
 local function oneShotRemoteLoop()
 	if not C.oneShotEn then return end
 	local now=tick()
@@ -618,7 +614,6 @@ local function oneShotRemoteLoop()
 		pcall(function() remote:FireServer(target,nil,"Melee") end)
 	end
 end
-
 local function hookOneShot(h)
 	if not h or oneShotConns[h] then return end
 	if h.Parent==LP.Character then return end
@@ -630,7 +625,6 @@ local function hookOneShot(h)
 		for _=1,15 do task.spawn(rapidFire) end
 	end)
 end
-
 local function unhookAllOneShot()
 	local keys={}; for h in pairs(oneShotConns) do keys[#keys+1]=h end
 	for _,h in ipairs(keys) do
@@ -641,7 +635,6 @@ local function unhookAllOneShot()
 	end
 end
 S.unhookAllOneShot=unhookAllOneShot
-
 addR("Func","OneShot+ (Killer+Remote)",function(b)
 	C.oneShotEn=not C.oneShotEn
 	if C.oneShotEn then
@@ -664,7 +657,6 @@ addR("Func","OneShot+ (Killer+Remote)",function(b)
 		unhookAllOneShot()
 	end
 end,false,"oneShotEn")
--- ===== /OneShot+ =====
 
 addR("Func","Авто-Реджоин",function(b)
 	C.rejoinEn=not C.rejoinEn
@@ -1053,6 +1045,35 @@ refreshWP()
 S.waypoints=waypoints
 print("[ACE] WP ок")
 
+-- ===== резолвер UserID из @username или числа =====
+local function resolveUserId(input)
+	input = (input or ""):gsub("^%s+",""):gsub("%s+$","")
+	if input == "" then return nil end
+	local num = tonumber(input)
+	if num then return num end
+	local name = input:gsub("^@","")
+	if name == "" then return nil end
+	local ok, uid = pcall(function() return Players:GetUserIdFromNameAsync(name) end)
+	if ok and uid then return uid end
+	local requester = request or http_request or (syn and syn.request)
+	if requester then
+		local ok2, res = pcall(function()
+			return requester({
+				Url = "https://users.roblox.com/v1/usernames/users",
+				Method = "POST",
+				Headers = {["Content-Type"] = "application/json"},
+				Body = Http:JSONEncode({usernames = {name}, excludeBannedUsers = false})
+			})
+		end)
+		if ok2 and res and res.Body then
+			local ok3, data = pcall(function() return Http:JSONDecode(res.Body) end)
+			if ok3 and data and data.data and data.data[1] then return data.data[1].id end
+		end
+	end
+	return nil
+end
+S.resolveUserId = resolveUserId
+
 -- PLAYERS
 local searchBox=Instance.new("TextBox",S.Tabs.Players)
 searchBox.Size=UDim2.new(1,-5,0,30); searchBox.BackgroundColor3=Color3.fromRGB(45,45,45)
@@ -1067,7 +1088,7 @@ joinRow.Size=UDim2.new(1,-5,0,30); joinRow.Position=UDim2.new(0,0,0,35)
 joinRow.BackgroundTransparency=1
 local joinIdBox=Instance.new("TextBox",joinRow)
 joinIdBox.Size=UDim2.new(0.62,-4,1,0); joinIdBox.BackgroundColor3=Color3.fromRGB(45,45,45)
-joinIdBox.BorderSizePixel=0; joinIdBox.Text=""; joinIdBox.PlaceholderText="UserID для Join..."
+joinIdBox.BorderSizePixel=0; joinIdBox.Text=""; joinIdBox.PlaceholderText="UserID или @username"
 joinIdBox.TextColor3=Color3.new(1,1,1); joinIdBox.PlaceholderColor3=Color3.fromRGB(140,140,140)
 joinIdBox.Font=Enum.Font.SourceSansBold; joinIdBox.TextSize=11; joinIdBox.ClearTextOnFocus=false
 Instance.new("UICorner",joinIdBox).CornerRadius=UDim.new(0,4)
@@ -1077,8 +1098,9 @@ joinBtn.BackgroundColor3=Color3.fromRGB(0,120,180); joinBtn.BorderSizePixel=0
 joinBtn.Text="Войти"; joinBtn.TextColor3=Color3.new(1,1,1); joinBtn.Font=Enum.Font.SourceSansBold; joinBtn.TextSize=12
 Instance.new("UICorner",joinBtn).CornerRadius=UDim.new(0,4)
 joinBtn.MouseButton1Click:Connect(function()
-	local uid=tonumber((joinIdBox.Text or ""):match("%d+"))
-	if not uid then S.notify("Введи UserID",Color3.fromRGB(255,80,80)); return end
+	local uid=resolveUserId(joinIdBox.Text)
+	if not uid then S.notify("Не нашёл UserID/@username",Color3.fromRGB(255,80,80)); return end
+	S.notify("Резолв: "..uid,Color3.fromRGB(0,180,0))
 	local ok=pcall(function()
 		local o=Instance.new("TeleportOptions")
 		o:SetFollowUserId(uid)
@@ -1093,7 +1115,7 @@ hopRow.Size=UDim2.new(1,-5,0,30); hopRow.Position=UDim2.new(0,0,0,70)
 hopRow.BackgroundTransparency=1
 local hopBox=Instance.new("TextBox",hopRow)
 hopBox.Size=UDim2.new(0.62,-4,1,0); hopBox.BackgroundColor3=Color3.fromRGB(45,45,45)
-hopBox.BorderSizePixel=0; hopBox.Text=""; hopBox.PlaceholderText="UserID друга (hop)"
+hopBox.BorderSizePixel=0; hopBox.Text=""; hopBox.PlaceholderText="UserID или @username (hop)"
 hopBox.TextColor3=Color3.new(1,1,1); hopBox.PlaceholderColor3=Color3.fromRGB(140,140,140)
 hopBox.Font=Enum.Font.SourceSansBold; hopBox.TextSize=11; hopBox.ClearTextOnFocus=false
 Instance.new("UICorner",hopBox).CornerRadius=UDim.new(0,4)
@@ -1103,15 +1125,15 @@ hopBtn.BackgroundColor3=Color3.fromRGB(140,40,140); hopBtn.BorderSizePixel=0
 hopBtn.Text="К другу"; hopBtn.TextColor3=Color3.new(1,1,1); hopBtn.Font=Enum.Font.SourceSansBold; hopBtn.TextSize=12
 Instance.new("UICorner",hopBtn).CornerRadius=UDim.new(0,4)
 hopBtn.MouseButton1Click:Connect(function()
-	local uid=tonumber((hopBox.Text or ""):match("%d+"))
-	if not uid then S.notify("Введи UserID",Color3.fromRGB(255,80,80)); return end
-	local ok,err=pcall(function()
+	local uid=resolveUserId(hopBox.Text)
+	if not uid then S.notify("Не нашёл UserID/@username",Color3.fromRGB(255,80,80)); return end
+	S.notify("Хоп к "..uid,Color3.fromRGB(0,180,0))
+	local ok=pcall(function()
 		local opts=Instance.new("TeleportOptions")
 		opts:SetFollowUserId(uid)
 		TeleSvc:TeleportAsync(game.PlaceId,{LP},opts)
 	end)
-	if ok then S.notify("Хоп к "..uid,Color3.fromRGB(0,180,0))
-	else S.notify("Ошибка: "..tostring(err):sub(1,40),Color3.fromRGB(255,80,80)) end
+	if not ok then S.notify("Ошибка hop",Color3.fromRGB(255,80,80)) end
 end)
 
 local PLf=Instance.new("Frame",S.Tabs.Players)
@@ -1137,7 +1159,6 @@ local function showP(p)
 	local c=p.Character; if not c then return end
 	for _,o in ipairs(c:GetDescendants()) do if o:IsA("BasePart") then o.LocalTransparencyModifier=0 end end
 end
-
 local function getDisplay(p)
 	if p.DisplayName and p.DisplayName~="" and p.DisplayName~=p.Name then return p.DisplayName end
 	return nil
@@ -1155,7 +1176,6 @@ local function matchQuery(p, q)
 	local nm=string.lower(p.Name or "")
 	return string.find(dn,q,1,true)~=nil or string.find(nm,q,1,true)~=nil
 end
-
 local function refreshP()
 	for _,c in ipairs(PLf:GetChildren()) do if c:IsA("Frame") then c:Destroy() end end
 	local q=string.lower(searchBox.Text or "")
@@ -1689,7 +1709,7 @@ S.conns.Hotkeys=UIS.InputBegan:Connect(function(i,gp)
 	end
 end)
 
--- ===== ЗАГРУЗКА РАСШИРЕНИЙ =====
+-- ЗАГРУЗКА РАСШИРЕНИЙ
 task.spawn(function()
 	local url = "https://raw.githubusercontent.com/Chester-pdf/ACE.lua/main/extras.lua?t=" .. tostring(tick())
 	local ok, src = pcall(game.HttpGet, game, url)
@@ -1727,5 +1747,5 @@ _G.ACE_Unload=function()
 	_G.ACE_Unload=nil
 	print("[ACE] Выгружено")
 end
-S.notify("ACE v11.10 загружен",Color3.fromRGB(0,200,0))
+S.notify("ACE v11.11 загружен",Color3.fromRGB(0,200,0))
 print("[ACE] ГОТОВО")
