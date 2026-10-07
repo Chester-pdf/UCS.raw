@@ -1,6 +1,7 @@
-print("[ACE] старт v11.11")
+print("[ACE] старт v11.12")
 if _G.ACE_Unload then pcall(_G.ACE_Unload) end
 _G.ACE = nil
+_G._ACE_ExtrasLoaded = nil
 task.wait(0.1)
 
 local Players=game:GetService("Players")
@@ -86,7 +87,7 @@ Instance.new("UIStroke",MF).Color=Color3.fromRGB(255,140,0)
 S.MF=MF
 local Tl=Instance.new("TextLabel",MF)
 Tl.Size=UDim2.new(1,-40,0,35); Tl.BackgroundColor3=Color3.fromRGB(42,42,42)
-Tl.BorderSizePixel=0; Tl.Text="ABSOLUTE CHEAT ENGINE v11.11"
+Tl.BorderSizePixel=0; Tl.Text="ABSOLUTE CHEAT ENGINE v11.12"
 Tl.TextColor3=Color3.fromRGB(255,140,0); Tl.Font=Enum.Font.SourceSansBold; Tl.TextSize=10
 S.MFHeader=Tl
 local Cl=Instance.new("TextButton",MF)
@@ -1045,7 +1046,7 @@ refreshWP()
 S.waypoints=waypoints
 print("[ACE] WP ок")
 
--- ===== резолвер UserID из @username или числа =====
+-- резолвер UserID
 local function resolveUserId(input)
 	input = (input or ""):gsub("^%s+",""):gsub("%s+$","")
 	if input == "" then return nil end
@@ -1128,12 +1129,21 @@ hopBtn.MouseButton1Click:Connect(function()
 	local uid=resolveUserId(hopBox.Text)
 	if not uid then S.notify("Не нашёл UserID/@username",Color3.fromRGB(255,80,80)); return end
 	S.notify("Хоп к "..uid,Color3.fromRGB(0,180,0))
-	local ok=pcall(function()
-		local opts=Instance.new("TeleportOptions")
-		opts:SetFollowUserId(uid)
-		TeleSvc:TeleportAsync(game.PlaceId,{LP},opts)
+	task.spawn(function()
+		local ok, errMsg, placeId, jobId = pcall(function()
+			return TeleSvc:GetPlayerPlaceInstanceAsync(uid)
+		end)
+		if not ok or not placeId or not jobId then
+			S.notify("Друг не в сети или в другом месте",Color3.fromRGB(255,80,80))
+			return
+		end
+		local ok2 = pcall(function()
+			local opts=Instance.new("TeleportOptions")
+			opts.ServerInstanceId = jobId
+			TeleSvc:TeleportAsync(placeId,{LP},opts)
+		end)
+		if not ok2 then S.notify("Телепорт не удался",Color3.fromRGB(255,80,80)) end
 	end)
-	if not ok then S.notify("Ошибка hop",Color3.fromRGB(255,80,80)) end
 end)
 
 local PLf=Instance.new("Frame",S.Tabs.Players)
@@ -1145,7 +1155,6 @@ local favorites={}
 local function saveFav() pcall(function() local e={}; for id,name in pairs(favorites) do e[tostring(id)]=name end; writefile(FAV_FILE,Http:JSONEncode(e)) end) end
 local function loadFav() pcall(function() if isfile and isfile(FAV_FILE) then local d=Http:JSONDecode(readfile(FAV_FILE)); for id,name in pairs(d) do favorites[tonumber(id) or id]=name end end end) end
 loadFav()
-
 local hidden={}; local hideC={}
 local function hideP(p)
 	hidden[p]=true; local c=p.Character; if not c then return end
@@ -1747,5 +1756,5 @@ _G.ACE_Unload=function()
 	_G.ACE_Unload=nil
 	print("[ACE] Выгружено")
 end
-S.notify("ACE v11.11 загружен",Color3.fromRGB(0,200,0))
+S.notify("ACE v11.12 загружен",Color3.fromRGB(0,200,0))
 print("[ACE] ГОТОВО")
