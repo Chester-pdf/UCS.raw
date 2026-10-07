@@ -1,6 +1,14 @@
-print("[ACE extras] загрузка v2.2...")
+print("[ACE extras] загрузка v2.3...")
 local ACE = _G.ACE
 if not ACE then warn("[ACE extras] _G.ACE пуст"); return end
+
+-- защита от двойной загрузки
+if _G._ACE_ExtrasLoaded == ACE then
+	warn("[ACE extras] уже загружен для этого ACE")
+	return
+end
+_G._ACE_ExtrasLoaded = ACE
+
 local S = ACE
 local C = S.C
 local addR = S.addR
@@ -33,9 +41,9 @@ local function toggleFav(key)
 	setFavs(f)
 end
 
--- ===== ITEM ESP (защита от дублирования) =====
+-- ===== ITEM ESP =====
 if S.toggles.itemEsp then
-	print("[ACE extras] Item ESP уже существует, скип")
+	print("[ACE extras] Item ESP уже есть, скип")
 else
 	local itemHl = {}
 	local ITEM_NAMES = {"drop","item","pickup","loot","resource","coin","gem","gold","wood","scrap","candy","ore","chest","crate","food","potion","ingot","bar"}
@@ -93,7 +101,7 @@ end
 
 -- ===== FREECAM =====
 if S.toggles.freecam then
-	print("[ACE extras] Freecam уже существует, скип")
+	print("[ACE extras] Freecam уже есть, скип")
 else
 	local fcConns = {}
 	local fcData = nil
@@ -118,9 +126,9 @@ else
 		for _,b in ipairs(freeButtons) do b.Visible = false end
 	end
 
-	local function createFreeBtn(text, x, y, size, onDown, onUp)
+	local function createFreeBtn(text, x, y, onDown, onUp)
 		local btn = Instance.new("TextButton", SG)
-		btn.Size = UDim2.new(0, size or 50, 0, size or 50)
+		btn.Size = UDim2.new(0, 50, 0, 50)
 		btn.Position = UDim2.new(0.5, x, 1, y)
 		btn.BackgroundColor3 = Color3.fromRGB(40, 90, 130)
 		btn.BackgroundTransparency = 0.2
@@ -146,43 +154,20 @@ else
 		return btn
 	end
 
-	-- Движение (левая группа)
-	createFreeBtn("W", -110, -170, 50,
-		function() if fcData then fcData.fwd=1 end end,
-		function() if fcData then fcData.fwd=0 end end)
-	createFreeBtn("A", -170, -110, 50,
-		function() if fcData then fcData.left=1 end end,
-		function() if fcData then fcData.left=0 end end)
-	createFreeBtn("S", -110, -110, 50,
-		function() if fcData then fcData.back=1 end end,
-		function() if fcData then fcData.back=0 end end)
-	createFreeBtn("D", -50, -110, 50,
-		function() if fcData then fcData.right=1 end end,
-		function() if fcData then fcData.right=0 end end)
-
-	-- Поворот (центральная группа)
-	createFreeBtn("◄", -30, -170, 50,
-		function() if fcData then fcData.yawL=1 end end,
-		function() if fcData then fcData.yawL=0 end end)
-	createFreeBtn("►", 30, -170, 50,
-		function() if fcData then fcData.yawR=1 end end,
-		function() if fcData then fcData.yawR=0 end end)
-	createFreeBtn("▲", -30, -110, 50,
-		function() if fcData then fcData.pitchU=1 end end,
-		function() if fcData then fcData.pitchU=0 end end)
-	createFreeBtn("▼", 30, -110, 50,
-		function() if fcData then fcData.pitchD=1 end end,
-		function() if fcData then fcData.pitchD=0 end end)
-
-	-- Вертикаль + выход (правая группа)
-	createFreeBtn("↑", 90, -170, 50,
-		function() if fcData then fcData.up=1 end end,
-		function() if fcData then fcData.up=0 end end)
-	createFreeBtn("↓", 90, -110, 50,
-		function() if fcData then fcData.down=1 end end,
-		function() if fcData then fcData.down=0 end end)
-	createFreeBtn("×", 150, -140, 50,
-		function() S._setFreecam(false) end, nil)
+	-- движение
+	createFreeBtn("W", -120, -170, function() if fcData then fcData.fwd=1 end end, function() if fcData then fcData.fwd=0 end end)
+	createFreeBtn("A", -180, -110, function() if fcData then fcData.left=1 end end, function() if fcData then fcData.left=0 end end)
+	createFreeBtn("S", -120, -110, function() if fcData then fcData.back=1 end end, function() if fcData then fcData.back=0 end end)
+	createFreeBtn("D", -60, -110, function() if fcData then fcData.right=1 end end, function() if fcData then fcData.right=0 end end)
+	-- поворот
+	createFreeBtn("◄", -30, -170, function() if fcData then fcData.yawL=1 end end, function() if fcData then fcData.yawL=0 end end)
+	createFreeBtn("►", 30, -170, function() if fcData then fcData.yawR=1 end end, function() if fcData then fcData.yawR=0 end end)
+	createFreeBtn("▲", -30, -110, function() if fcData then fcData.pitchU=1 end end, function() if fcData then fcData.pitchU=0 end end)
+	createFreeBtn("▼", 30, -110, function() if fcData then fcData.pitchD=1 end end, function() if fcData then fcData.pitchD=0 end end)
+	-- вертикаль + выход
+	createFreeBtn("↑", 100, -170, function() if fcData then fcData.up=1 end end, function() if fcData then fcData.up=0 end end)
+	createFreeBtn("↓", 100, -110, function() if fcData then fcData.down=1 end end, function() if fcData then fcData.down=0 end end)
+	createFreeBtn("×", 160, -140, function() S._setFreecam(false) end, nil)
 
 	local function startFreecam()
 		local cam = workspace.CurrentCamera
@@ -230,12 +215,11 @@ else
 		end)
 		fcConns[4] = RS.RenderStepped:Connect(function(dt)
 			if not fcData then return end
-			-- поворот через кнопки (1.2 рад/сек)
-			local rotSpd = 1.2 * dt
-			fcData.yaw = fcData.yaw + (fcData.yawR - fcData.yawL) * rotSpd
+			local rotSpd = 1.5 * dt
+			-- исправленное направление: yawL увеличивает yaw (влево), yawR уменьшает (вправо)
+			fcData.yaw = fcData.yaw + (fcData.yawL - fcData.yawR) * rotSpd
 			fcData.pitch = math.clamp(fcData.pitch + (fcData.pitchU - fcData.pitchD) * rotSpd, -math.pi/2+0.01, math.pi/2-0.01)
 
-			-- движение — нормальная скорость
 			local spd = C.freecamSpeed * dt
 			local look = CFrame.fromEulerAnglesYXZ(fcData.pitch, fcData.yaw, 0)
 			local mv = Vector3.zero
@@ -284,14 +268,7 @@ else
 	end,false,"freecam")
 end
 
--- ===== SEARCH + STARS (правильные LayoutOrder диапазоны) =====
--- Диапазоны LayoutOrder:
---   SearchBox: -100000
---   Избранное: -50000 + 1..N
---   Обычные:   оригинальный LayoutOrder (по умолчанию 0)
-local SEARCH_LO = -100000
-local FAV_BASE  = -50000
-
+-- ===== SEARCH + STARS =====
 local funRows = {}
 local rowOrder = {}
 
@@ -301,15 +278,15 @@ local function indexRows()
 	for _, tabName in ipairs({"Main","Func","Visual","WP","Addons","Settings"}) do
 		local tab = S.Tabs[tabName]
 		if tab then
+			local idx = 0
 			for _, child in ipairs(tab:GetChildren()) do
+				idx = idx + 1
+				rowOrder[child] = idx
 				if child:IsA("Frame") then
-					if funRows[child] == nil then
-						for k, t in pairs(S.toggles) do
-							if t.btn and t.btn.Parent == child then
-								funRows[child] = k
-								rowOrder[child] = child.LayoutOrder
-								break
-							end
+					for k, t in pairs(S.toggles) do
+						if t.btn and t.btn.Parent == child then
+							funRows[child] = k
+							break
 						end
 					end
 				end
@@ -318,18 +295,70 @@ local function indexRows()
 	end
 end
 
-local function updateRowOrder()
+-- физическая перестановка элементов через .Parent = nil / = tab
+local function reorderTab(tab)
+	if not tab then return end
 	local favs = getFavs()
-	local favCount = 0
-	for row, key in pairs(funRows) do
-		if row and row.Parent then
-			if favs[key] then
-				favCount = favCount + 1
-				row.LayoutOrder = FAV_BASE + favCount
-			else
-				row.LayoutOrder = rowOrder[row] or 0
-			end
+	local children = tab:GetChildren()
+	
+	local searchBox = nil
+	for _, c in ipairs(children) do
+		if c.Name == "ACE_SearchBox" then searchBox = c; break end
+	end
+	
+	local funList, nonFun = {}, {}
+	for _, c in ipairs(children) do
+		if c ~= searchBox then
+			if funRows[c] then table.insert(funList, c)
+			else table.insert(nonFun, c) end
 		end
+	end
+	
+	-- сортировка: favorites первыми, потом по оригинальному порядку
+	local function sortFun(a,b)
+		local fa = favs[funRows[a]] and 1 or 0
+		local fb = favs[funRows[b]] and 1 or 0
+		if fa ~= fb then return fa > fb end
+		return (rowOrder[a] or 0) < (rowOrder[b] or 0)
+	end
+	table.sort(funList, sortFun)
+	table.sort(nonFun, function(a,b) return (rowOrder[a] or 0) < (rowOrder[b] or 0) end)
+	
+	-- найти первый funRow по оригинальному порядку
+	local firstFunIdx = math.huge
+	for _, c in ipairs(funList) do
+		local i = rowOrder[c] or 0
+		if i < firstFunIdx then firstFunIdx = i end
+	end
+	
+	-- разделить nonFun на "до" и "после"
+	local before, after = {}, {}
+	for _, c in ipairs(nonFun) do
+		if (rowOrder[c] or 0) < firstFunIdx then
+			table.insert(before, c)
+		else
+			table.insert(after, c)
+		end
+	end
+	
+	-- собрать финальный порядок
+	local final = {}
+	if searchBox then table.insert(final, searchBox) end
+	for _, c in ipairs(before) do table.insert(final, c) end
+	for _, c in ipairs(funList) do table.insert(final, c) end
+	for _, c in ipairs(after) do table.insert(final, c) end
+	
+	-- переустановить: отсоединить всех, присоединить в нужном порядке
+	for _, c in ipairs(tab:GetChildren()) do c.Parent = nil end
+	for i, c in ipairs(final) do
+		c.LayoutOrder = i
+		c.Parent = tab
+	end
+end
+
+local function reorderAll()
+	for _, tabName in ipairs({"Main","Func","Visual","WP","Addons","Settings"}) do
+		reorderTab(S.Tabs[tabName])
 	end
 end
 
@@ -346,7 +375,6 @@ local function addStar(row, key)
 	end
 	if not mainBtn then return end
 
-	-- освободить место справа под звезду
 	if sldPlus then
 		mainBtn.Size = UDim2.new(1, -88, 1, 0)
 		sldMinus.Size = UDim2.new(0, 25, 1, 0); sldMinus.Position = UDim2.new(1, -86, 0, 0)
@@ -380,7 +408,7 @@ local function addStar(row, key)
 	star.MouseButton1Click:Connect(function()
 		toggleFav(key)
 		refreshStar()
-		updateRowOrder()
+		reorderAll()
 	end)
 end
 
@@ -400,7 +428,7 @@ local function addSearchToTab(tabName)
 	box.Font = Enum.Font.SourceSansBold
 	box.TextSize = 11
 	box.ClearTextOnFocus = false
-	box.LayoutOrder = SEARCH_LO
+	box.LayoutOrder = -9999
 	Instance.new("UICorner", box).CornerRadius = UDim.new(0,4)
 
 	box:GetPropertyChangedSignal("Text"):Connect(function()
@@ -429,14 +457,16 @@ task.spawn(function()
 	for _, tabName in ipairs({"Main","Func","Visual","WP","Addons","Settings"}) do
 		addSearchToTab(tabName)
 	end
+	-- пересобрать индексы, т.к. добавили searchBox
+	indexRows()
 
 	for row, key in pairs(funRows) do
 		if row and row.Parent then
 			addStar(row, key)
 		end
 	end
-	updateRowOrder()
-	print("[ACE extras] search+stars готовы")
+	reorderAll()
+	print("[ACE extras] search+stars готовы, fun-rows: "..(function() local n=0 for _ in pairs(funRows) do n=n+1 end return n end)())
 end)
 
 -- ===== PLAYER INFO =====
@@ -497,9 +527,9 @@ local function showInfo(p)
 end
 S._showPlayerInfo = showInfo
 
--- ===== GAME INFO DUMPER (защита от дублирования) =====
+-- ===== GAME INFO DUMPER =====
 if S.toggles.gameDumper then
-	print("[ACE extras] Game Info Dumper уже существует, скип")
+	print("[ACE extras] Game Info Dumper уже есть, скип")
 else
 	local dumperPanel = Instance.new("Frame", SG)
 	dumperPanel.Size = UDim2.new(0,320,0,400)
@@ -590,4 +620,4 @@ S._extrasCleanup = function()
 	if infoPanel then infoPanel:Destroy() end
 end
 
-print("[ACE extras] готово v2.2")
+print("[ACE extras] готово v2.3")
