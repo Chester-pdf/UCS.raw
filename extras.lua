@@ -39,65 +39,257 @@ local function toggleFav(key)
 	setFavs(f)
 end
 
--- ITEM ESP
+-- ITEM ESP (v2)
 if S.toggles.itemEsp then
 	print("[ACE extras] Item ESP уже есть")
 else
 	local itemHl = {}
-	local ITEM_NAMES = {"drop","item","pickup","loot","resource","coin","gem","gold","wood","scrap","candy","ore","chest","crate","food","potion","ingot","bar"}
+	local itemLabels = {}
+	local itemBeams = {}
+
+	-- настройки
+	C.itemEspRange = C.itemEspRange or 500
+	C.itemEspShowName = C.itemEspShowName ~= false
+	C.itemEspShowDist = C.itemEspShowDist ~= false
+	C.itemEspBeam = C.itemEspBeam or false
+	C.itemEspCount = 0
+
+	-- категории с цветами
+	local CATEGORIES = {
+		{name="coin",   color=Color3.fromRGB(255,215,0),  keys={"coin","money","cash","dollar","gold_coin"}},
+		{name="gem",    color=Color3.fromRGB(150,80,255), keys={"gem","crystal","diamond","ruby","emerald"}},
+		{name="resource",color=Color3.fromRGB(180,180,180),keys={"wood","scrap","stone","ore","ingot","iron","coal","metal"}},
+		{name="food",   color=Color3.fromRGB(255,120,120),keys={"food","candy","apple","bread","meat","potion","pizza"}},
+		{name="chest",  color=Color3.fromRGB(255,140,0),  keys={"chest","crate","box","barrel"}},
+		{name="tool",   color=Color3.fromRGB(0,200,255),  keys={}}, -- Tools определяются по классу
+		{name="default",color=Color3.fromRGB(255,255,100),keys={}},
+	}
+	local function getCategory(o)
+		if o:IsA("Tool") then return CATEGORIES[6] end -- tool
+		local n = string.lower(o.Name)
+		for i=1,5 do
+			for _,k in ipairs(CATEGORIES[i].keys) do
+				if string.find(n,k,1,true) then return CATEGORIES[i] end
+			end
+		end
+		return CATEGORIES[7] -- default
+	end
+
 	local function isItemObj(o)
 		if not o or not o.Parent then return false end
 		if o:IsA("Tool") then return true end
 		if o:IsA("Model") or o:IsA("BasePart") then
-			local n = string.lower(o.Name)
-			for _,p in ipairs(ITEM_NAMES) do
-				if string.find(n,p,1,true) then return true end
-			end
+			-- сначала проверим категорию, если default — отбрасываем
+			local cat = getCategory(o)
+			if cat.name ~= "default" then return true end
+			-- дополнительно: объекты, у которых есть ProximityPrompt или ClickDetector внутри
+			if o:IsA("Model") and (o:FindFirstChildOfClass("ProximityPrompt") or o:FindFirstChildOfClass("ClickDetector")) then return true end
 		end
 		return false
 	end
-	local function addItemHL(o)
+
+	local function getItemPos(o)
+		if o:IsA("BasePart") then return o.Position end
+		local p = o:FindFirstChild("Handle") or o:FindFirstChild("Main") or o.PrimaryPart
+		if p then return p.Position end
+		local anyPart = o:FindFirstChildWhichIsA("BasePart",true)
+		return anyPart and anyPart.Position or nil
+	end
+
+	local function addItem(o)
 		if itemHl[o] then return end
+		local cat = getCategory(o)
+
 		local hl = Instance.new("Highlight",o)
 		hl.Name = "ACE_ITEM_HL"
-		hl.FillColor = Color3.fromRGB(255,200,0)
+		hl.FillColor = cat.color
 		hl.FillTransparency = 0.5
-		hl.OutlineColor = Color3.fromRGB(255,255,100)
+		hl.OutlineColor = cat.color:Lerp(Color3.new(1,1,1),0.4)
+		hl.OutlineTransparency = 0.2
+		hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 		itemHl[o] = hl
-	end
-	local function clearItems()
-		for o,hl in pairs(itemHl) do pcall(function() hl:Destroy() end) end
-		itemHl = {}
-	end
-	local function scanItems()
-		for _,o in ipairs(workspace:GetDescendants()) do
-			if isItemObj(o) then addItemHL(o) end
+
+		-- Label над item
+		local billboard = Instance.new("BillboardGui",o)
+		billboard.Name = "ACE_ITEM_BB"
+		billboard.Size = UDim2.new(0,200,0,50)
+		billboard.StudsOffset = Vector3.new(0,3,0)
+		billboard.AlwaysOnTop = true
+		billboard.MaxDistance = C.itemEspRange
+		billboard.Adornee = o
+		local nameLbl = Instance.new("TextLabel",billboard)
+		nameLbl.Name = "NameLbl"
+		nameLbl.Size = UDim2.new(1,0,0,22)
+		nameLbl.BackgroundTransparency = 1
+		nameLbl.TextColor3 = cat.color
+		nameLbl.TextStrokeTransparency = 0
+		nameLbl.TextStrokeColor3 = Color3.new(0,0,0)
+		nameLbl.Font = Enum.Font.SourceSansBold
+		nameLbl.TextSize = 14
+		nameLbl.Text = o.Name
+		local distLbl = Instance.new("TextLabel",billboard)
+		distLbl.Name = "DistLbl"
+		distLbl.Size = UDim2.new(1,0,0,18)
+		distLbl.Position = UDim2.new(0,0,0,22)
+		distLbl.BackgroundTransparency = 1
+		distLbl.TextColor3 = Color3.fromRGB(220,220,220)
+		distLbl.TextStrokeTransparency = 0
+		distLbl.TextStrokeColor3 = Color3.new(0,0,0)
+		distLbl.Font = Enum.Font.Code
+		distLbl.TextSize = 12
+		distLbl.Text = "?"
+		itemLabels[o] = billboard
+
+		-- Beam (опционально)
+		if C.itemEspBeam then
+			local attach0 = Instance.new("Attachment", workspace.CurrentCamera)
+			local attach1 = Instance.new("Attachment")
+			local bp = o:IsA("BasePart") and o or (o:FindFirstChildWhichIsA("BasePart",true))
+			if bp then attach1.Parent = bp end
+			local beam = Instance.new("Beam",bp or workspace.CurrentCamera)
+			beam.Attachment0 = attach0
+			beam.Attachment1 = attach1
+			beam.Color = ColorSequence.new(cat.color)
+			beam.Width0 = 0.05
+			beam.Width1 = 0.05
+			beam.FaceCamera = true
+			beam.Transparency = NumberSequence.new(0.3)
+			itemBeams[o] = {beam=beam, a0=attach0, a1=attach1}
 		end
 	end
+
+	local function clearItems()
+		for o,hl in pairs(itemHl) do pcall(function() hl:Destroy() end) end
+		for o,bb in pairs(itemLabels) do pcall(function() bb:Destroy() end) end
+		for o,data in pairs(itemBeams) do
+			pcall(function() data.beam:Destroy() end)
+			pcall(function() data.a0:Destroy() end)
+			pcall(function() data.a1:Destroy() end)
+		end
+		itemHl = {}
+		itemLabels = {}
+		itemBeams = {}
+		C.itemEspCount = 0
+	end
+
+	local function scanItems()
+		for _,o in ipairs(workspace:GetDescendants()) do
+			if isItemObj(o) then addItem(o) end
+		end
+	end
+
+	-- Периодическое обновление позиции/дистанции
+	local function updateLabels()
+		if not C.itemEsp then return end
+		local myChar = LP.Character
+		local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+		if not myRoot then return end
+		local myPos = myRoot.Position
+
+		local count = 0
+		for o,bb in pairs(itemLabels) do
+			if not o.Parent then
+				pcall(function() bb:Destroy() end)
+				itemLabels[o] = nil
+			else
+				count = count + 1
+				local pos = getItemPos(o)
+				if pos then
+					local d = (pos - myPos).Magnitude
+					local nl = bb:FindFirstChild("NameLbl")
+					local dl = bb:FindFirstChild("DistLbl")
+					if nl then nl.Text = o.Name end
+					if dl then
+						if C.itemEspShowDist then
+							dl.Text = string.format("%d studs", math.floor(d))
+							dl.Visible = true
+						else
+							dl.Visible = false
+						end
+					end
+					-- скрыть если далеко
+					bb.Enabled = d <= C.itemEspRange
+				end
+			end
+		end
+		C.itemEspCount = count
+		-- обновление title кнопки
+		local tog = S.toggles.itemEsp
+		if tog and tog.btn then
+			tog.btn.Text = "Item ESP: ВКЛ ("..count..")"
+		end
+	end
+
 	addR("Visual","Item ESP",function(b)
 		C.itemEsp = not C.itemEsp
 		if C.itemEsp then
 			b.BackgroundColor3 = Color3.fromRGB(0,120,0)
-			b.Text = "Item ESP: ВКЛ"
+			b.Text = "Item ESP: ВКЛ (0)"
 			scanItems()
 			S.addT("ItemEspSync",function()
 				for _,o in ipairs(workspace:GetDescendants()) do
-					if isItemObj(o) and not itemHl[o] then addItemHL(o) end
+					if isItemObj(o) and not itemHl[o] then addItem(o) end
 				end
 				for o,hl in pairs(itemHl) do
-					if not o.Parent then pcall(function() hl:Destroy() end); itemHl[o]=nil end
+					if not o.Parent then
+						pcall(function() hl:Destroy() end)
+						itemHl[o] = nil
+						if itemLabels[o] then pcall(function() itemLabels[o]:Destroy() end); itemLabels[o]=nil end
+						if itemBeams[o] then
+							pcall(function() itemBeams[o].beam:Destroy() end)
+							pcall(function() itemBeams[o].a0:Destroy() end)
+							pcall(function() itemBeams[o].a1:Destroy() end)
+							itemBeams[o]=nil
+						end
+					end
 				end
 			end,0.5)
+			S.addT("ItemEspUpdate",updateLabels,0.1)
 		else
 			b.BackgroundColor3 = Color3.fromRGB(50,50,50)
 			b.Text = "Item ESP: ВЫКЛ"
 			S.delT("ItemEspSync")
+			S.delT("ItemEspUpdate")
 			clearItems()
 		end
 	end,false,"itemEsp")
-end
 
--- FREECAM
+	-- доп. настройки в разделе Visual
+	addR("Visual","Item ESP: дистанция ("..C.itemEspRange..")",function(b,a)
+		if a=="minus" then C.itemEspRange = math.max(50, C.itemEspRange - 50)
+		elseif a=="plus" then C.itemEspRange = math.min(5000, C.itemEspRange + 50) end
+		b.Text = "Item ESP: дистанция ("..C.itemEspRange..")"
+		for _,bb in pairs(itemLabels) do bb.MaxDistance = C.itemEspRange end
+	end,true,"itemEspRange")
+
+	addR("Visual","Item ESP: показать имена",function(b,a)
+		if a=="toggle" then C.itemEspShowName = not C.itemEspShowName end
+		for _,bb in pairs(itemLabels) do
+			local nl = bb:FindFirstChild("NameLbl")
+			if nl then nl.Visible = C.itemEspShowName end
+		end
+		if C.itemEspShowName then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text="Item ESP: показать имена: ВКЛ"
+		else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text="Item ESP: показать имена: ВЫКЛ" end
+	end,false,"itemEspShowName")
+
+	addR("Visual","Item ESP: дистанция текстом",function(b,a)
+		if a=="toggle" then C.itemEspShowDist = not C.itemEspShowDist end
+		if C.itemEspShowDist then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text="Item ESP: дистанция текстом: ВКЛ"
+		else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text="Item ESP: дистанция текстом: ВЫКЛ" end
+	end,false,"itemEspShowDist")
+
+	addR("Visual","Item ESP: лучи",function(b,a)
+		if a=="toggle" then
+			C.itemEspBeam = not C.itemEspBeam
+			if C.itemEsp then
+				-- пересоздать
+				S._setItemEspBeam(C.itemEspBeam)
+			end
+		end
+		if C.itemEspBeam then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text="Item ESP: лучи: ВКЛ"
+		else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text="Item ESP: лучи: ВЫКЛ" end
+	end,false,"itemEspBeam")
+end-- FREECAM
 if S.toggles.freecam then
 	print("[ACE extras] Freecam уже есть")
 else
