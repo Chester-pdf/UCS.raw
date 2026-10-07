@@ -225,7 +225,7 @@ function S.enterStealth()
 	for _,e in ipairs(S.screenButtons) do if e.btn then pcall(function() e.btn.Visible=false end) end end
 	if S._customJumpBtn and S._customJumpBtn.Parent then S._customJumpBtn.Visible=false end
 	ensureStealth()
-	S.notify("Стелс ВКЛ — двойной тап в угол",Color3.fromRGB(120,200,255))
+	S.notify("Стелс ВКЛ",Color3.fromRGB(120,200,255))
 end
 function S.exitStealth()
 	C.stealthHidden=false
@@ -1056,16 +1056,18 @@ print("[ACE] WP ок")
 -- PLAYERS
 local searchBox=Instance.new("TextBox",S.Tabs.Players)
 searchBox.Size=UDim2.new(1,-5,0,30); searchBox.BackgroundColor3=Color3.fromRGB(45,45,45)
-searchBox.BorderSizePixel=0; searchBox.Text=""; searchBox.PlaceholderText="Поиск по нику..."
+searchBox.BorderSizePixel=0; searchBox.Text=""
+searchBox.PlaceholderText="Поиск: имя или @username"
 searchBox.TextColor3=Color3.new(1,1,1); searchBox.PlaceholderColor3=Color3.fromRGB(140,140,140)
 searchBox.Font=Enum.Font.SourceSansBold; searchBox.TextSize=12
 Instance.new("UICorner",searchBox).CornerRadius=UDim.new(0,4)
+
 local joinRow=Instance.new("Frame",S.Tabs.Players)
 joinRow.Size=UDim2.new(1,-5,0,30); joinRow.Position=UDim2.new(0,0,0,35)
 joinRow.BackgroundTransparency=1
 local joinIdBox=Instance.new("TextBox",joinRow)
 joinIdBox.Size=UDim2.new(0.62,-4,1,0); joinIdBox.BackgroundColor3=Color3.fromRGB(45,45,45)
-joinIdBox.BorderSizePixel=0; joinIdBox.Text=""; joinIdBox.PlaceholderText="UserID..."
+joinIdBox.BorderSizePixel=0; joinIdBox.Text=""; joinIdBox.PlaceholderText="UserID для Join..."
 joinIdBox.TextColor3=Color3.new(1,1,1); joinIdBox.PlaceholderColor3=Color3.fromRGB(140,140,140)
 joinIdBox.Font=Enum.Font.SourceSansBold; joinIdBox.TextSize=11; joinIdBox.ClearTextOnFocus=false
 Instance.new("UICorner",joinIdBox).CornerRadius=UDim.new(0,4)
@@ -1085,8 +1087,35 @@ joinBtn.MouseButton1Click:Connect(function()
 	if ok then S.notify("Джойн "..uid,Color3.fromRGB(0,180,0))
 	else S.notify("Не удалось",Color3.fromRGB(255,80,80)) end
 end)
+
+local hopRow=Instance.new("Frame",S.Tabs.Players)
+hopRow.Size=UDim2.new(1,-5,0,30); hopRow.Position=UDim2.new(0,0,0,70)
+hopRow.BackgroundTransparency=1
+local hopBox=Instance.new("TextBox",hopRow)
+hopBox.Size=UDim2.new(0.62,-4,1,0); hopBox.BackgroundColor3=Color3.fromRGB(45,45,45)
+hopBox.BorderSizePixel=0; hopBox.Text=""; hopBox.PlaceholderText="UserID друга (hop)"
+hopBox.TextColor3=Color3.new(1,1,1); hopBox.PlaceholderColor3=Color3.fromRGB(140,140,140)
+hopBox.Font=Enum.Font.SourceSansBold; hopBox.TextSize=11; hopBox.ClearTextOnFocus=false
+Instance.new("UICorner",hopBox).CornerRadius=UDim.new(0,4)
+local hopBtn=Instance.new("TextButton",hopRow)
+hopBtn.Size=UDim2.new(0.38,-4,1,0); hopBtn.Position=UDim2.new(0.62,4,0,0)
+hopBtn.BackgroundColor3=Color3.fromRGB(140,40,140); hopBtn.BorderSizePixel=0
+hopBtn.Text="К другу"; hopBtn.TextColor3=Color3.new(1,1,1); hopBtn.Font=Enum.Font.SourceSansBold; hopBtn.TextSize=12
+Instance.new("UICorner",hopBtn).CornerRadius=UDim.new(0,4)
+hopBtn.MouseButton1Click:Connect(function()
+	local uid=tonumber((hopBox.Text or ""):match("%d+"))
+	if not uid then S.notify("Введи UserID",Color3.fromRGB(255,80,80)); return end
+	local ok,err=pcall(function()
+		local opts=Instance.new("TeleportOptions")
+		opts:SetFollowUserId(uid)
+		TeleSvc:TeleportAsync(game.PlaceId,{LP},opts)
+	end)
+	if ok then S.notify("Хоп к "..uid,Color3.fromRGB(0,180,0))
+	else S.notify("Ошибка: "..tostring(err):sub(1,40),Color3.fromRGB(255,80,80)) end
+end)
+
 local PLf=Instance.new("Frame",S.Tabs.Players)
-PLf.Size=UDim2.new(1,-5,0,0); PLf.Position=UDim2.new(0,0,0,70)
+PLf.Size=UDim2.new(1,-5,0,0); PLf.Position=UDim2.new(0,0,0,105)
 PLf.AutomaticSize=Enum.AutomaticSize.Y; PLf.BackgroundTransparency=1
 Instance.new("UIListLayout",PLf).Padding=UDim.new(0,4)
 local FAV_FILE="ACE_Favorites.json"
@@ -1094,6 +1123,7 @@ local favorites={}
 local function saveFav() pcall(function() local e={}; for id,name in pairs(favorites) do e[tostring(id)]=name end; writefile(FAV_FILE,Http:JSONEncode(e)) end) end
 local function loadFav() pcall(function() if isfile and isfile(FAV_FILE) then local d=Http:JSONDecode(readfile(FAV_FILE)); for id,name in pairs(d) do favorites[tonumber(id) or id]=name end end end) end
 loadFav()
+
 local hidden={}; local hideC={}
 local function hideP(p)
 	hidden[p]=true; local c=p.Character; if not c then return end
@@ -1107,12 +1137,31 @@ local function showP(p)
 	local c=p.Character; if not c then return end
 	for _,o in ipairs(c:GetDescendants()) do if o:IsA("BasePart") then o.LocalTransparencyModifier=0 end end
 end
+
+local function getDisplay(p)
+	if p.DisplayName and p.DisplayName~="" and p.DisplayName~=p.Name then return p.DisplayName end
+	return nil
+end
+local function getLabel(p, isFav)
+	local prefix = isFav and "* " or ""
+	local dn = getDisplay(p)
+	if dn then return prefix..dn.." (@"..p.Name..")" end
+	return prefix..p.Name
+end
+local function matchQuery(p, q)
+	if q=="" then return true end
+	q=q:gsub("^@","")
+	local dn=string.lower(p.DisplayName or "")
+	local nm=string.lower(p.Name or "")
+	return string.find(dn,q,1,true)~=nil or string.find(nm,q,1,true)~=nil
+end
+
 local function refreshP()
 	for _,c in ipairs(PLf:GetChildren()) do if c:IsA("Frame") then c:Destroy() end end
 	local q=string.lower(searchBox.Text or "")
 	local list={}
 	for _,p in ipairs(Players:GetPlayers()) do
-		if p~=LP then if q=="" or string.find(string.lower(p.Name),q,1,true) then list[#list+1]=p end end
+		if p~=LP and matchQuery(p,q) then list[#list+1]=p end
 	end
 	table.sort(list,function(a,b)
 		local fa=favorites[a.UserId] and 1 or 0; local fb=favorites[b.UserId] and 1 or 0
@@ -1127,7 +1176,7 @@ local function refreshP()
 		Instance.new("UICorner",row).CornerRadius=UDim.new(0,4)
 		local nm=Instance.new("TextLabel",row)
 		nm.Size=UDim2.new(1,-165,1,0); nm.Position=UDim2.new(0,6,0,0)
-		nm.BackgroundTransparency=1; nm.Text=(isFav and "* " or "")..p.Name
+		nm.BackgroundTransparency=1; nm.Text=getLabel(p,isFav)
 		nm.TextColor3=isFav and Color3.fromRGB(255,220,80) or Color3.new(1,1,1)
 		nm.Font=Enum.Font.SourceSansBold; nm.TextSize=10
 		nm.TextXAlignment=Enum.TextXAlignment.Left; nm.TextTruncate=Enum.TextTruncate.AtEnd
@@ -1640,9 +1689,27 @@ S.conns.Hotkeys=UIS.InputBegan:Connect(function(i,gp)
 	end
 end)
 
+-- ===== ЗАГРУЗКА РАСШИРЕНИЙ =====
+task.spawn(function()
+	local url = "https://raw.githubusercontent.com/Chester-pdf/ACE.lua/main/extras.lua?t=" .. tostring(tick())
+	local ok, src = pcall(game.HttpGet, game, url)
+	if ok and src and #src > 500 then
+		local fn, err = loadstring(src)
+		if fn then
+			local ok2, err2 = pcall(fn)
+			if not ok2 then warn("[ACE extras] " .. tostring(err2)) end
+		else
+			warn("[ACE extras] syntax: " .. tostring(err))
+		end
+	else
+		warn("[ACE extras] не скачалось")
+	end
+end)
+
 _G.ACE_Unload=function()
 	for k in pairs(S.conns) do S.dis(k) end
 	for n in pairs(S.tasks) do S.delT(n) end
+	if S._extrasCleanup then pcall(S._extrasCleanup) end
 	if S.unhookAllOneShot then pcall(S.unhookAllOneShot) end
 	if S.stopAntiKB then pcall(S.stopAntiKB) end
 	if S.stopAntiFling then pcall(S.stopAntiFling) end
