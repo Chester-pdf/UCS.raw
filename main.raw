@@ -1,7 +1,7 @@
-print("[ACE] старт v11.12")
-if _G.ACE_Unload then pcall(_G.ACE_Unload) end
-_G.ACE = nil
-_G._ACE_ExtrasLoaded = nil
+print("[UCS] старт v1.0")
+if _G.UCS_Unload then pcall(_G.UCS_Unload) end
+_G.UCS = nil
+_G._UCS_AddLoaded = nil
 task.wait(0.1)
 
 local Players=game:GetService("Players")
@@ -15,7 +15,7 @@ local TeleSvc=game:GetService("TeleportService")
 local LP=Players.LocalPlayer
 local Cam=workspace.CurrentCamera
 local S={}
-_G.ACE=S
+_G.UCS=S
 S.C={sEn=false,tSp=100,fEn=false,fSp=4,jpEn=false,jPw=100,jEn=false,nEn=false,
 eEn=false,xrayEn=false,xrayOpacity=100,fbEn=false,avEn=false,voidY=-50,akbEn=false,kbLimit=50,
 dashPower=200,dashDuration=0.20,dashMoveMode=false,
@@ -57,7 +57,7 @@ function S.col(c,s) if not c then return end for _,p in ipairs(c:GetDescendants(
 S.conns.main=RS.Heartbeat:Connect(function() local n=tick() for k,t in pairs(S.tasks) do if n-t.l>=t.i then t.l=n; pcall(t.f) end end end)
 
 local pG=LP:WaitForChild("PlayerGui",15)
-if not pG then return warn("[ACE] нет PlayerGui") end
+if not pG then return warn("[UCS] нет PlayerGui") end
 S.pG=pG
 if pG:FindFirstChild("UniversalDeltaPanel") then pG.UniversalDeltaPanel:Destroy() end
 local SG=Instance.new("ScreenGui")
@@ -87,7 +87,7 @@ Instance.new("UIStroke",MF).Color=Color3.fromRGB(255,140,0)
 S.MF=MF
 local Tl=Instance.new("TextLabel",MF)
 Tl.Size=UDim2.new(1,-40,0,35); Tl.BackgroundColor3=Color3.fromRGB(42,42,42)
-Tl.BorderSizePixel=0; Tl.Text="ABSOLUTE CHEAT ENGINE v11.12"
+Tl.BorderSizePixel=0; Tl.Text="UNIVERSAL CHEAT SCRIPT v1.0"
 Tl.TextColor3=Color3.fromRGB(255,140,0); Tl.Font=Enum.Font.SourceSansBold; Tl.TextSize=10
 S.MFHeader=Tl
 local Cl=Instance.new("TextButton",MF)
@@ -101,7 +101,7 @@ StealthBtn.BackgroundTransparency=1; StealthBtn.TextSize=18
 StealthBtn.Font=Enum.Font.SourceSansBold; StealthBtn.ZIndex=11
 local Op=Instance.new("TextButton",SG)
 Op.Size=UDim2.new(0,190,0,32); Op.Position=UDim2.new(0.02,0,0.5,0)
-Op.Text="ABSOLUTE CHEAT ENGINE"; Op.BackgroundColor3=Color3.fromRGB(42,42,42)
+Op.Text="UNIVERSAL CHEAT SCRIPT"; Op.BackgroundColor3=Color3.fromRGB(42,42,42)
 Op.TextColor3=Color3.fromRGB(255,140,0); Op.Font=Enum.Font.SourceSansBold
 Op.TextSize=10; Op.Visible=false
 Instance.new("UICorner",Op).CornerRadius=UDim.new(0,6)
@@ -258,7 +258,7 @@ local function startFly()
 	if not root or not hum then C.fEn=false; return end
 	hum.PlatformStand=true
 	if flyBV and flyBV.Parent then flyBV:Destroy() end
-	flyBV=Instance.new("BodyPosition",root); flyBV.Name="AceFlyPos"
+	flyBV=Instance.new("BodyPosition",root); flyBV.Name="UcsFlyPos"
 	flyBV.MaxForce=Vector3.new(9e9,9e9,9e9); flyBV.Position=root.Position
 	S.dis("Fly")
 	S.conns.Fly=RS.RenderStepped:Connect(function()
@@ -280,7 +280,7 @@ local function stopFly()
 		local char=LP.Character
 		local root=char and char:FindFirstChild("HumanoidRootPart")
 		local hum=char and char:FindFirstChildOfClass("Humanoid")
-		if root and root:FindFirstChild("AceFlyPos") then root.AceFlyPos:Destroy() end
+		if root and root:FindFirstChild("UcsFlyPos") then root.UcsFlyPos:Destroy() end
 		if hum then hum.PlatformStand=false end
 	end)
 	flyBV=nil
@@ -342,7 +342,7 @@ end,false,"nEn")
 
 -- PLATFORM
 local plat=Instance.new("Part")
-plat.Name="ACE_Platform"; plat.Size=Vector3.new(10,1,10); plat.Anchored=true
+plat.Name="UCS_Platform"; plat.Size=Vector3.new(10,1,10); plat.Anchored=true
 plat.CanCollide=false; plat.CanQuery=false; plat.CanTouch=false; plat.CastShadow=false
 plat.Transparency=0.5; plat.Material=Enum.Material.Neon
 plat.Color=Color3.fromRGB(0,200,255); plat.TopSurface=Enum.SurfaceType.Smooth
@@ -356,7 +356,7 @@ local function startPlat()
 	plat.Position=Vector3.new(root.Position.X,platY,root.Position.Z)
 	plat.Parent=workspace
 	if platBP then platBP:Destroy() end
-	platBP=Instance.new("BodyPosition",root); platBP.Name="ACE_PlatBP"
+	platBP=Instance.new("BodyPosition",root); platBP.Name="UCS_PlatBP"
 	platBP.MaxForce=Vector3.new(0,1e6,0); platBP.P=1e5; platBP.D=100
 	platBP.Position=root.Position
 	S.dis("PlatConn")
@@ -365,7 +365,7 @@ local function startPlat()
 		local r=LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
 		if not r then return end
 		if not platBP or not platBP.Parent then
-			platBP=Instance.new("BodyPosition",r); platBP.Name="ACE_PlatBP"
+			platBP=Instance.new("BodyPosition",r); platBP.Name="UCS_PlatBP"
 			platBP.MaxForce=Vector3.new(0,1e6,0); platBP.P=1e5; platBP.D=100
 		end
 		platBP.Position=Vector3.new(r.Position.X,platY+3.5,r.Position.Z)
@@ -498,7 +498,7 @@ addR("Main","Респавн себя",function(b)
 	doRespawn(); b.BackgroundColor3=Color3.fromRGB(0,120,180)
 	task.wait(0.3); b.BackgroundColor3=Color3.fromRGB(50,50,50)
 end,false)
-print("[ACE] Main ок")
+print("[UCS] Main ок")
 
 -- FUNC
 local promptCache={}; local clickCache={}; local fiHoldSaved={}; local fiLosSaved={}; local fiFiredCount=0
@@ -801,7 +801,7 @@ addR("Func","Анти-Флинг",function(b)
 	if C.aflingEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text="Анти-Флинг: ВКЛ"; startAntiFling()
 	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text="Анти-Флинг: ВЫКЛ"; stopAntiFling() end
 end,false,"aflingEn")
-print("[ACE] Func ок")
+print("[UCS] Func ок")
 
 -- NPC
 local NPCList={}
@@ -827,7 +827,7 @@ S.addT("NPCCleanup",function()
 		if not m.Parent or not h or h.Health<=0 then unregNPC(m) end
 	end
 end,1.5)
-print("[ACE] NPC ок")
+print("[UCS] NPC ок")
 
 -- VISUAL
 local espC={}
@@ -835,9 +835,9 @@ local function applyESP(p)
 	if p==LP then return end
 	local function ap(c)
 		if not c or not C.eEn then return end
-		local old=c:FindFirstChild("ACE_HL"); if old then old:Destroy() end
+		local old=c:FindFirstChild("UCS_HL"); if old then old:Destroy() end
 		local hl=Instance.new("Highlight",c)
-		hl.Name="ACE_HL"; hl.FillColor=Color3.fromRGB(255,30,30)
+		hl.Name="UCS_HL"; hl.FillColor=Color3.fromRGB(255,30,30)
 		hl.FillTransparency=0.4; hl.OutlineColor=Color3.fromRGB(255,255,255)
 	end
 	if espC[p] then espC[p]:Disconnect() end
@@ -846,7 +846,7 @@ local function applyESP(p)
 end
 local function rmESP(p)
 	if espC[p] then espC[p]:Disconnect(); espC[p]=nil end
-	pcall(function() local c=p.Character; if c and c:FindFirstChild("ACE_HL") then c.ACE_HL:Destroy() end end)
+	pcall(function() local c=p.Character; if c and c:FindFirstChild("UCS_HL") then c.UCS_HL:Destroy() end end)
 end
 S.rmESP=rmESP
 addR("Visual","ESP игроки",function(b)
@@ -861,9 +861,9 @@ end,false,"eEn")
 
 local npcESP={}
 local function addNH(m)
-	if npcESP[m] or m:FindFirstChild("ACE_NPC_HL") then return end
+	if npcESP[m] or m:FindFirstChild("UCS_NPC_HL") then return end
 	local hl=Instance.new("Highlight",m)
-	hl.Name="ACE_NPC_HL"; hl.FillColor=Color3.fromRGB(255,140,0)
+	hl.Name="UCS_NPC_HL"; hl.FillColor=Color3.fromRGB(255,140,0)
 	hl.FillTransparency=0.5; hl.OutlineColor=Color3.fromRGB(255,255,0)
 	npcESP[m]=hl
 end
@@ -956,10 +956,10 @@ addR("Visual","Фуллбрайт",function(b)
 		end) end
 	end
 end,false,"fbEn")
-print("[ACE] Visual ок")
+print("[UCS] Visual ок")
 
 -- WP
-local WP_FILE="ACE_Waypoints.json"
+local WP_FILE="UCS_Waypoints.json"
 local waypoints={}
 local function saveWP() pcall(function() writefile(WP_FILE,Http:JSONEncode(waypoints)) end) end
 local function loadWP() pcall(function()
@@ -1044,7 +1044,7 @@ end
 S.refreshWP=refreshWP
 refreshWP()
 S.waypoints=waypoints
-print("[ACE] WP ок")
+print("[UCS] WP ок")
 
 -- резолвер UserID
 local function resolveUserId(input)
@@ -1150,7 +1150,7 @@ local PLf=Instance.new("Frame",S.Tabs.Players)
 PLf.Size=UDim2.new(1,-5,0,0); PLf.Position=UDim2.new(0,0,0,105)
 PLf.AutomaticSize=Enum.AutomaticSize.Y; PLf.BackgroundTransparency=1
 Instance.new("UIListLayout",PLf).Padding=UDim.new(0,4)
-local FAV_FILE="ACE_Favorites.json"
+local FAV_FILE="UCS_Favorites.json"
 local favorites={}
 local function saveFav() pcall(function() local e={}; for id,name in pairs(favorites) do e[tostring(id)]=name end; writefile(FAV_FILE,Http:JSONEncode(e)) end) end
 local function loadFav() pcall(function() if isfile and isfile(FAV_FILE) then local d=Http:JSONDecode(readfile(FAV_FILE)); for id,name in pairs(d) do favorites[tonumber(id) or id]=name end end end) end
@@ -1259,10 +1259,10 @@ searchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshP() end)
 refreshP()
 Players.PlayerAdded:Connect(function() task.wait(0.5); refreshP() end)
 Players.PlayerRemoving:Connect(function(p) task.wait(0.1); hidden[p]=nil; if hideC[p] then hideC[p]:Disconnect(); hideC[p]=nil end; refreshP() end)
-print("[ACE] Players ок")
+print("[UCS] Players ок")
 
 -- ADDONS
-local ADDON_FILE="ACE_Addons.json"
+local ADDON_FILE="UCS_Addons.json"
 local function saveAddons() pcall(function() writefile(ADDON_FILE,Http:JSONEncode(S.addonList)) end) end
 local function loadAddonsFile() pcall(function()
 	if isfile and isfile(ADDON_FILE) then
@@ -1381,7 +1381,7 @@ clearBtn.MouseButton1Click:Connect(function()
 end)
 S.refreshAddons=refreshAddons
 refreshAddons()
-print("[ACE] Addons ок")
+print("[UCS] Addons ок")
 
 -- SETTINGS
 addR("Settings","Прозрачность панели ("..C.panelTransparency.."%)",function(b,a)
@@ -1471,7 +1471,7 @@ local function ensureCustomJumpBtn()
 		return
 	end
 	local btn=Instance.new("TextButton",SG)
-	btn.Name="ACE_CustomJump"
+	btn.Name="UCS_CustomJump"
 	btn.Size=UDim2.new(0,70,0,70)
 	btn.Position=UDim2.new(1,C.customJumpX,1,C.customJumpY)
 	btn.BackgroundColor3=Color3.fromRGB(40,90,130); btn.BackgroundTransparency=0.15
@@ -1532,7 +1532,7 @@ addR("Settings","Своя кнопка прыжка",function(b,a)
 	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text="Своя кнопка прыжка: ВЫКЛ" end
 end,false,"customJumpBtn")
 
-local CFILE2="ACE_Config_v99.json"
+local CFILE2="UCS_Config_v1.json"
 addR("Settings","Сохранить конфиг",function(b)
 	local t={}
 	for k,v in pairs(C) do local tv=type(v); if tv=="number" or tv=="boolean" or tv=="string" then t[k]=v end end
@@ -1574,7 +1574,7 @@ end,false)
 S.applyPanelTransparency(C.panelTransparency or 0)
 
 -- PROFILES
-local PROF_FILE="ACE_Profiles.json"
+local PROF_FILE="UCS_Profiles.json"
 local profiles={}
 local function loadProfilesFile() pcall(function()
 	if isfile and isfile(PROF_FILE) then
@@ -1691,8 +1691,8 @@ profSaveBtn.MouseButton1Click:Connect(function()
 	S.notify("Профиль сохранён: "..name,Color3.fromRGB(0,180,0))
 end)
 refreshProfiles()
-print("[ACE] Settings ок")
-print("[ACE] Profiles ок")
+print("[UCS] Settings ок")
+print("[UCS] Profiles ок")
 
 -- RESPAWN
 S.conns.Respawn=LP.CharacterAdded:Connect(function(ch)
@@ -1718,24 +1718,24 @@ S.conns.Hotkeys=UIS.InputBegan:Connect(function(i,gp)
 	end
 end)
 
--- ЗАГРУЗКА РАСШИРЕНИЙ
+-- ЗАГРУЗКА ADD
 task.spawn(function()
-	local url = "https://raw.githubusercontent.com/Chester-pdf/ACE.lua/main/extras.lua?t=" .. tostring(tick())
+	local url = "https://raw.githubusercontent.com/Chester-pdf/UCS.lua/main/add.raw?t=" .. tostring(tick())
 	local ok, src = pcall(game.HttpGet, game, url)
 	if ok and src and #src > 500 then
 		local fn, err = loadstring(src)
 		if fn then
 			local ok2, err2 = pcall(fn)
-			if not ok2 then warn("[ACE extras] " .. tostring(err2)) end
+			if not ok2 then warn("[UCS add] " .. tostring(err2)) end
 		else
-			warn("[ACE extras] syntax: " .. tostring(err))
+			warn("[UCS add] syntax: " .. tostring(err))
 		end
 	else
-		warn("[ACE extras] не скачалось")
+		warn("[UCS add] не скачалось")
 	end
 end)
 
-_G.ACE_Unload=function()
+_G.UCS_Unload=function()
 	for k in pairs(S.conns) do S.dis(k) end
 	for n in pairs(S.tasks) do S.delT(n) end
 	if S._extrasCleanup then pcall(S._extrasCleanup) end
@@ -1753,8 +1753,8 @@ _G.ACE_Unload=function()
 	if h then h.PlatformStand=false; h.WalkSpeed=16 end
 	pcall(function() if S.plat then S.plat:Destroy() end end)
 	pcall(function() if S.SG then S.SG:Destroy() end end)
-	_G.ACE_Unload=nil
-	print("[ACE] Выгружено")
+	_G.UCS_Unload=nil
+	print("[UCS] Выгружено")
 end
-S.notify("ACE v11.12 загружен",Color3.fromRGB(0,200,0))
-print("[ACE] ГОТОВО")
+S.notify("UCS v1.0 загружен",Color3.fromRGB(0,200,0))
+print("[UCS] ГОТОВО")
