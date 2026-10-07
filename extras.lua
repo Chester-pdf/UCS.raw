@@ -1,4 +1,4 @@
-print("[ACE extras] загрузка v2...")
+print("[ACE extras] загрузка v2.1...")
 local ACE = _G.ACE
 if not ACE then warn("[ACE extras] _G.ACE пуст"); return end
 local S = ACE
@@ -8,7 +8,6 @@ local RS = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
-local Http = game:GetService("HttpService")
 local SG = S.SG
 
 C.itemEsp = C.itemEsp or false
@@ -16,7 +15,7 @@ C.freecam = C.freecam or false
 C.freecamSpeed = C.freecamSpeed or 50
 C.favKeys = C.favKeys or ""
 
--- ===== FAVORITES HELPERS =====
+-- ===== FAVORITES =====
 local function getFavs()
 	local t = {}
 	if C.favKeys == "" then return t end
@@ -88,7 +87,7 @@ addR("Visual","Item ESP",function(b)
 	end
 end,false,"itemEsp")
 
--- ===== FREECAM + BUTTONS =====
+-- ===== FREECAM =====
 local fcConns = {}
 local fcData = nil
 local freeButtons = {}
@@ -127,8 +126,7 @@ local function createFreeBtn(text, x, y, onDown, onUp)
 	btn.ZIndex = 60
 	Instance.new("UICorner", btn).CornerRadius = UDim.new(0.5, 0)
 	local st = Instance.new("UIStroke", btn)
-	st.Color = Color3.fromRGB(120, 200, 255)
-	st.Thickness = 2
+	st.Color = Color3.fromRGB(120, 200, 255); st.Thickness = 2
 	btn.MouseButton1Down:Connect(function()
 		btn.BackgroundColor3 = Color3.fromRGB(70, 140, 190)
 		if onDown then onDown() end
@@ -153,8 +151,7 @@ local function startFreecam()
 	local cam = workspace.CurrentCamera
 	local cf = cam.CFrame
 	fcData = {
-		cam = cam,
-		pos = cf.Position,
+		cam = cam, pos = cf.Position,
 		yaw = math.atan2(-cf.LookVector.X, -cf.LookVector.Z),
 		pitch = math.asin(math.clamp(cf.LookVector.Y,-1,1)),
 		fwd=0,back=0,left=0,right=0,up=0,down=0
@@ -178,8 +175,7 @@ local function startFreecam()
 		elseif i.KeyCode==Enum.KeyCode.A then fcData.left=1
 		elseif i.KeyCode==Enum.KeyCode.D then fcData.right=1
 		elseif i.KeyCode==Enum.KeyCode.Space then fcData.up=1
-		elseif i.KeyCode==Enum.KeyCode.LeftControl then fcData.down=1
-		end
+		elseif i.KeyCode==Enum.KeyCode.LeftControl then fcData.down=1 end
 	end)
 	fcConns[3] = UIS.InputEnded:Connect(function(i)
 		if not fcData then return end
@@ -188,8 +184,7 @@ local function startFreecam()
 		elseif i.KeyCode==Enum.KeyCode.A then fcData.left=0
 		elseif i.KeyCode==Enum.KeyCode.D then fcData.right=0
 		elseif i.KeyCode==Enum.KeyCode.Space then fcData.up=0
-		elseif i.KeyCode==Enum.KeyCode.LeftControl then fcData.down=0
-		end
+		elseif i.KeyCode==Enum.KeyCode.LeftControl then fcData.down=0 end
 	end)
 	fcConns[4] = RS.RenderStepped:Connect(function(dt)
 		if not fcData then return end
@@ -223,21 +218,15 @@ function S._setFreecam(on)
 	local tog = S.toggles.freecam
 	if tog and tog.btn then
 		if on then
-			tog.btn.BackgroundColor3 = Color3.fromRGB(0,120,0)
-			tog.btn.Text = "Freecam: ВКЛ"
+			tog.btn.BackgroundColor3 = Color3.fromRGB(0,120,0); tog.btn.Text = "Freecam: ВКЛ"
 		else
-			tog.btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
-			tog.btn.Text = "Freecam: ВЫКЛ"
+			tog.btn.BackgroundColor3 = Color3.fromRGB(50,50,50); tog.btn.Text = "Freecam: ВЫКЛ"
 		end
 	end
 	if on then
-		startFreecam()
-		hideHotkeysForFreecam()
-		showFreeButtons()
+		startFreecam(); hideHotkeysForFreecam(); showFreeButtons()
 	else
-		stopFreecam()
-		restoreHotkeys()
-		hideFreeButtons()
+		stopFreecam(); restoreHotkeys(); hideFreeButtons()
 	end
 end
 
@@ -245,61 +234,62 @@ addR("Visual","Freecam",function(b)
 	S._setFreecam(not C.freecam)
 end,false,"freecam")
 
--- ===== SEARCH + STARS + FAV ORDER =====
-local function rebuildFavOrder()
-	local favs = getFavs()
-	local byTab = {}
-	for key, tog in pairs(S.toggles) do
-		if tog.btn and tog.btn.Parent then
-			local row = tog.btn.Parent
-			local tab = row.Parent
-			if tab then
-				byTab[tab] = byTab[tab] or {}
-				table.insert(byTab[tab], {key=key, row=row})
+-- ===== SEARCH + STARS =====
+-- Собираем все fun-rows, чтобы фильтр не трогал служебные элементы
+local funRows = {}   -- row -> key
+local rowOrder = {}  -- row -> оригинальный LayoutOrder
+
+local function indexRows()
+	for k, t in pairs(S.toggles) do
+		if t.btn and t.btn.Parent then
+			local row = t.btn.Parent
+			funRows[row] = k
+			if rowOrder[row] == nil then
+				rowOrder[row] = row.LayoutOrder
 			end
 		end
 	end
-	for tab, list in pairs(byTab) do
-		local favList, otherList = {}, {}
-		for _,e in ipairs(list) do
-			if favs[e.key] then table.insert(favList, e)
-			else table.insert(otherList, e) end
+end
+
+local function updateRowOrder()
+	local favs = getFavs()
+	-- fav rows получают отрицательные LayoutOrder, остальные возвращаются к оригиналу
+	local idx = 0
+	for row, key in pairs(funRows) do
+		if row and row.Parent then
+			if favs[key] then
+				idx = idx + 1
+				row.LayoutOrder = -1000 + idx
+			else
+				row.LayoutOrder = rowOrder[row] or 0
+			end
 		end
-		for i, e in ipairs(favList) do e.row.LayoutOrder = i end
-		for i, e in ipairs(otherList) do e.row.LayoutOrder = 100 + i end
 	end
 end
 
-local function addStarToRow(row)
-	-- найти главную кнопку (первый TextButton без имени ACE_FavStar)
-	local mainBtn = nil
-	local otherBtns = {}
+local function addStar(row, key)
+	if row:FindFirstChild("ACE_FavStar") then return end
+
+	-- найти все элементы row: главная кнопка + (если есть) слайдеры
+	local mainBtn, sldMinus, sldPlus = nil, nil, nil
 	for _, c in ipairs(row:GetChildren()) do
-		if c:IsA("TextButton") and c.Name ~= "ACE_FavStar" and c.Name ~= "ACE_FavStar2" then
+		if c:IsA("TextButton") then
 			if not mainBtn then mainBtn = c
-			else table.insert(otherBtns, c) end
+			elseif not sldMinus then sldMinus = c
+			else sldPlus = c end
 		end
 	end
 	if not mainBtn then return end
-	if row:FindFirstChild("ACE_FavStar") then return end
 
-	local key = nil
-	for k, t in pairs(S.toggles) do
-		if t.btn == mainBtn then key = k; break end
-	end
-	if not key then return end
-
-	-- переставить элементы чтобы освободить 30px справа
-	if #otherBtns >= 2 then
-		mainBtn.Size = UDim2.new(1, -92, 1, 0)
-		mainBtn.Position = UDim2.new(0, 0, 0, 0)
-		otherBtns[1].Size = UDim2.new(0, 25, 1, 0)
-		otherBtns[1].Position = UDim2.new(1, -88, 0, 0)
-		otherBtns[2].Size = UDim2.new(0, 25, 1, 0)
-		otherBtns[2].Position = UDim2.new(1, -60, 0, 0)
+	-- пересчет размеров, чтобы поместилась звезда
+	if sldPlus then
+		-- hasS: mainBtn + "-" + "+" + star
+		mainBtn.Size = UDim2.new(1, -88, 1, 0)
+		sldMinus.Size = UDim2.new(0, 25, 1, 0); sldMinus.Position = UDim2.new(1, -86, 0, 0)
+		sldPlus.Size = UDim2.new(0, 25, 1, 0);  sldPlus.Position = UDim2.new(1, -58, 0, 0)
 	else
+		-- просто mainBtn + star
 		mainBtn.Size = UDim2.new(1, -32, 1, 0)
-		mainBtn.Position = UDim2.new(0, 0, 0, 0)
 	end
 
 	local star = Instance.new("TextButton", row)
@@ -315,29 +305,25 @@ local function addStarToRow(row)
 	star.ZIndex = 5
 	Instance.new("UICorner", star).CornerRadius = UDim.new(0,4)
 
-	local function updateStar()
+	local function refreshStar()
 		local favs = getFavs()
 		if favs[key] then
-			star.Text = "★"
-			star.BackgroundColor3 = Color3.fromRGB(180,140,20)
+			star.Text = "★"; star.BackgroundColor3 = Color3.fromRGB(180,140,20)
 		else
-			star.Text = "☆"
-			star.BackgroundColor3 = Color3.fromRGB(60,60,60)
+			star.Text = "☆"; star.BackgroundColor3 = Color3.fromRGB(60,60,60)
 		end
 	end
-	updateStar()
-
+	refreshStar()
 	star.MouseButton1Click:Connect(function()
 		toggleFav(key)
-		updateStar()
-		rebuildFavOrder()
+		refreshStar()
+		updateRowOrder()
 	end)
 end
 
-local function addSearchToTab(tabName, layoutOrder)
+local function addSearchToTab(tabName)
 	local tab = S.Tabs[tabName]
-	if not tab then return end
-	if tab:FindFirstChild("ACE_SearchBox") then return end
+	if not tab or tab:FindFirstChild("ACE_SearchBox") then return end
 
 	local box = Instance.new("TextBox", tab)
 	box.Name = "ACE_SearchBox"
@@ -351,13 +337,14 @@ local function addSearchToTab(tabName, layoutOrder)
 	box.Font = Enum.Font.SourceSansBold
 	box.TextSize = 11
 	box.ClearTextOnFocus = false
-	box.LayoutOrder = layoutOrder or -100
+	box.LayoutOrder = -9999
 	Instance.new("UICorner", box).CornerRadius = UDim.new(0,4)
 
 	box:GetPropertyChangedSignal("Text"):Connect(function()
 		local q = string.lower(box.Text or "")
-		for _, row in ipairs(tab:GetChildren()) do
-			if row:IsA("Frame") then
+		-- пройтись ТОЛЬКО по fun-rows
+		for row, key in pairs(funRows) do
+			if row and row.Parent == tab then
 				local mainBtn = nil
 				for _, c in ipairs(row:GetChildren()) do
 					if c:IsA("TextButton") and c.Name ~= "ACE_FavStar" then
@@ -373,25 +360,35 @@ local function addSearchToTab(tabName, layoutOrder)
 	end)
 end
 
--- применить ко всем вкладкам
-task.spawn(function()
-	task.wait(0.5)
+local function isFunRowExists(tab)
+	for row, _ in pairs(funRows) do
+		if row.Parent == tab then return true end
+	end
+	return false
+end
+
+local function initSearchAndStars()
+	indexRows()
 
 	for _, tabName in ipairs({"Main","Func","Visual","WP","Addons","Settings"}) do
-		addSearchToTab(tabName, -100)
+		addSearchToTab(tabName)
 	end
 
-	for _, tog in pairs(S.toggles) do
-		if tog.btn and tog.btn.Parent then
-			addStarToRow(tog.btn.Parent)
+	for row, key in pairs(funRows) do
+		if row and row.Parent then
+			addStar(row, key)
 		end
 	end
+	updateRowOrder()
+	print("[ACE extras] search+stars готовы, fun-rows: "..#(function() local n=0 for _ in pairs(funRows) do n=n+1 end return {tostring(n)} end)())
+end
 
-	rebuildFavOrder()
-	print("[ACE extras] search+stars встроены")
+task.spawn(function()
+	task.wait(0.6)
+	initSearchAndStars()
 end)
 
--- ===== PLAYER INFO (оставил) =====
+-- ===== PLAYER INFO =====
 local infoPanel = Instance.new("Frame", SG)
 infoPanel.Size = UDim2.new(0,240,0,180)
 infoPanel.Position = UDim2.new(0.5,-120,0.5,-90)
@@ -400,8 +397,7 @@ infoPanel.BorderSizePixel = 0
 infoPanel.Visible = false
 infoPanel.ZIndex = 100
 Instance.new("UICorner", infoPanel).CornerRadius = UDim.new(0,8)
-local ipStroke = Instance.new("UIStroke", infoPanel)
-ipStroke.Color = Color3.fromRGB(120,180,255); ipStroke.Thickness = 1.5
+Instance.new("UIStroke", infoPanel).Color = Color3.fromRGB(120,180,255)
 local ipTitle = Instance.new("TextLabel", infoPanel)
 ipTitle.Size = UDim2.new(1,0,0,28); ipTitle.BackgroundColor3 = Color3.fromRGB(42,42,42)
 ipTitle.BorderSizePixel = 0; ipTitle.Text = "Инфо игрока"
@@ -437,7 +433,7 @@ local function showInfo(p)
 		local dist = "?"
 		if hrp and myHrp then dist = string.format("%.0f", (hrp.Position - myHrp.Position).Magnitude) end
 		local tool = ch and ch:FindFirstChildOfClass("Tool")
-		local lines = {
+		ipText.Text = table.concat({
 			"Имя: "..ipTarget.Name,
 			"Ник: "..ipTarget.DisplayName,
 			"UserID: "..ipTarget.UserId,
@@ -445,8 +441,7 @@ local function showInfo(p)
 			"Дист: "..dist.." studs",
 			"Оружие: "..(tool and tool.Name or "—"),
 			"Аккаунт: "..(ipTarget.AccountAge or "?").." дн.",
-		}
-		ipText.Text = table.concat(lines, "\n")
+		}, "\n")
 	end)
 end
 S._showPlayerInfo = showInfo
@@ -495,16 +490,11 @@ dpText.Font = Enum.Font.Code; dpText.TextSize = 10
 dpText.TextXAlignment = Enum.TextXAlignment.Left
 dpText.TextYAlignment = Enum.TextYAlignment.Top
 dpText.TextWrapped = true
-
 local function dumpGame()
-	local lines = {}
-	table.insert(lines, "=== GAME INFO ===")
-	table.insert(lines, "Place: "..tostring(game.PlaceId))
-	table.insert(lines, "JobId: "..tostring(game.JobId))
-	table.insert(lines, "")
-	local rstorage = game:GetService("ReplicatedStorage")
+	local lines = {"=== GAME INFO ===","Place: "..tostring(game.PlaceId),"JobId: "..tostring(game.JobId),""}
+	local rs = game:GetService("ReplicatedStorage")
 	local remotes, modules = {}, {}
-	for _,o in ipairs(rstorage:GetDescendants()) do
+	for _,o in ipairs(rs:GetDescendants()) do
 		if o:IsA("RemoteEvent") or o:IsA("RemoteFunction") then table.insert(remotes, o:GetFullName())
 		elseif o:IsA("ModuleScript") then table.insert(modules, o:GetFullName()) end
 	end
@@ -546,4 +536,4 @@ S._extrasCleanup = function()
 	if infoPanel then infoPanel:Destroy() end
 end
 
-print("[ACE extras] готово — Freecam+, Search, Stars, Dumper, Item ESP")
+print("[ACE extras] готово v2.1")
