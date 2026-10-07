@@ -1,4 +1,4 @@
-print("[ACE extras] загрузка v3.0...")
+print("[ACE extras] загрузка v3.1...")
 local ACE = _G.ACE
 if not ACE then warn("[ACE extras] _G.ACE пуст"); return end
 
@@ -22,7 +22,6 @@ C.freecam = C.freecam or false
 C.freecamSpeed = C.freecamSpeed or 15
 C.favKeys = C.favKeys or ""
 
--- ===== FAVORITES =====
 local function getFavs()
 	local t = {}
 	if C.favKeys == "" then return t end
@@ -40,7 +39,7 @@ local function toggleFav(key)
 	setFavs(f)
 end
 
--- ===== ITEM ESP =====
+-- ITEM ESP
 if S.toggles.itemEsp then
 	print("[ACE extras] Item ESP уже есть")
 else
@@ -98,7 +97,7 @@ else
 	end,false,"itemEsp")
 end
 
--- ===== FREECAM =====
+-- FREECAM
 if S.toggles.freecam then
 	print("[ACE extras] Freecam уже есть")
 else
@@ -262,7 +261,7 @@ else
 	end,false,"freecam")
 end
 
--- ===== PLAYER INFO =====
+-- PLAYER INFO
 local infoPanel = Instance.new("Frame", SG)
 infoPanel.Size = UDim2.new(0,240,0,180)
 infoPanel.Position = UDim2.new(0.5,-120,0.5,-90)
@@ -320,7 +319,7 @@ local function showInfo(p)
 end
 S._showPlayerInfo = showInfo
 
--- ===== GAME INFO DUMPER =====
+-- GAME INFO DUMPER
 if S.toggles.gameDumper then
 	print("[ACE extras] Game Info Dumper уже есть")
 else
@@ -402,23 +401,24 @@ else
 	end,false,"gameDumper")
 end
 
--- ===== SEARCH + STARS =====
-local funRows = {}    -- row -> key
-local rowOrder = {}   -- row -> фиксированная позиция (1,2,3...)
+-- SEARCH + STARS
+local funRows = {}
+local rowOrder = {}
 
 local function fixTabOrder(tab)
-	-- фиксируем текущий порядок элементов через LayoutOrder
-	-- и включаем сортировку по LayoutOrder
 	local lay = tab:FindFirstChildOfClass("UIListLayout")
 	if lay then
 		lay.SortOrder = Enum.SortOrder.LayoutOrder
 	end
 	local idx = 0
 	for _, child in ipairs(tab:GetChildren()) do
-		if child.Name ~= "ACE_SearchBox" then
-			idx = idx + 1
-			rowOrder[child] = idx
-			child.LayoutOrder = idx
+		if child.Name ~= "ACE_SearchBox" and child:IsA("GuiObject") then
+			local ok = pcall(function() return child.LayoutOrder end)
+			if ok then
+				idx = idx + 1
+				rowOrder[child] = idx
+				child.LayoutOrder = idx
+			end
 		end
 	end
 end
@@ -431,7 +431,6 @@ local function indexRows()
 		local tab = S.Tabs[tabName]
 		if tab then
 			fixTabOrder(tab)
-			-- найти fun-rows
 			for _, child in ipairs(tab:GetChildren()) do
 				if child:IsA("Frame") then
 					for k, t in pairs(S.toggles) do
@@ -550,7 +549,7 @@ local function addSearchToTab(tabName)
 end
 
 task.spawn(function()
-	task.wait(0.6)
+	task.wait(0.7)
 	indexRows()
 
 	for _, tabName in ipairs({"Main","Func","Visual","WP","Addons","Settings"}) do
@@ -563,10 +562,12 @@ task.spawn(function()
 		end
 	end
 	reorderAll()
-	print("[ACE extras] search+stars готовы, fun-rows: "..(function() local n=0 for _ in pairs(funRows) do n=n+1 end return n end)())
+	local n = 0
+	for _ in pairs(funRows) do n = n + 1 end
+	print("[ACE extras] search+stars готовы, fun-rows: "..n)
 end)
 
--- ===== CLEANUP =====
+-- CLEANUP
 S._extrasCleanup = function()
 	S.delT("ItemEspSync")
 	if S._setFreecam and C.freecam then S._setFreecam(false) end
@@ -577,4 +578,4 @@ S._extrasCleanup = function()
 	if infoPanel then infoPanel:Destroy() end
 end
 
-print("[ACE extras] готово v3.0")
+print("[ACE extras] готово v3.1")
