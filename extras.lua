@@ -1,4 +1,4 @@
-print("[ACE extras] загрузка v3.1...")
+print("[ACE extras] загрузка v3.2...")
 local ACE = _G.ACE
 if not ACE then warn("[ACE extras] _G.ACE пуст"); return end
 
@@ -104,6 +104,7 @@ else
 	local fcConns = {}
 	local fcData = nil
 	local freeButtons = {}
+	local touchLook = nil
 
 	local function hideHotkeysForFreecam()
 		for _,e in ipairs(S.screenButtons) do
@@ -152,17 +153,29 @@ else
 		return btn
 	end
 
+	-- Только движение и вертикаль
 	createFreeBtn("W", -120, -170, function() if fcData then fcData.fwd=1 end end, function() if fcData then fcData.fwd=0 end end)
 	createFreeBtn("A", -180, -110, function() if fcData then fcData.left=1 end end, function() if fcData then fcData.left=0 end end)
 	createFreeBtn("S", -120, -110, function() if fcData then fcData.back=1 end end, function() if fcData then fcData.back=0 end end)
 	createFreeBtn("D", -60, -110, function() if fcData then fcData.right=1 end end, function() if fcData then fcData.right=0 end end)
-	createFreeBtn("◄", -30, -170, function() if fcData then fcData.yawL=1 end end, function() if fcData then fcData.yawL=0 end end)
-	createFreeBtn("►", 30, -170, function() if fcData then fcData.yawR=1 end end, function() if fcData then fcData.yawR=0 end end)
-	createFreeBtn("▲", -30, -110, function() if fcData then fcData.pitchU=1 end end, function() if fcData then fcData.pitchU=0 end end)
-	createFreeBtn("▼", 30, -110, function() if fcData then fcData.pitchD=1 end end, function() if fcData then fcData.pitchD=0 end end)
-	createFreeBtn("↑", 100, -170, function() if fcData then fcData.up=1 end end, function() if fcData then fcData.up=0 end end)
-	createFreeBtn("↓", 100, -110, function() if fcData then fcData.down=1 end end, function() if fcData then fcData.down=0 end end)
-	createFreeBtn("×", 160, -140, function() S._setFreecam(false) end, nil)
+	createFreeBtn("↑", 60, -170, function() if fcData then fcData.up=1 end end, function() if fcData then fcData.up=0 end end)
+	createFreeBtn("↓", 60, -110, function() if fcData then fcData.down=1 end end, function() if fcData then fcData.down=0 end end)
+	createFreeBtn("×", 130, -140, function() S._setFreecam(false) end, nil)
+
+	-- хелпер: попадает ли точка в кнопку
+	local function isOnFreeButton(pos)
+		for _, b in ipairs(freeButtons) do
+			if b.Visible then
+				local bp = b.AbsolutePosition
+				local bs = b.AbsoluteSize
+				if pos.X >= bp.X and pos.X <= bp.X + bs.X
+					and pos.Y >= bp.Y and pos.Y <= bp.Y + bs.Y then
+					return true
+				end
+			end
+		end
+		return false
+	end
 
 	local function startFreecam()
 		local cam = workspace.CurrentCamera
@@ -171,48 +184,70 @@ else
 			cam = cam, pos = cf.Position,
 			yaw = math.atan2(-cf.LookVector.X, -cf.LookVector.Z),
 			pitch = math.asin(math.clamp(cf.LookVector.Y,-1,1)),
-			fwd=0,back=0,left=0,right=0,up=0,down=0,
-			yawL=0,yawR=0,pitchU=0,pitchD=0
+			fwd=0,back=0,left=0,right=0,up=0,down=0
 		}
-		UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
 		local ch = LP.Character
 		if ch then
 			local hum = ch:FindFirstChildOfClass("Humanoid")
 			if hum then cam.CameraSubject = nil end
 		end
+
+		-- КЛАВИАТУРА/МЫШЬ
 		fcConns[1] = UIS.InputChanged:Connect(function(i)
-			if i.UserInputType == Enum.UserInputType.MouseMovement then
+			if i.UserInputType == Enum.UserInputType.MouseMovement and not touchLook then
 				fcData.yaw = fcData.yaw - math.rad(i.Delta.X)*0.3
 				fcData.pitch = math.clamp(fcData.pitch - math.rad(i.Delta.Y)*0.3, -math.pi/2+0.01, math.pi/2-0.01)
 			end
 		end)
-		fcConns[2] = UIS.InputBegan:Connect(function(i,gp)
+
+		-- ТАЧ: свайп в любом месте кроме кнопок = поворот
+		fcConns[2] = UIS.InputBegan:Connect(function(i)
+			if i.UserInputType == Enum.UserInputType.Touch then
+				if not isOnFreeButton(i.Position) then
+					touchLook = {
+						startPos = i.Position,
+						startYaw = fcData.yaw,
+						startPitch = fcData.pitch
+					}
+				end
+			end
+		end)
+		fcConns[3] = UIS.InputChanged:Connect(function(i)
+			if i.UserInputType == Enum.UserInputType.Touch and touchLook then
+				local dx = i.Position.X - touchLook.startPos.X
+				local dy = i.Position.Y - touchLook.startPos.Y
+				fcData.yaw = touchLook.startYaw - dx * 0.008
+				fcData.pitch = math.clamp(touchLook.startPitch - dy * 0.008, -math.pi/2+0.01, math.pi/2-0.01)
+			end
+		end)
+		fcConns[4] = UIS.InputEnded:Connect(function(i)
+			if i.UserInputType == Enum.UserInputType.Touch then
+				touchLook = nil
+			end
+		end)
+
+		-- клавиатура для движения
+		fcConns[5] = UIS.InputBegan:Connect(function(i,gp)
 			if gp or not fcData then return end
 			if i.KeyCode==Enum.KeyCode.W then fcData.fwd=1
 			elseif i.KeyCode==Enum.KeyCode.S then fcData.back=1
 			elseif i.KeyCode==Enum.KeyCode.A then fcData.left=1
 			elseif i.KeyCode==Enum.KeyCode.D then fcData.right=1
 			elseif i.KeyCode==Enum.KeyCode.Space then fcData.up=1
-			elseif i.KeyCode==Enum.KeyCode.LeftControl then fcData.down=1
-			elseif i.KeyCode==Enum.KeyCode.Q then fcData.yawL=1
-			elseif i.KeyCode==Enum.KeyCode.E then fcData.yawR=1 end
+			elseif i.KeyCode==Enum.KeyCode.LeftControl then fcData.down=1 end
 		end)
-		fcConns[3] = UIS.InputEnded:Connect(function(i)
+		fcConns[6] = UIS.InputEnded:Connect(function(i)
 			if not fcData then return end
 			if i.KeyCode==Enum.KeyCode.W then fcData.fwd=0
 			elseif i.KeyCode==Enum.KeyCode.S then fcData.back=0
 			elseif i.KeyCode==Enum.KeyCode.A then fcData.left=0
 			elseif i.KeyCode==Enum.KeyCode.D then fcData.right=0
 			elseif i.KeyCode==Enum.KeyCode.Space then fcData.up=0
-			elseif i.KeyCode==Enum.KeyCode.LeftControl then fcData.down=0
-			elseif i.KeyCode==Enum.KeyCode.Q then fcData.yawL=0
-			elseif i.KeyCode==Enum.KeyCode.E then fcData.yawR=0 end
+			elseif i.KeyCode==Enum.KeyCode.LeftControl then fcData.down=0 end
 		end)
-		fcConns[4] = RS.RenderStepped:Connect(function(dt)
+
+		fcConns[7] = RS.RenderStepped:Connect(function(dt)
 			if not fcData then return end
-			local rotSpd = 1.5 * dt
-			fcData.yaw = fcData.yaw + (fcData.yawL - fcData.yawR) * rotSpd
-			fcData.pitch = math.clamp(fcData.pitch + (fcData.pitchU - fcData.pitchD) * rotSpd, -math.pi/2+0.01, math.pi/2-0.01)
 			local spd = C.freecamSpeed * dt
 			local look = CFrame.fromEulerAnglesYXZ(fcData.pitch, fcData.yaw, 0)
 			local mv = Vector3.zero
@@ -227,7 +262,7 @@ else
 		for _,c in ipairs(fcConns) do pcall(function() c:Disconnect() end) end
 		fcConns = {}
 		fcData = nil
-		UIS.MouseBehavior = Enum.MouseBehavior.Default
+		touchLook = nil
 		local ch = LP.Character
 		if ch then
 			local hum = ch:FindFirstChildOfClass("Humanoid")
@@ -407,9 +442,7 @@ local rowOrder = {}
 
 local function fixTabOrder(tab)
 	local lay = tab:FindFirstChildOfClass("UIListLayout")
-	if lay then
-		lay.SortOrder = Enum.SortOrder.LayoutOrder
-	end
+	if lay then lay.SortOrder = Enum.SortOrder.LayoutOrder end
 	local idx = 0
 	for _, child in ipairs(tab:GetChildren()) do
 		if child.Name ~= "ACE_SearchBox" and child:IsA("GuiObject") then
@@ -426,7 +459,6 @@ end
 local function indexRows()
 	funRows = {}
 	rowOrder = {}
-
 	for _, tabName in ipairs({"Main","Func","Visual","WP","Addons","Settings"}) do
 		local tab = S.Tabs[tabName]
 		if tab then
@@ -462,7 +494,6 @@ end
 
 local function addStar(row, key)
 	if row:FindFirstChild("ACE_FavStar") then return end
-
 	local mainBtn, sldMinus, sldPlus = nil, nil, nil
 	for _, c in ipairs(row:GetChildren()) do
 		if c:IsA("TextButton") and c.Name ~= "ACE_FavStar" then
@@ -493,7 +524,6 @@ local function addStar(row, key)
 	star.TextSize = 14
 	star.ZIndex = 5
 	Instance.new("UICorner", star).CornerRadius = UDim.new(0,4)
-
 	local function refreshStar()
 		local favs = getFavs()
 		if favs[key] then
@@ -504,16 +534,13 @@ local function addStar(row, key)
 	end
 	refreshStar()
 	star.MouseButton1Click:Connect(function()
-		toggleFav(key)
-		refreshStar()
-		reorderAll()
+		toggleFav(key); refreshStar(); reorderAll()
 	end)
 end
 
 local function addSearchToTab(tabName)
 	local tab = S.Tabs[tabName]
 	if not tab or tab:FindFirstChild("ACE_SearchBox") then return end
-
 	local box = Instance.new("TextBox", tab)
 	box.Name = "ACE_SearchBox"
 	box.Size = UDim2.new(1, -5, 0, 28)
@@ -528,16 +555,13 @@ local function addSearchToTab(tabName)
 	box.ClearTextOnFocus = false
 	box.LayoutOrder = -99999
 	Instance.new("UICorner", box).CornerRadius = UDim.new(0,4)
-
 	box:GetPropertyChangedSignal("Text"):Connect(function()
 		local q = string.lower(box.Text or "")
 		for row, _ in pairs(funRows) do
 			if row and row.Parent == tab then
 				local mainBtn = nil
 				for _, c in ipairs(row:GetChildren()) do
-					if c:IsA("TextButton") and c.Name ~= "ACE_FavStar" then
-						mainBtn = c; break
-					end
+					if c:IsA("TextButton") and c.Name ~= "ACE_FavStar" then mainBtn = c; break end
 				end
 				if mainBtn then
 					local txt = string.lower(mainBtn.Text or "")
@@ -551,15 +575,11 @@ end
 task.spawn(function()
 	task.wait(0.7)
 	indexRows()
-
 	for _, tabName in ipairs({"Main","Func","Visual","WP","Addons","Settings"}) do
 		addSearchToTab(tabName)
 	end
-
 	for row, key in pairs(funRows) do
-		if row and row.Parent then
-			addStar(row, key)
-		end
+		if row and row.Parent then addStar(row, key) end
 	end
 	reorderAll()
 	local n = 0
@@ -567,7 +587,6 @@ task.spawn(function()
 	print("[ACE extras] search+stars готовы, fun-rows: "..n)
 end)
 
--- CLEANUP
 S._extrasCleanup = function()
 	S.delT("ItemEspSync")
 	if S._setFreecam and C.freecam then S._setFreecam(false) end
@@ -578,4 +597,4 @@ S._extrasCleanup = function()
 	if infoPanel then infoPanel:Destroy() end
 end
 
-print("[ACE extras] готово v3.1")
+print("[ACE extras] готово v3.2")
