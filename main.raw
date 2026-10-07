@@ -1720,15 +1720,17 @@ end)
 
 -- ЗАГРУЗКА ADD
 task.spawn(function()
-	local url = "https://raw.githubusercontent.com/Chester-pdf/UCS.lua/main/add.raw?t=" .. tostring(tick())
+	local url = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/add.raw?t=" .. tostring(tick())
+	print("[UCS] качаю add: "..url)
 	local ok, src = pcall(game.HttpGet, game, url)
+	print("[UCS] результат: ok="..tostring(ok).." size="..tostring(ok and #src or tostring(src)))
 	if ok and src and #src > 500 then
 		local fn, err = loadstring(src)
 		if fn then
 			local ok2, err2 = pcall(fn)
-			if not ok2 then warn("[UCS add] " .. tostring(err2)) end
+			if not ok2 then warn("[UCS add] "..tostring(err2)) end
 		else
-			warn("[UCS add] syntax: " .. tostring(err))
+			warn("[UCS add] syntax: "..tostring(err))
 		end
 	else
 		warn("[UCS add] не скачалось")
