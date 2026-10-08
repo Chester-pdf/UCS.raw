@@ -1,6 +1,38 @@
 {
   "entries": [
     {
+      "version": "1.2.0",
+      "date": "2026-10-08",
+      "changes": {
+        "ru": [
+          "🧹 Чистка: убраны Anti-Knockback, Anti-Fling, Anti-AFK, Auto Rejoin, AntiTP",
+          "🐛 Фикс: Anti-Fling и Anti-Knockback конфликтовали с Fly и Speed",
+          "🐛 OneShot+ вынесен в отдельный аддон — больше не жрёт CPU впустую",
+          "✨ Добавлен Auto Jump — прыгает автоматически при движении",
+          "✨ Добавлен Click TP — клик по экрану = телепорт (ЛКМ)",
+          "✨ Добавлен No Fog — убирает туман, не трогая всё освещение",
+          "✨ Добавлен FOV Changer — ползунок 40–120",
+          "✨ Кнопка ♻ Восстановить скрытые аддоны",
+          "🔧 Убран Join / Hop — были ненадёжны",
+          "🔧 AntiVoid v2: запоминает последнюю безопасную точку",
+          "🔧 FastInteract: режим Безопасно (не трогает HoldDuration)"
+        ],
+        "en": [
+          "🧹 Cleanup: removed Anti-Knockback, Anti-Fling, Anti-AFK, Auto Rejoin, AntiTP",
+          "🐛 Fix: Anti-Fling and Anti-Knockback conflicted with Fly and Speed",
+          "🐛 OneShot+ moved to a separate addon — no longer wastes CPU",
+          "✨ Added Auto Jump — jumps automatically while moving",
+          "✨ Added Click TP — click on screen to teleport (LMB)",
+          "✨ Added No Fog — removes fog without touching all lighting",
+          "✨ Added FOV Changer — slider 40–120",
+          "✨ Button ♻ Restore hidden addons",
+          "🔧 Removed Join / Hop — unreliable",
+          "🔧 AntiVoid v2: remembers last safe point",
+          "🔧 FastInteract: Safe mode (doesn't touch HoldDuration)"
+        ]
+      }
+    },
+    {
       "version": "1.1.0",
       "date": "2026-10-08",
       "changes": {
