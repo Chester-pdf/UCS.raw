@@ -1527,11 +1527,13 @@ Players.PlayerRemoving:Connect(function(p) task.wait(0.1); hidden[p]=nil; if hid
 print("[UCS] Players ok")
 
 -- ============================================================
--- ADDONS v2 — REMOTE LIST + VERSIONING + UPDATE CHECK
+-- ADDONS v3 — REMOTE LIST + VERSIONING + RUN/STOP
 -- ============================================================
 local ADDON_FILE="UCS_Addons.json"
 -- store: {remote={...}, localVersion={url->ver}, hidden={url->true}, custom={...}}
 local addonStore = {remote={version="0", addons={}}, localVersion={}, hidden={}, custom={}}
+-- running addons: url -> {name=..., unload=fn}
+local runningAddons = {}
 
 local function saveAddonStore()
 	pcall(function() writefile(ADDON_FILE, Http:JSONEncode(addonStore)) end)
@@ -1542,7 +1544,6 @@ local function loadAddonStore()
 			local raw = readfile(ADDON_FILE)
 			local d = Http:JSONDecode(raw)
 			if type(d) == "table" then
-				-- миграция со старого формата (просто массив)
 				if d[1] and d[1].url then
 					addonStore.custom = d
 				else
@@ -1567,7 +1568,6 @@ local function fetchRemoteAddons()
 	return true
 end
 
--- Собрать объединённый список: remote + custom, минус hidden
 local function getMergedAddons()
 	local list = {}
 	for _,a in ipairs(addonStore.remote.addons or {}) do
@@ -1593,8 +1593,27 @@ end
 
 local function hasUpdate(url, remoteVersion)
 	local localV = addonStore.localVersion[url]
-	if not localV then return false end -- ещё ни разу не запускался
+	if not localV then return false end
 	return tostring(localV) ~= tostring(remoteVersion)
+end
+
+-- Определяем unload-функцию аддона: снимок _G до/после загрузки
+local function snapshotUnloadFns()
+	local set = {}
+	for k,v in pairs(_G) do
+		if type(k)=="string" and k:match("^UCS_.+_Unload$") and type(v)=="function" then
+			set[k] = true
+		end
+	end
+	return set
+end
+local function detectNewUnload(before)
+	for k,v in pairs(_G) do
+		if type(k)=="string" and k:match("^UCS_.+_Unload$") and type(v)=="function" and not before[k] then
+			return v
+		end
+	end
+	return nil
 end
 
 -- UI
@@ -1603,7 +1622,6 @@ ALf.Size=UDim2.new(1,-5,0,0); ALf.AutomaticSize=Enum.AutomaticSize.Y
 ALf.BackgroundTransparency=1
 Instance.new("UIListLayout",ALf).Padding=UDim.new(0,4)
 
--- Кнопка "Обновить список"
 local refreshBtn=Instance.new("TextButton",S.Tabs.Addons)
 refreshBtn.Size=UDim2.new(1,-5,0,28); refreshBtn.LayoutOrder=0
 refreshBtn.BackgroundColor3=Color3.fromRGB(60,60,110); refreshBtn.BorderSizePixel=0
@@ -1649,21 +1667,28 @@ local function refreshAddons()
 		return
 	end
 	for i,a in ipairs(list) do
-		local upd = (a.source=="remote") and hasUpdate(a.url, a.version) or false
+		local isRunning = runningAddons[a.url] ~= nil
+		local upd = (not isRunning) and (a.source=="remote") and hasUpdate(a.url, a.version)
 		local row=Instance.new("Frame",ALf); row.Size=UDim2.new(1,0,0,52)
 		row.BackgroundColor3=Color3.fromRGB(45,45,45); row.BorderSizePixel=0
 		Instance.new("UICorner",row).CornerRadius=UDim.new(0,4)
 
-		-- индикатор обновления (полоска слева)
 		if upd then
 			local bar=Instance.new("Frame",row)
 			bar.Size=UDim2.new(0,3,1,-8); bar.Position=UDim2.new(0,4,0,4)
 			bar.BackgroundColor3=Color3.fromRGB(255,200,60); bar.BorderSizePixel=0
 			Instance.new("UICorner",bar).CornerRadius=UDim.new(0,2)
+		elseif isRunning then
+			local bar=Instance.new("Frame",row)
+			bar.Size=UDim2.new(0,3,1,-8); bar.Position=UDim2.new(0,4,0,4)
+			bar.BackgroundColor3=Color3.fromRGB(80,200,80); bar.BorderSizePixel=0
+			Instance.new("UICorner",bar).CornerRadius=UDim.new(0,2)
 		end
 
+		local leftOffset = (upd or isRunning) and 12 or 6
+
 		local name=Instance.new("TextLabel",row)
-		name.Size=UDim2.new(1,-92,0,18); name.Position=UDim2.new(0,upd and 12 or 6,0,2)
+		name.Size=UDim2.new(1,-92,0,18); name.Position=UDim2.new(0,leftOffset,0,2)
 		name.BackgroundTransparency=1; name.Text=a.name; name.TextColor3=Color3.new(1,1,1)
 		name.Font=Enum.Font.SourceSansBold; name.TextSize=12
 		name.TextXAlignment=Enum.TextXAlignment.Left; name.TextTruncate=Enum.TextTruncate.AtEnd
@@ -1676,27 +1701,38 @@ local function refreshAddons()
 		if a.author ~= "" then versionLine = versionLine .. "  ·  "..t("addon_author").." "..a.author end
 
 		local desc=Instance.new("TextLabel",row)
-		desc.Size=UDim2.new(1,-92,0,14); desc.Position=UDim2.new(0,upd and 12 or 6,0,20)
+		desc.Size=UDim2.new(1,-92,0,14); desc.Position=UDim2.new(0,leftOffset,0,20)
 		desc.BackgroundTransparency=1
 		desc.Text = versionLine.."   "..(a.desc~="" and ("— "..a.desc) or "")
-		desc.TextColor3 = upd and Color3.fromRGB(255,210,80) or Color3.fromRGB(150,150,150)
+		desc.TextColor3 = upd and Color3.fromRGB(255,210,80) or (isRunning and Color3.fromRGB(120,220,120) or Color3.fromRGB(150,150,150))
 		desc.Font=Enum.Font.SourceSans; desc.TextSize=9
 		desc.TextXAlignment=Enum.TextXAlignment.Left; desc.TextTruncate=Enum.TextTruncate.AtEnd
 
 		local status=Instance.new("TextLabel",row)
-		status.Size=UDim2.new(0,60,0,12); status.Position=UDim2.new(0,upd and 12 or 6,0,36)
-		status.BackgroundTransparency=1; status.Text=""
-		status.TextColor3=Color3.fromRGB(180,180,180)
+		status.Size=UDim2.new(0,90,0,12); status.Position=UDim2.new(0,leftOffset,0,36)
+		status.BackgroundTransparency=1
+		status.Text = isRunning and t("addon_status_running") or ""
+		status.TextColor3 = isRunning and Color3.fromRGB(80,200,80) or Color3.fromRGB(180,180,180)
 		status.Font=Enum.Font.SourceSansBold; status.TextSize=8
 		status.TextXAlignment=Enum.TextXAlignment.Left
 
 		local runBtn=Instance.new("TextButton",row)
 		runBtn.Size=UDim2.new(0,50,1,-8); runBtn.Position=UDim2.new(1,-84,0,4)
-		runBtn.BackgroundColor3 = upd and Color3.fromRGB(200,150,0) or Color3.fromRGB(0,140,60)
+		if isRunning then
+			runBtn.BackgroundColor3=Color3.fromRGB(180,60,60)
+			runBtn.Text="STOP"
+			runBtn.TextSize=11
+		elseif upd then
+			runBtn.BackgroundColor3=Color3.fromRGB(200,150,0)
+			runBtn.Text=t("addon_update_badge")
+			runBtn.TextSize=8
+		else
+			runBtn.BackgroundColor3=Color3.fromRGB(0,140,60)
+			runBtn.Text="RUN"
+			runBtn.TextSize=11
+		end
 		runBtn.BorderSizePixel=0
-		runBtn.Text = upd and t("addon_update_badge") or "RUN"
 		runBtn.TextColor3=Color3.new(1,1,1); runBtn.Font=Enum.Font.SourceSansBold
-		runBtn.TextSize = upd and 8 or 11
 		Instance.new("UICorner",runBtn).CornerRadius=UDim.new(0,3)
 
 		local delBtn=Instance.new("TextButton",row)
@@ -1706,9 +1742,22 @@ local function refreshAddons()
 		Instance.new("UICorner",delBtn).CornerRadius=UDim.new(0,3)
 
 		runBtn.MouseButton1Click:Connect(function()
-			S.notify(t("n_loading").." "..a.name,Color3.fromRGB(180,180,80))
+			-- STOP
+			if runningAddons[a.url] then
+				local info = runningAddons[a.url]
+				if info and info.unload then
+					pcall(info.unload)
+				end
+				runningAddons[a.url] = nil
+				S.notify(a.name.." — "..t("addon_stopped"), Color3.fromRGB(200,100,80))
+				refreshAddons()
+				return
+			end
+			-- RUN
+			S.notify(t("n_loading").." "..a.name, Color3.fromRGB(180,180,80))
 			status.Text=""
 			task.spawn(function()
+				local before = snapshotUnloadFns()
 				local ok,err = pcall(function()
 					local src=game:HttpGet(a.url)
 					if not src or #src<100 then error("empty response") end
@@ -1722,19 +1771,28 @@ local function refreshAddons()
 					status.TextColor3=Color3.fromRGB(255,80,80)
 					row.BackgroundColor3=Color3.fromRGB(60,30,30)
 				else
-					S.notify(a.name.." "..t("n_started"),Color3.fromRGB(0,180,0))
-					status.Text=t("addon_status_ok")
-					status.TextColor3=Color3.fromRGB(0,200,0)
-					-- фиксируем локальную версию = remote версия
+					local unloadFn = detectNewUnload(before)
+					if unloadFn then
+						runningAddons[a.url] = {name=a.name, unload=unloadFn}
+					else
+						-- аддон без _G.UCS_*_Unload — просто помечаем как запущенный
+						runningAddons[a.url] = {name=a.name, unload=function() end}
+					end
 					if a.source=="remote" then
 						addonStore.localVersion[a.url] = a.version
 						saveAddonStore()
 					end
+					S.notify(a.name.." "..t("n_started"),Color3.fromRGB(0,180,0))
+					refreshAddons()
 				end
 			end)
 		end)
 
 		delBtn.MouseButton1Click:Connect(function()
+			-- если аддон работает — сначала выгружаем
+			local info = runningAddons[a.url]
+			if info and info.unload then pcall(info.unload) end
+			runningAddons[a.url] = nil
 			if a.source == "remote" then
 				addonStore.hidden[a.url] = true
 			else
@@ -1747,7 +1805,6 @@ local function refreshAddons()
 	end
 end
 
--- Refresh button
 refreshBtn.MouseButton1Click:Connect(function()
 	refreshBtn.Text = t("addon_refreshing")
 	local ok = fetchRemoteAddons()
@@ -1755,9 +1812,8 @@ refreshBtn.MouseButton1Click:Connect(function()
 	refreshBtn.Text = t("addon_refresh")
 	if ok then
 		S.notify(t("n_addons_updated"), Color3.fromRGB(0,180,0))
-		-- проверка обновлений и уведомление
 		for _,a in ipairs(addonStore.remote.addons or {}) do
-			if type(a)=="table" and a.url then
+			if type(a)=="table" and a.url and not runningAddons[a.url] then
 				local localV = addonStore.localVersion[a.url]
 				if localV and tostring(localV) ~= tostring(a.version) then
 					S.notify(t("n_addon_update")..a.name.." v"..tostring(a.version), Color3.fromRGB(255,200,80))
@@ -1780,6 +1836,11 @@ addBtn.MouseButton1Click:Connect(function()
 	S.notify(t("n_addon_added"),Color3.fromRGB(0,180,0))
 end)
 clearBtn.MouseButton1Click:Connect(function()
+	-- сначала останавливаем все запущенные
+	for url, info in pairs(runningAddons) do
+		if info and info.unload then pcall(info.unload) end
+	end
+	runningAddons = {}
 	addonStore.custom={}
 	saveAddonStore(); refreshAddons()
 	S.notify(t("n_cleared"),Color3.fromRGB(200,80,80))
@@ -1787,15 +1848,13 @@ end)
 S.refreshAddons=refreshAddons
 refreshAddons()
 
--- первый запрос remote при старте (не блокирующий)
 task.spawn(function()
 	task.wait(1)
 	local ok = fetchRemoteAddons()
 	if ok then
 		refreshAddons()
-		-- тихо проверяем обновления
 		for _,a in ipairs(addonStore.remote.addons or {}) do
-			if type(a)=="table" and a.url then
+			if type(a)=="table" and a.url and not runningAddons[a.url] then
 				local localV = addonStore.localVersion[a.url]
 				if localV and tostring(localV) ~= tostring(a.version) then
 					S.notify(t("n_addon_update")..a.name.." v"..tostring(a.version), Color3.fromRGB(255,200,80))
@@ -1804,7 +1863,7 @@ task.spawn(function()
 		end
 	end
 end)
-print("[UCS] Addons v2 ok")
+print("[UCS] Addons v3 ok")
 
 -- SETTINGS
 addR("Settings",t("transp").." ("..C.panelTransparency.."%)",function(b,a)
