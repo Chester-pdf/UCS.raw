@@ -49,6 +49,8 @@ local L = {
 		addon_version="v",
 		addon_status_ok="OK",
 		addon_status_err="ОШИБКА",
+		addon_status_running="РАБОТАЕТ",
+		addon_stopped="Остановлено",
 		transp="Прозрачность панели",
 		show_hotkeys="Показ хоткеев (общий)",
 		hk_dash="Хоткей DASH: показ", hk_plat="Хоткей Платформа: показ",
@@ -63,6 +65,12 @@ local L = {
 		profiles="📚 Профили конфигов", profile_name_ph="Имя профиля...",
 		profile_save="Сохранить", profile_load="Load", profile_none="Профилей пока нет",
 		language="Язык / Language",
+		whats_new="📰 Что нового",
+		changelog_title="Что нового",
+		changelog_loading="Загрузка...",
+		changelog_error="Не удалось загрузить changelog",
+		changelog_empty="Записей пока нет",
+		changelog_new_badge="НОВОЕ",
 		n_stealth_on="Стелс ВКЛ", n_stealth_off="Стелс выключен",
 		n_file_missing="Файла нет", n_broken_cfg="Битый конфиг",
 		n_saved="Сохранено", n_loaded="Загружено", n_no_writefile="Нет writefile",
@@ -114,6 +122,8 @@ local L = {
 		addon_version="v",
 		addon_status_ok="OK",
 		addon_status_err="ERROR",
+		addon_status_running="RUNNING",
+		addon_stopped="Stopped",
 		transp="Panel transparency",
 		show_hotkeys="Show hotkeys (all)",
 		hk_dash="Hotkey DASH: visible", hk_plat="Hotkey Platform: visible",
@@ -128,6 +138,12 @@ local L = {
 		profiles="📚 Config Profiles", profile_name_ph="Profile name...",
 		profile_save="Save", profile_load="Load", profile_none="No profiles yet",
 		language="Language / Язык",
+		whats_new="📰 What's new",
+		changelog_title="What's new",
+		changelog_loading="Loading...",
+		changelog_error="Failed to load changelog",
+		changelog_empty="No entries yet",
+		changelog_new_badge="NEW",
 		n_stealth_on="Stealth ON", n_stealth_off="Stealth OFF",
 		n_file_missing="File not found", n_broken_cfg="Broken config",
 		n_saved="Saved", n_loaded="Loaded", n_no_writefile="No writefile",
@@ -192,8 +208,9 @@ end
 S.VERSION = "1.0.5"
 S.AUTHOR  = "@Chester-pdf"
 S.BRAND   = "UCS"
-S.VERSION_URL = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/version.txt"
-S.ADDONS_URL  = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/addons.json"
+S.VERSION_URL   = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/version.txt"
+S.ADDONS_URL    = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/addons.json"
+S.CHANGELOG_URL = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/changelog.json"
 
 S.C={sEn=false,tSp=100,fEn=false,fSp=4,jpEn=false,jPw=100,jEn=false,nEn=false,
 eEn=false,xrayEn=false,xrayOpacity=100,fbEn=false,avEn=false,voidY=-50,akbEn=false,kbLimit=50,
@@ -341,7 +358,9 @@ for i,n in ipairs(names) do
 	sc.Visible=(i==1)
 	local pad=Instance.new("UIPadding",sc)
 	pad.PaddingTop=UDim.new(0,4); pad.PaddingBottom=UDim.new(0,26)
-	Instance.new("UIListLayout",sc).Padding=UDim.new(0,5)
+	local lay=Instance.new("UIListLayout",sc)
+	lay.Padding=UDim.new(0,5)
+	lay.SortOrder=Enum.SortOrder.LayoutOrder
 	S.Tabs[n]=sc
 	local b=Instance.new("TextButton",TB)
 	b.Size=UDim2.new(tabW,-2,1,0); b.Position=UDim2.new((i-1)*tabW,0,0,0)
@@ -1530,9 +1549,7 @@ print("[UCS] Players ok")
 -- ADDONS v3 — REMOTE LIST + VERSIONING + RUN/STOP
 -- ============================================================
 local ADDON_FILE="UCS_Addons.json"
--- store: {remote={...}, localVersion={url->ver}, hidden={url->true}, custom={...}}
 local addonStore = {remote={version="0", addons={}}, localVersion={}, hidden={}, custom={}}
--- running addons: url -> {name=..., unload=fn}
 local runningAddons = {}
 
 local function saveAddonStore()
@@ -1597,7 +1614,6 @@ local function hasUpdate(url, remoteVersion)
 	return tostring(localV) ~= tostring(remoteVersion)
 end
 
--- Определяем unload-функцию аддона: снимок _G до/после загрузки
 local function snapshotUnloadFns()
 	local set = {}
 	for k,v in pairs(_G) do
@@ -1616,7 +1632,6 @@ local function detectNewUnload(before)
 	return nil
 end
 
--- UI
 local ALf=Instance.new("Frame",S.Tabs.Addons)
 ALf.Size=UDim2.new(1,-5,0,0); ALf.AutomaticSize=Enum.AutomaticSize.Y
 ALf.BackgroundTransparency=1
@@ -1742,18 +1757,14 @@ local function refreshAddons()
 		Instance.new("UICorner",delBtn).CornerRadius=UDim.new(0,3)
 
 		runBtn.MouseButton1Click:Connect(function()
-			-- STOP
 			if runningAddons[a.url] then
 				local info = runningAddons[a.url]
-				if info and info.unload then
-					pcall(info.unload)
-				end
+				if info and info.unload then pcall(info.unload) end
 				runningAddons[a.url] = nil
 				S.notify(a.name.." — "..t("addon_stopped"), Color3.fromRGB(200,100,80))
 				refreshAddons()
 				return
 			end
-			-- RUN
 			S.notify(t("n_loading").." "..a.name, Color3.fromRGB(180,180,80))
 			status.Text=""
 			task.spawn(function()
@@ -1775,7 +1786,6 @@ local function refreshAddons()
 					if unloadFn then
 						runningAddons[a.url] = {name=a.name, unload=unloadFn}
 					else
-						-- аддон без _G.UCS_*_Unload — просто помечаем как запущенный
 						runningAddons[a.url] = {name=a.name, unload=function() end}
 					end
 					if a.source=="remote" then
@@ -1789,7 +1799,6 @@ local function refreshAddons()
 		end)
 
 		delBtn.MouseButton1Click:Connect(function()
-			-- если аддон работает — сначала выгружаем
 			local info = runningAddons[a.url]
 			if info and info.unload then pcall(info.unload) end
 			runningAddons[a.url] = nil
@@ -1836,7 +1845,6 @@ addBtn.MouseButton1Click:Connect(function()
 	S.notify(t("n_addon_added"),Color3.fromRGB(0,180,0))
 end)
 clearBtn.MouseButton1Click:Connect(function()
-	-- сначала останавливаем все запущенные
 	for url, info in pairs(runningAddons) do
 		if info and info.unload then pcall(info.unload) end
 	end
@@ -2252,6 +2260,241 @@ task.spawn(function()
 		warn("[UCS add] not downloaded")
 	end
 end)
+
+-- ============================================================
+-- CHANGELOG
+-- ============================================================
+do
+	local CHANGELOG_FILE = "UCS_ChangelogCache.json"
+	local CHANGELOG_SEEN = "UCS_ChangelogSeen.json"
+	local changelogData = {entries={}}
+	local seenVersions = {}
+
+	pcall(function()
+		if isfile and isfile(CHANGELOG_FILE) then
+			local d = Http:JSONDecode(readfile(CHANGELOG_FILE))
+			if type(d)=="table" and type(d.entries)=="table" then changelogData=d end
+		end
+		if isfile and isfile(CHANGELOG_SEEN) then
+			local d2 = Http:JSONDecode(readfile(CHANGELOG_SEEN))
+			if type(d2)=="table" then seenVersions=d2 end
+		end
+	end)
+	local function saveChangelogCache() pcall(function() writefile(CHANGELOG_FILE, Http:JSONEncode(changelogData)) end) end
+	local function saveSeen() pcall(function() writefile(CHANGELOG_SEEN, Http:JSONEncode(seenVersions)) end) end
+
+	local function fetchChangelog()
+		if not S.CHANGELOG_URL then return false end
+		local ok, src = pcall(function() return game:HttpGet(S.CHANGELOG_URL.."?t="..tostring(tick()), true) end)
+		if not ok or not src or #src < 20 then return false end
+		local ok2, d = pcall(function() return Http:JSONDecode(src) end)
+		if not ok2 or type(d)~="table" or type(d.entries)~="table" then return false end
+		changelogData = d
+		saveChangelogCache()
+		return true
+	end
+
+	local function unseenCount()
+		local n = 0
+		for _,e in ipairs(changelogData.entries or {}) do
+			if e.version and not seenVersions[e.version] then n = n + 1 end
+		end
+		return n
+	end
+
+	local function markAllSeen()
+		for _,e in ipairs(changelogData.entries or {}) do
+			if e.version then seenVersions[e.version] = true end
+		end
+		saveSeen()
+	end
+
+	local function tcl(k)
+		local tbl = (L[S.lang] or L.en)
+		if tbl and tbl[k] then return tbl[k] end
+		return k
+	end
+
+	local clBtnRow = Instance.new("TextButton", S.Tabs.Settings)
+	clBtnRow.Name = "UCS_ChangelogBtn"
+	clBtnRow.Size = UDim2.new(1,-5,0,32)
+	clBtnRow.BackgroundColor3 = Color3.fromRGB(60,40,90)
+	clBtnRow.BorderSizePixel = 0
+	clBtnRow.Text = tcl("whats_new")
+	clBtnRow.TextColor3 = Color3.new(1,1,1)
+	clBtnRow.Font = Enum.Font.SourceSansBold
+	clBtnRow.TextSize = 12
+	clBtnRow.LayoutOrder = 9999
+	Instance.new("UICorner", clBtnRow).CornerRadius = UDim.new(0,4)
+
+	local CLPanel = Instance.new("Frame", SG)
+	CLPanel.Name = "UCS_ChangelogPanel"
+	CLPanel.Size = UDim2.new(0, 320, 0, 400)
+	CLPanel.Position = UDim2.new(0.5, -160, 0.5, -200)
+	CLPanel.BackgroundColor3 = Color3.fromRGB(22,22,28)
+	CLPanel.BorderSizePixel = 0
+	CLPanel.Visible = false
+	CLPanel.ZIndex = 100
+	Instance.new("UICorner", CLPanel).CornerRadius = UDim.new(0,8)
+	Instance.new("UIStroke", CLPanel).Color = Color3.fromRGB(180,140,255)
+
+	local clTitle = Instance.new("TextLabel", CLPanel)
+	clTitle.Size = UDim2.new(1,0,0,28)
+	clTitle.BackgroundColor3 = Color3.fromRGB(42,42,42)
+	clTitle.BorderSizePixel = 0
+	clTitle.Text = tcl("changelog_title")
+	clTitle.TextColor3 = Color3.fromRGB(180,140,255)
+	clTitle.Font = Enum.Font.SourceSansBold
+	clTitle.TextSize = 12
+	Instance.new("UICorner", clTitle).CornerRadius = UDim.new(0,8)
+
+	local clClose = Instance.new("TextButton", CLPanel)
+	clClose.Size = UDim2.new(0,28,0,28)
+	clClose.Position = UDim2.new(1,-28,0,0)
+	clClose.BackgroundTransparency = 1
+	clClose.Text = "×"
+	clClose.TextColor3 = Color3.new(1,1,1)
+	clClose.Font = Enum.Font.SourceSansBold
+	clClose.TextSize = 16
+
+	local clScroll = Instance.new("ScrollingFrame", CLPanel)
+	clScroll.Size = UDim2.new(1,-16,1,-40)
+	clScroll.Position = UDim2.new(0,8,0,34)
+	clScroll.BackgroundTransparency = 1
+	clScroll.BorderSizePixel = 0
+	clScroll.ScrollBarThickness = 4
+	clScroll.ScrollBarImageColor3 = Color3.fromRGB(180,140,255)
+	clScroll.CanvasSize = UDim2.new(0,0,0,0)
+	clScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	Instance.new("UIListLayout", clScroll).Padding = UDim.new(0,6)
+
+	local function renderChangelog()
+		for _,c in ipairs(clScroll:GetChildren()) do
+			if c:IsA("Frame") then c:Destroy() end
+		end
+		local list = changelogData.entries or {}
+		if #list == 0 then
+			local lbl = Instance.new("TextLabel", clScroll)
+			lbl.Size = UDim2.new(1,-5,0,30)
+			lbl.BackgroundTransparency = 1
+			lbl.Text = tcl("changelog_empty")
+			lbl.TextColor3 = Color3.fromRGB(140,140,140)
+			lbl.Font = Enum.Font.SourceSansBold
+			lbl.TextSize = 11
+			return
+		end
+		for _,e in ipairs(list) do
+			local isNew = e.version and not seenVersions[e.version]
+			local card = Instance.new("Frame", clScroll)
+			card.Size = UDim2.new(1,-5,0,0)
+			card.AutomaticSize = Enum.AutomaticSize.Y
+			card.BackgroundColor3 = isNew and Color3.fromRGB(45,35,60) or Color3.fromRGB(36,36,42)
+			card.BorderSizePixel = 0
+			Instance.new("UICorner", card).CornerRadius = UDim.new(0,6)
+			local pad = Instance.new("UIPadding", card)
+			pad.PaddingTop = UDim.new(0,8); pad.PaddingBottom = UDim.new(0,8)
+			pad.PaddingLeft = UDim.new(0,10); pad.PaddingRight = UDim.new(0,10)
+			local lay = Instance.new("UIListLayout", card)
+			lay.Padding = UDim.new(0,4)
+			lay.SortOrder = Enum.SortOrder.LayoutOrder
+
+			local header = Instance.new("Frame", card)
+			header.Size = UDim2.new(1,0,0,18)
+			header.BackgroundTransparency = 1
+			header.LayoutOrder = 1
+
+			local vLabel = Instance.new("TextLabel", header)
+			vLabel.Size = UDim2.new(0,80,1,0)
+			vLabel.BackgroundTransparency = 1
+			vLabel.Text = "v"..tostring(e.version or "?")
+			vLabel.TextColor3 = Color3.fromRGB(255,180,80)
+			vLabel.Font = Enum.Font.SourceSansBold; vLabel.TextSize = 12
+			vLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+			local dLabel = Instance.new("TextLabel", header)
+			dLabel.Size = UDim2.new(1,-80,1,0); dLabel.Position = UDim2.new(0,80,0,0)
+			dLabel.BackgroundTransparency = 1
+			dLabel.Text = tostring(e.date or "")
+			dLabel.TextColor3 = Color3.fromRGB(150,150,150)
+			dLabel.Font = Enum.Font.SourceSans; dLabel.TextSize = 10
+			dLabel.TextXAlignment = Enum.TextXAlignment.Right
+
+			if isNew then
+				local badge = Instance.new("TextLabel", header)
+				badge.Size = UDim2.new(0,52,0,16)
+				badge.Position = UDim2.new(1,-132,0,1)
+				badge.BackgroundColor3 = Color3.fromRGB(180,120,255)
+				badge.BorderSizePixel = 0
+				badge.Text = tcl("changelog_new_badge")
+				badge.TextColor3 = Color3.new(1,1,1)
+				badge.Font = Enum.Font.SourceSansBold; badge.TextSize = 8
+				Instance.new("UICorner", badge).CornerRadius = UDim.new(0,4)
+			end
+
+			local changes = (e.changes and (e.changes[S.lang] or e.changes.en)) or {}
+			for _,line in ipairs(changes) do
+				local bullet = Instance.new("TextLabel", card)
+				bullet.Size = UDim2.new(1,0,0,0)
+				bullet.AutomaticSize = Enum.AutomaticSize.Y
+				bullet.BackgroundTransparency = 1
+				bullet.Text = "•  "..tostring(line)
+				bullet.TextColor3 = Color3.fromRGB(220,220,220)
+				bullet.Font = Enum.Font.SourceSans; bullet.TextSize = 11
+				bullet.TextXAlignment = Enum.TextXAlignment.Left
+				bullet.TextWrapped = true
+				bullet.LayoutOrder = 2
+			end
+		end
+	end
+
+	local function refreshClButton()
+		local n = unseenCount()
+		if n > 0 then
+			clBtnRow.Text = tcl("whats_new").."  ("..n..")"
+			clBtnRow.BackgroundColor3 = Color3.fromRGB(120,80,180)
+		else
+			clBtnRow.Text = tcl("whats_new")
+			clBtnRow.BackgroundColor3 = Color3.fromRGB(60,40,90)
+		end
+	end
+
+	clBtnRow.MouseButton1Click:Connect(function()
+		if not CLPanel.Visible then
+			renderChangelog()
+			CLPanel.Visible = true
+			markAllSeen()
+			task.defer(refreshClButton)
+		else
+			CLPanel.Visible = false
+		end
+	end)
+	clClose.MouseButton1Click:Connect(function() CLPanel.Visible = false end)
+
+	refreshClButton()
+
+	task.spawn(function()
+		task.wait(2)
+		if fetchChangelog() then
+			refreshClButton()
+			for _,e in ipairs(changelogData.entries or {}) do
+				if e.version == S.VERSION and not seenVersions[e.version] then
+					S.notify(tcl("changelog_title")..": v"..tostring(e.version), Color3.fromRGB(180,140,255))
+					break
+				end
+			end
+		end
+	end)
+
+	if S.onLangChange then
+		S.onLangChange(function()
+			pcall(function() clTitle.Text = tcl("changelog_title") end)
+			refreshClButton()
+			if CLPanel.Visible then renderChangelog() end
+		end)
+	end
+
+	print("[UCS] Changelog ok")
+end
 
 -- ============================================================
 -- AUTO-UPDATE CHECK (main)
