@@ -1,75 +1,48 @@
 -- ============================================================
--- UCS ADD v1.0.3 — LOCALIZED (RU + EN) + LIVE LANG
+-- UCS ADD v1.3.1 — Freecam + Player Info + Device/Hotkeys
 -- ============================================================
 local S = _G.UCS
-if not S then warn("[UCS add] _G.UCS is empty / _G.UCS пуст"); return end
+if not S then warn("[UCS add] _G.UCS is empty"); return end
 
--- ===== LOCALIZATION =====
 local L = {
 	ru = {
-		loading="[UCS add] загрузка v1.0.3...",
+		loading="[UCS add] загрузка v1.3.1...",
 		already="[UCS add] уже загружен",
 		freecam_exists="[UCS add] Freecam уже есть",
-		dumper_exists="[UCS add] Game Info Dumper уже есть",
 		search_ready="[UCS add] search+stars готовы, fun-rows: ",
-		done="[UCS add] готово v1.0.3",
+		done="[UCS add] готово v1.3.1",
 		freecam_name="Freecam",
 		freecam_on="Freecam: ВКЛ",
 		freecam_off="Freecam: ВЫКЛ",
 		info_title="Инфо игрока",
-		info_name="Имя",
-		info_display="Ник",
-		info_userid="UserID",
-		info_hp="HP",
-		info_dist="Дист",
-		info_tool="Оружие",
-		info_account="Аккаунт",
-		info_days="дн.",
-		info_studs="студов",
-		info_none="—",
-		dumper_title="📊 Game Info Dumper",
-		dumper_copy="КОПИЯ",
-		dumper_rescan="РеСкан",
-		dumper_copied="Скопировано",
-		dumper_game_info="=== ИНФО ИГРЫ ===",
-		dumper_place="Место",
-		dumper_jobid="JobId",
-		dumper_remotes="=== РЕМОУТЫ",
-		dumper_modules="=== МОДУЛИ",
-		dumper_npc="=== NPC",
+		info_name="Имя", info_display="Ник", info_userid="UserID", info_hp="HP",
+		info_dist="Дист", info_tool="Оружие", info_account="Аккаунт",
+		info_days="дн.", info_studs="студов", info_none="—",
+		device="Устройство",
+		hotkeys_list="⌨ Список хоткеев",
+		hotkeys_title="⌨ Горячие клавиши",
+		hotkeys_hint="Актуально только для ПК-версии",
+		device_switched="Устройство: ",
 		search_ph="🔍 поиск...",
 	},
 	en = {
-		loading="[UCS add] loading v1.0.3...",
+		loading="[UCS add] loading v1.3.1...",
 		already="[UCS add] already loaded",
 		freecam_exists="[UCS add] Freecam already exists",
-		dumper_exists="[UCS add] Game Info Dumper already exists",
 		search_ready="[UCS add] search+stars ready, fun-rows: ",
-		done="[UCS add] done v1.0.3",
+		done="[UCS add] done v1.3.1",
 		freecam_name="Freecam",
 		freecam_on="Freecam: ON",
 		freecam_off="Freecam: OFF",
 		info_title="Player Info",
-		info_name="Name",
-		info_display="Display",
-		info_userid="UserID",
-		info_hp="HP",
-		info_dist="Dist",
-		info_tool="Tool",
-		info_account="Account",
-		info_days="days",
-		info_studs="studs",
-		info_none="—",
-		dumper_title="📊 Game Info Dumper",
-		dumper_copy="COPY",
-		dumper_rescan="ReScan",
-		dumper_copied="Copied",
-		dumper_game_info="=== GAME INFO ===",
-		dumper_place="Place",
-		dumper_jobid="JobId",
-		dumper_remotes="=== REMOTES",
-		dumper_modules="=== MODULES",
-		dumper_npc="=== NPC",
+		info_name="Name", info_display="Display", info_userid="UserID", info_hp="HP",
+		info_dist="Dist", info_tool="Tool", info_account="Account",
+		info_days="days", info_studs="studs", info_none="—",
+		device="Device",
+		hotkeys_list="⌨ Hotkeys list",
+		hotkeys_title="⌨ Hotkeys",
+		hotkeys_hint="Only for PC build",
+		device_switched="Device: ",
 		search_ph="🔍 search...",
 	},
 }
@@ -80,7 +53,6 @@ local function t(k)
 end
 S.t_addon = t
 
--- ===== берём систему слушателей из main.raw =====
 local onLangChange  = S.onLangChange  or function() end
 local fireLangChange = S.fireLangChange or function() end
 
@@ -299,13 +271,18 @@ else
 		end
 	end
 
-	-- жёсткий фильтр: работает ТОЛЬКО на явный клик
 	addR("Visual", t("freecam_name"), function(b,a)
-		if a ~= "toggle" then return end
+		if a~="toggle" then
+			if C.freecam then
+				b.Text = t("freecam_on"); b.BackgroundColor3 = Color3.fromRGB(0,120,0)
+			else
+				b.Text = t("freecam_off"); b.BackgroundColor3 = Color3.fromRGB(50,50,50)
+			end
+			return
+		end
 		S._setFreecam(not C.freecam)
 	end, false, "freecam")
 
-	-- обновление текста при смене языка
 	onLangChange(function()
 		local tog = S.toggles and S.toggles.freecam
 		if tog and tog.btn then
@@ -380,109 +357,157 @@ onLangChange(function()
 end)
 
 -- ============================================================
--- GAME INFO DUMPER
+-- DEVICE SWITCH
 -- ============================================================
-if S.toggles.gameDumper then
-	print(t("dumper_exists"))
-else
-	local dumperPanel = Instance.new("Frame", SG)
-	dumperPanel.Size = UDim2.new(0,320,0,400)
-	dumperPanel.Position = UDim2.new(0.5,-160,0.5,-200)
-	dumperPanel.BackgroundColor3 = Color3.fromRGB(20,20,26)
-	dumperPanel.BorderSizePixel = 0; dumperPanel.Visible = false; dumperPanel.ZIndex = 100
-	Instance.new("UICorner", dumperPanel).CornerRadius = UDim.new(0,8)
-	Instance.new("UIStroke", dumperPanel).Color = Color3.fromRGB(100,220,180)
-	local dpTitle = Instance.new("TextLabel", dumperPanel)
-	dpTitle.Size = UDim2.new(1,0,0,28); dpTitle.BackgroundColor3 = Color3.fromRGB(42,42,42)
-	dpTitle.BorderSizePixel = 0; dpTitle.Text = t("dumper_title")
-	dpTitle.TextColor3 = Color3.fromRGB(100,220,180)
-	dpTitle.Font = Enum.Font.SourceSansBold; dpTitle.TextSize = 12
-	Instance.new("UICorner", dpTitle).CornerRadius = UDim.new(0,8)
-	local dpClose = Instance.new("TextButton", dumperPanel)
-	dpClose.Size = UDim2.new(0,28,0,28); dpClose.Position = UDim2.new(1,-28,0,0)
-	dpClose.BackgroundTransparency = 1; dpClose.Text = "×"
-	dpClose.TextColor3 = Color3.new(1,1,1); dpClose.Font = Enum.Font.SourceSansBold; dpClose.TextSize = 16
-	local dpCopy = Instance.new("TextButton", dumperPanel)
-	dpCopy.Size = UDim2.new(0,80,0,24); dpCopy.Position = UDim2.new(1,-90,0,32)
-	dpCopy.BackgroundColor3 = Color3.fromRGB(0,120,180); dpCopy.BorderSizePixel = 0
-	dpCopy.Text = t("dumper_copy"); dpCopy.TextColor3 = Color3.new(1,1,1)
-	dpCopy.Font = Enum.Font.SourceSansBold; dpCopy.TextSize = 10
-	Instance.new("UICorner", dpCopy).CornerRadius = UDim.new(0,4)
-	local dpRescan = Instance.new("TextButton", dumperPanel)
-	dpRescan.Size = UDim2.new(0,80,0,24); dpRescan.Position = UDim2.new(1,-180,0,32)
-	dpRescan.BackgroundColor3 = Color3.fromRGB(60,60,80); dpRescan.BorderSizePixel = 0
-	dpRescan.Text = t("dumper_rescan"); dpRescan.TextColor3 = Color3.new(1,1,1)
-	dpRescan.Font = Enum.Font.SourceSansBold; dpRescan.TextSize = 10
-	Instance.new("UICorner", dpRescan).CornerRadius = UDim.new(0,4)
-	local dpScroll = Instance.new("ScrollingFrame", dumperPanel)
-	dpScroll.Size = UDim2.new(1,-16,1,-70); dpScroll.Position = UDim2.new(0,8,0,62)
-	dpScroll.BackgroundColor3 = Color3.fromRGB(12,12,16); dpScroll.BorderSizePixel = 0
-	dpScroll.ScrollBarThickness = 4; dpScroll.CanvasSize = UDim2.new(0,0,0,0)
-	dpScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	Instance.new("UICorner", dpScroll).CornerRadius = UDim.new(0,4)
-	local dpText = Instance.new("TextLabel", dpScroll)
-	dpText.Size = UDim2.new(1,-8,0,0); dpText.Position = UDim2.new(0,4,0,4)
-	dpText.AutomaticSize = Enum.AutomaticSize.Y; dpText.BackgroundTransparency = 1
-	dpText.TextColor3 = Color3.fromRGB(200,200,200)
-	dpText.Font = Enum.Font.Code; dpText.TextSize = 10
-	dpText.TextXAlignment = Enum.TextXAlignment.Left
-	dpText.TextYAlignment = Enum.TextYAlignment.Top
-	dpText.TextWrapped = true
-	local function dumpGame()
-		local lines = {
-			t("dumper_game_info"),
-			t("dumper_place")..": "..tostring(game.PlaceId),
-			t("dumper_jobid")..": "..tostring(game.JobId),
-			""
-		}
-		local rs = game:GetService("ReplicatedStorage")
-		local remotes, modules = {}, {}
-		for _,o in ipairs(rs:GetDescendants()) do
-			if o:IsA("RemoteEvent") or o:IsA("RemoteFunction") then table.insert(remotes, o:GetFullName())
-			elseif o:IsA("ModuleScript") then table.insert(modules, o:GetFullName()) end
-		end
-		table.insert(lines, t("dumper_remotes").." ("..#remotes..") ===")
-		for _,r in ipairs(remotes) do table.insert(lines, r) end
-		table.insert(lines, "")
-		table.insert(lines, t("dumper_modules").." ("..#modules..") ===")
-		for _,m in ipairs(modules) do table.insert(lines, m) end
-		local npcCount = 0
-		for _,o in ipairs(workspace:GetDescendants()) do
-			if o:IsA("Humanoid") and not Players:GetPlayerFromCharacter(o.Parent) then npcCount = npcCount + 1 end
-		end
-		table.insert(lines, ""); table.insert(lines, t("dumper_npc")..": "..npcCount.." ===")
-		return table.concat(lines, "\n")
-	end
-	local lastDump = nil
-	local function refreshDump() lastDump = dumpGame(); dpText.Text = lastDump end
-	dpRescan.MouseButton1Click:Connect(refreshDump)
-	dpCopy.MouseButton1Click:Connect(function()
-		if not lastDump then refreshDump() end
-		if setclipboard then
-			pcall(function() setclipboard(lastDump) end)
-			S.notify(t("dumper_copied"), Color3.fromRGB(0,180,0))
-		else
-			print(lastDump)
-		end
-	end)
-	dpClose.MouseButton1Click:Connect(function() dumperPanel.Visible = false end)
+local DEVICE_FILE = "UCS_Device.json"
 
-	-- жёсткий фильтр: работает ТОЛЬКО на явный клик
-	addR("Settings", t("dumper_title"), function(b,a)
-		if a ~= "toggle" then return end
-		if not dumperPanel.Visible then refreshDump(); dumperPanel.Visible = true
-		else dumperPanel.Visible = false end
-	end, false, "gameDumper")
-
-	onLangChange(function()
-		pcall(function() dpTitle.Text = t("dumper_title") end)
-		pcall(function() dpCopy.Text = t("dumper_copy") end)
-		pcall(function() dpRescan.Text = t("dumper_rescan") end)
-		pcall(function() if lastDump then dpText.Text = lastDump end end)
-		local tog = S.toggles and S.toggles.gameDumper
-		if tog and tog.btn then tog.btn.Text = t("dumper_title") end
-	end)
+local function currentDevice()
+	return _G.UCS_Device or "pc"
 end
+local function saveDevice(dev)
+	pcall(function()
+		writefile(DEVICE_FILE, Http:JSONEncode({device=dev, lang=S.lang, ts=os.time()}))
+	end)
+	_G.UCS_Device = dev
+end
+
+local function reloadMain(newDev)
+	saveDevice(newDev)
+	local name = (newDev=="pc") and "PC" or "Mobile"
+	S.notify(t("device_switched")..name, Color3.fromRGB(120,200,255))
+	task.wait(0.8)
+	pcall(function() if _G.UCS_Unload then _G.UCS_Unload() end end)
+	task.wait(0.5)
+	local url = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/main.raw?t="..tostring(tick())
+	local ok, src = pcall(game.HttpGet, game, url)
+	if ok and src then
+		local fn = loadstring(src)
+		if fn then pcall(fn) end
+	end
+end
+
+addR("Settings", t("device"), function(b,a)
+	if a~="toggle" then
+		local d = currentDevice()
+		b.Text = t("device")..": "..(d=="pc" and "💻 PC" or "📱 Mobile")
+		b.BackgroundColor3 = (d=="pc") and Color3.fromRGB(60,80,120) or Color3.fromRGB(60,120,80)
+		return
+	end
+	local newDev = (currentDevice()=="pc") and "mobile" or "pc"
+	reloadMain(newDev)
+end, false, "deviceSwitcher")
+
+-- ============================================================
+-- HOTKEYS PANEL
+-- ============================================================
+local HK_ROWS = {
+	{"RightShift","Панель вкл/выкл","Toggle panel"},
+	{"LeftCtrl","Рывок (Dash)","Dash"},
+	{"Alt+R","Респавн себя","Respawn self"},
+	{"F","Полёт","Fly"},
+	{"N","Ноуклип","Noclip"},
+	{"C","Платформа","Platform"},
+	{"V","Заморозить игрока","Freeze player"},
+	{"B","Заморозить камеру","Freeze camera"},
+}
+
+local hkPanel = Instance.new("Frame", SG)
+hkPanel.Name = "UCS_HotkeysPanel"
+hkPanel.Size = UDim2.new(0, 320, 0, 380)
+hkPanel.Position = UDim2.new(0.5, -160, 0.5, -190)
+hkPanel.BackgroundColor3 = Color3.fromRGB(22,22,28)
+hkPanel.BorderSizePixel = 0
+hkPanel.Visible = false
+hkPanel.ZIndex = 100
+Instance.new("UICorner", hkPanel).CornerRadius = UDim.new(0,8)
+Instance.new("UIStroke", hkPanel).Color = Color3.fromRGB(120,200,255)
+
+local hkTitle = Instance.new("TextLabel", hkPanel)
+hkTitle.Size = UDim2.new(1,0,0,28)
+hkTitle.BackgroundColor3 = Color3.fromRGB(42,42,42)
+hkTitle.BorderSizePixel = 0
+hkTitle.Text = t("hotkeys_title")
+hkTitle.TextColor3 = Color3.fromRGB(120,200,255)
+hkTitle.Font = Enum.Font.SourceSansBold
+hkTitle.TextSize = 12
+Instance.new("UICorner", hkTitle).CornerRadius = UDim.new(0,8)
+
+local hkClose = Instance.new("TextButton", hkPanel)
+hkClose.Size = UDim2.new(0,28,0,28)
+hkClose.Position = UDim2.new(1,-28,0,0)
+hkClose.BackgroundTransparency = 1
+hkClose.Text = "×"
+hkClose.TextColor3 = Color3.new(1,1,1)
+hkClose.Font = Enum.Font.SourceSansBold
+hkClose.TextSize = 16
+
+local hkScroll = Instance.new("ScrollingFrame", hkPanel)
+hkScroll.Size = UDim2.new(1,-16,1,-44)
+hkScroll.Position = UDim2.new(0,8,0,36)
+hkScroll.BackgroundTransparency = 1
+hkScroll.BorderSizePixel = 0
+hkScroll.ScrollBarThickness = 4
+hkScroll.ScrollBarImageColor3 = Color3.fromRGB(120,200,255)
+hkScroll.CanvasSize = UDim2.new(0,0,0,0)
+hkScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+Instance.new("UIListLayout", hkScroll).Padding = UDim.new(0,4)
+
+local hkLabels = {}
+for i, row in ipairs(HK_ROWS) do
+	local r = Instance.new("Frame", hkScroll)
+	r.Size = UDim2.new(1,-5,0,28)
+	r.BackgroundColor3 = Color3.fromRGB(42,42,48)
+	r.BorderSizePixel = 0
+	r.LayoutOrder = i
+	Instance.new("UICorner", r).CornerRadius = UDim.new(0,4)
+
+	local kb = Instance.new("TextLabel", r)
+	kb.Size = UDim2.new(0,90,1,0)
+	kb.Position = UDim2.new(0,6,0,0)
+	kb.BackgroundColor3 = Color3.fromRGB(28,28,32)
+	kb.BorderSizePixel = 0
+	kb.Text = row[1]
+	kb.TextColor3 = Color3.fromRGB(255,180,80)
+	kb.Font = Enum.Font.Code
+	kb.TextSize = 12
+	Instance.new("UICorner", kb).CornerRadius = UDim.new(0,4)
+
+	local desc = Instance.new("TextLabel", r)
+	desc.Size = UDim2.new(1,-108,1,0)
+	desc.Position = UDim2.new(0,104,0,0)
+	desc.BackgroundTransparency = 1
+	desc.Text = (S.lang=="ru") and row[2] or row[3]
+	desc.TextColor3 = Color3.fromRGB(220,220,220)
+	desc.Font = Enum.Font.SourceSans
+	desc.TextSize = 12
+	desc.TextXAlignment = Enum.TextXAlignment.Left
+	table.insert(hkLabels, {lbl=desc, ru=row[2], en=row[3]})
+end
+
+local hkHint = Instance.new("TextLabel", hkPanel)
+hkHint.Size = UDim2.new(1,-16,0,14)
+hkHint.Position = UDim2.new(0,8,1,-20)
+hkHint.BackgroundTransparency = 1
+hkHint.Text = t("hotkeys_hint")
+hkHint.TextColor3 = Color3.fromRGB(140,140,140)
+hkHint.Font = Enum.Font.SourceSans
+hkHint.TextSize = 10
+hkHint.TextXAlignment = Enum.TextXAlignment.Center
+
+hkClose.MouseButton1Click:Connect(function() hkPanel.Visible = false end)
+
+addR("Settings", t("hotkeys_list"), function(b,a)
+	if a~="toggle" then return end
+	hkPanel.Visible = not hkPanel.Visible
+end, false, "hotkeysBtn")
+
+onLangChange(function()
+	pcall(function() hkTitle.Text = t("hotkeys_title") end)
+	pcall(function() hkHint.Text = t("hotkeys_hint") end)
+	for _, e in ipairs(hkLabels) do
+		e.lbl.Text = (S.lang=="ru") and e.ru or e.en
+	end
+end)
 
 -- ============================================================
 -- SEARCH + STARS
@@ -654,6 +679,7 @@ S._extrasCleanup = function()
 		for _,b in ipairs(S._freeButtons) do pcall(function() b:Destroy() end) end
 	end
 	if infoPanel then infoPanel:Destroy() end
+	if hkPanel then hkPanel:Destroy() end
 end
 
 print(t("done"))
