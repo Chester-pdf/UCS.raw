@@ -1,22 +1,136 @@
 {
-  "version": "1.3.0",
-  "date": "2026-10-08",
-  "changes": {
-    "ru": [
-      "🎉 Новый Welcome Screen при первом запуске",
-      "📱 Две версии: mainM.raw (мобила) и mainPC.raw (ПК)",
-      "💻 ПК-версия без экранных кнопок + хоткеи F/N/C/V/B",
-      "🧊 FreezeCam: заморозить игрока / заморозить камеру",
-      "🖥 Автозапуск нужной версии при следующих запусках",
-      "⌨ Хоткеи в Welcome для удобства"
-    ],
-    "en": [
-      "🎉 New Welcome Screen on first launch",
-      "📱 Two builds: mainM.raw (mobile) and mainPC.raw (PC)",
-      "💻 PC build without on-screen buttons + F/N/C/V/B hotkeys",
-      "🧊 FreezeCam: freeze player / freeze camera",
-      "🖥 Auto-load the right build next time",
-      "⌨ Hotkeys shown in Welcome for reference"
-    ]
-  }
+  "entries": [
+    {
+      "version": "1.3.1",
+      "date": "2026-10-08",
+      "changes": {
+        "ru": [
+          "✨ Самоввод чисел в тоглах — зажми имя тогла 0.7 сек → откроется окно ввода",
+          "⚡ Зажатие + / − ускоряется со временем (0.15с → 0.07с → 0.03с)",
+          "🔓 Убраны лимиты на значения в тоглах (можно вписать любое число)",
+          "🖥 Переключатель Mobile/PC в Настройках — меняет сборку на лету",
+          "⌨ Кнопка «Список хоткеев» — показывает все горячие клавиши",
+          "🧹 Убран Click TP с мобильной версии (был неудобен на тач)",
+          "🔗 Обновлены ссылки аддонов AIMBOT и EXTRA"
+        ],
+        "en": [
+          "✨ Manual number input in toggles — hold toggle name 0.7s → input window",
+          "⚡ Holding + / − accelerates over time (0.15s → 0.07s → 0.03s)",
+          "🔓 Removed upper limits on toggle values (type any number)",
+          "🖥 Mobile/PC switcher in Settings — swaps build on the fly",
+          "⌨ 'Hotkeys list' button — shows all keyboard shortcuts",
+          "🧹 Removed Click TP from mobile build (awkward on touch)",
+          "🔗 Updated AIMBOT and EXTRA addon links"
+        ]
+      }
+    },
+    {
+      "version": "1.3.0",
+      "date": "2026-10-08",
+      "changes": {
+        "ru": [
+          "🎉 Welcome Screen при первом запуске",
+          "🌐 Выбор языка: Русский / English",
+          "📱💻 Выбор устройства: Компьютер / Телефон",
+          "📦 Две отдельные сборки: mainM.raw и mainPC.raw",
+          "💻 ПК-версия без экранных кнопок, только хоткеи",
+          "⌨ Новые хоткеи на ПК: F (Fly), N (Noclip), C (Platform), V (Freeze Player), B (Freeze Camera)",
+          "🧊 FreezeCam: заморозить игрока (камера летает) / заморозить камеру (игрок ходит)",
+          "🖥 Автозагрузка нужной сборки при следующих запусках",
+          "💾 Настройки устройства сохраняются в файл UCS_Device.json"
+        ],
+        "en": [
+          "🎉 Welcome Screen on first launch",
+          "🌐 Language pick: Russian / English",
+          "📱💻 Device pick: PC / Phone",
+          "📦 Two separate builds: mainM.raw and mainPC.raw",
+          "💻 PC build without on-screen buttons, hotkeys only",
+          "⌨ New PC hotkeys: F (Fly), N (Noclip), C (Platform), V (Freeze Player), B (Freeze Camera)",
+          "🧊 FreezeCam: freeze player (camera flies) / freeze camera (player walks)",
+          "🖥 Auto-load correct build next time",
+          "💾 Device settings saved to UCS_Device.json"
+        ]
+      }
+    },
+    {
+      "version": "1.2.0",
+      "date": "2026-10-08",
+      "changes": {
+        "ru": [
+          "🧹 Убраны Anti-KB, Anti-Fling, Anti-AFK, Auto Rejoin, AntiTP",
+          "✨ Добавлены Auto Jump, Click TP, No Fog, FOV Changer",
+          "🐛 Фикс: Anti-Fling и Anti-Knockback конфликтовали с Fly и Speed",
+          "🐛 OneShot+ вынесен в отдельный аддон",
+          "🔧 AntiVoid v2 (last-safe-position)",
+          "🔧 FastInteract Safe mode",
+          "🔧 Кнопка ♻ Восстановить скрытые аддоны"
+        ],
+        "en": [
+          "🧹 Removed Anti-KB, Anti-Fling, Anti-AFK, Auto Rejoin, AntiTP",
+          "✨ Added Auto Jump, Click TP, No Fog, FOV Changer",
+          "🐛 Fix: Anti-Fling and Anti-Knockback conflicted with Fly and Speed",
+          "🐛 OneShot+ moved to separate addon",
+          "🔧 AntiVoid v2 (last-safe-position)",
+          "🔧 FastInteract Safe mode",
+          "🔧 Button ♻ Restore hidden addons"
+        ]
+      }
+    },
+    {
+      "version": "1.1.0",
+      "date": "2026-10-08",
+      "changes": {
+        "ru": [
+          "OneShot+ вынесен в отдельный аддон",
+          "AntiTP удалён",
+          "AntiVoid v2",
+          "FastInteract Safe mode",
+          "Addon Manager v3: RUN → STOP"
+        ],
+        "en": [
+          "OneShot+ moved to separate addon",
+          "AntiTP removed",
+          "AntiVoid v2",
+          "FastInteract Safe mode",
+          "Addon Manager v3: RUN → STOP"
+        ]
+      }
+    },
+    {
+      "version": "1.0.5",
+      "date": "2026-10-08",
+      "changes": {
+        "ru": [
+          "Changelog в UI",
+          "Addon Manager v3: RUN → STOP когда аддон запущен",
+          "Автопроверка версий аддонов",
+          "Watermark в подвале панели",
+          "Меньше размер уведомлений"
+        ],
+        "en": [
+          "Changelog UI",
+          "Addon Manager v3: RUN → STOP when addon is running",
+          "Auto-check for addon versions",
+          "Watermark in panel footer",
+          "Smaller notification size"
+        ]
+      }
+    },
+    {
+      "version": "1.0.4",
+      "date": "2026-10-05",
+      "changes": {
+        "ru": [
+          "Полная локализация RU + EN",
+          "Watermark и авто-проверка версий",
+          "Fix: при смене языка не запускаются функции"
+        ],
+        "en": [
+          "Full RU + EN localization",
+          "Watermark and auto version check",
+          "Fix: functions no longer trigger on language switch"
+        ]
+      }
+    }
+  ]
 }
