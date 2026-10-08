@@ -1,0 +1,40 @@
+{
+  "entries": [
+    {
+      "version": "1.0.5",
+      "date": "2026-10-08",
+      "changes": {
+        "ru": [
+          "Добавлена панель Changelog — кнопка в Настройках",
+          "Addon Manager v3: кнопка RUN превращается в STOP, когда аддон запущен",
+          "Автопроверка новых версий аддонов",
+          "Водяной знак в подвале панели",
+          "Меньше размер уведомлений — чётче и компактнее"
+        ],
+        "en": [
+          "Added Changelog panel — button in Settings",
+          "Addon Manager v3: RUN turns into STOP when addon is running",
+          "Auto-check for new addon versions",
+          "Watermark in the panel footer",
+          "Smaller notification size — cleaner and compact"
+        ]
+      }
+    },
+    {
+      "version": "1.0.4",
+      "date": "2026-10-05",
+      "changes": {
+        "ru": [
+          "Полная локализация RU + EN с живым переключением",
+          "Watermark и авто-проверка версий",
+          "Исправлен баг: при смене языка не запускаются функции"
+        ],
+        "en": [
+          "Full RU + EN localization with live switching",
+          "Watermark and auto version check",
+          "Fixed bug: functions no longer trigger on language switch"
+        ]
+      }
+    }
+  ]
+}
