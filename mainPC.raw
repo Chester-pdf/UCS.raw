@@ -1,0 +1,2209 @@
+print("[UCS] mainPC start v1.3.0")
+if _G.UCS_Unload then pcall(_G.UCS_Unload) end
+_G.UCS = nil
+_G._UCS_AddLoaded = nil
+task.wait(0.1)
+
+local Players=game:GetService("Players")
+local UIS=game:GetService("UserInputService")
+local RS=game:GetService("RunService")
+local VIM=game:GetService("VirtualInputManager")
+local Lighting=game:GetService("Lighting")
+local Tween=game:GetService("TweenService")
+local Http=game:GetService("HttpService")
+local TeleSvc=game:GetService("TeleportService")
+local LP=Players.LocalPlayer
+local Cam=workspace.CurrentCamera
+local S={}
+_G.UCS=S
+
+-- ===== LANG =====
+S.lang = _G.UCS_PresetLang or "en"
+local L = {
+	ru = {
+		tab_main="ДВИЖ", tab_func="ФУНК", tab_vis="ВИЗ", tab_play="ИГРОК",
+		tab_wp="ТОЧКИ", tab_addons="АДДОНЫ", tab_settings="⚙",
+		run="Бег", fly="Полёт", jump="Прыжок", infjump="Беск. Прыжок",
+		autojump="Авто-Прыжок",
+		noclip="Ноуклип", platform="Платформа", hotkeys_work="Хоткеи: работа",
+		hotkeys_move="Хоткеи: перемещение", respawn="Респавн себя",
+		clicktp="Click TP", clicktp_on="Click TP: ВКЛ (ЛКМ = ТП)",
+		freeze_player="Заморозить игрока",
+		freeze_cam="Заморозить камеру",
+		on="ВКЛ", off="ВЫКЛ",
+		fastint="Фаст Интеракт", fi_safe="FastInteract: Безопасно",
+		antiragdoll="Анти-Рэгдолл",
+		antivoid="Анти-Войд",
+		espp="ESP игроки", espnpc="ESP NPC", xray="X-Ray", fullbright="Фуллбрайт",
+		nofog="Убрать туман", fov="Угол обзора (FOV)",
+		freecam="Freecam",
+		search_players="Поиск: имя или @username",
+		spectate="СМОТР", stop="СТОП", hide="СКРЫТЬ", show="ПОКАЗ",
+		wp_name_ph="Имя (пусто = авто)", wp_save="Сохранить позицию",
+		wp_clear="Удалить все",
+		addon_url_ph="URL raw-скрипта", addon_name_ph="Имя аддона",
+		addon_add="Добавить аддон", addon_clear="Очистить список",
+		addon_empty="Список пуст.",
+		addon_refresh="🔄 Обновить список",
+		addon_refreshing="Загрузка списка...",
+		addon_update_badge="ОБНОВЛЕНИЕ",
+		addon_author="автор", addon_version="v",
+		addon_status_ok="OK", addon_status_err="ОШИБКА",
+		addon_status_running="РАБОТАЕТ", addon_stopped="Остановлено",
+		transp="Прозрачность панели",
+		show_hotkeys="Показ хоткеев (общий)",
+		hk_dash="Хоткей DASH: показ", hk_plat="Хоткей Платформа: показ",
+		hk_fly="Хоткей Полёт: показ", hk_noclip="Хоткей Ноуклип: показ",
+		hk_panel="Хоткей Панель: показ",
+		hide_all="👻 Скрыть всё (стелс)", stealth_corner="Стелс: угол",
+		corner_tl="Левый верх", corner_tr="Правый верх",
+		corner_bl="Левый низ", corner_br="Правый низ",
+		hide_joy="Скрыть джойстик", hide_jump="Скрыть прыжок (Roblox)",
+		custom_jump="Своя кнопка прыжка",
+		cfg_save="Сохранить конфиг", cfg_load="Загрузить конфиг",
+		profiles="📚 Профили конфигов", profile_name_ph="Имя профиля...",
+		profile_save="Сохранить", profile_load="Load", profile_none="Профилей пока нет",
+		language="Язык / Language",
+		whats_new="📰 Что нового",
+		changelog_title="Что нового",
+		changelog_loading="Загрузка...",
+		changelog_error="Не удалось загрузить changelog",
+		changelog_empty="Записей пока нет",
+		changelog_new_badge="НОВОЕ",
+		n_stealth_on="Стелс ВКЛ", n_stealth_off="Стелс выключен",
+		n_file_missing="Файла нет", n_broken_cfg="Битый конфиг",
+		n_saved="Сохранено", n_loaded="Загружено", n_no_writefile="Нет writefile",
+		n_prof_saved="Профиль сохранён", n_prof_loaded="Профиль загружен",
+		n_prof_deleted="Профиль удалён", n_prof_name="Введи имя профиля",
+		n_cleared="Очищено", n_addon_added="Аддон добавлен",
+		n_url_empty="URL пустой", n_loading="Загрузка", n_started="запущен",
+		n_error="Ошибка", n_no_fire="Нет fireproximityprompt/fireclickdetector",
+		n_ucs_loaded="UCS v1.3.0 загружен",
+		n_name_taken="Имя занято", n_point_saved="Точка сохранена",
+		n_reload_for_lang="Перезапусти UCS чтобы применить язык",
+		n_update="🔔 Доступна UCS v",
+		n_update_you=" (у тебя: v",
+		n_addons_updated="Список аддонов обновлён",
+		n_addon_fetch_fail="Не удалось загрузить список аддонов",
+		n_addon_update="🔔 Обновление: ",
+		n_clicktp_hint="Кликни в точку на экране",
+	},
+	en = {
+		tab_main="MOVE", tab_func="FUNC", tab_vis="VISUAL", tab_play="PLAYERS",
+		tab_wp="WAYPTS", tab_addons="ADDONS", tab_settings="⚙",
+		run="Speed", fly="Fly", jump="Jump", infjump="Infinite Jump",
+		autojump="Auto Jump",
+		noclip="Noclip", platform="Platform", hotkeys_work="Hotkeys: action",
+		hotkeys_move="Hotkeys: move mode", respawn="Respawn Self",
+		clicktp="Click TP", clicktp_on="Click TP: ON (LMB = TP)",
+		freeze_player="Freeze Player",
+		freeze_cam="Freeze Camera",
+		on="ON", off="OFF",
+		fastint="Fast Interact", fi_safe="FastInteract: Safe",
+		antiragdoll="Anti Ragdoll",
+		antivoid="Anti Void",
+		espp="ESP Players", espnpc="ESP NPC", xray="X-Ray", fullbright="Fullbright",
+		nofog="No Fog", fov="Field of View (FOV)",
+		freecam="Freecam",
+		search_players="Search: name or @username",
+		spectate="SPECTATE", stop="STOP", hide="HIDE", show="SHOW",
+		wp_name_ph="Name (empty = auto)", wp_save="Save Position",
+		wp_clear="Delete All",
+		addon_url_ph="Raw script URL", addon_name_ph="Addon name",
+		addon_add="Add Addon", addon_clear="Clear List",
+		addon_empty="List is empty.",
+		addon_refresh="🔄 Refresh List",
+		addon_refreshing="Fetching list...",
+		addon_update_badge="UPDATE",
+		addon_author="by", addon_version="v",
+		addon_status_ok="OK", addon_status_err="ERROR",
+		addon_status_running="RUNNING", addon_stopped="Stopped",
+		transp="Panel transparency",
+		show_hotkeys="Show hotkeys (all)",
+		hk_dash="Hotkey DASH: visible", hk_plat="Hotkey Platform: visible",
+		hk_fly="Hotkey Fly: visible", hk_noclip="Hotkey Noclip: visible",
+		hk_panel="Hotkey Panel: visible",
+		hide_all="👻 Hide All (Stealth)", stealth_corner="Stealth: corner",
+		corner_tl="Top Left", corner_tr="Top Right",
+		corner_bl="Bottom Left", corner_br="Bottom Right",
+		hide_joy="Hide Joystick", hide_jump="Hide Jump (Roblox)",
+		custom_jump="Custom Jump Button",
+		cfg_save="Save Config", cfg_load="Load Config",
+		profiles="📚 Config Profiles", profile_name_ph="Profile name...",
+		profile_save="Save", profile_load="Load", profile_none="No profiles yet",
+		language="Language / Язык",
+		whats_new="📰 What's new",
+		changelog_title="What's new",
+		changelog_loading="Loading...",
+		changelog_error="Failed to load changelog",
+		changelog_empty="No entries yet",
+		changelog_new_badge="NEW",
+		n_stealth_on="Stealth ON", n_stealth_off="Stealth OFF",
+		n_file_missing="File not found", n_broken_cfg="Broken config",
+		n_saved="Saved", n_loaded="Loaded", n_no_writefile="No writefile",
+		n_prof_saved="Profile saved", n_prof_loaded="Profile loaded",
+		n_prof_deleted="Profile deleted", n_prof_name="Enter profile name",
+		n_cleared="Cleared", n_addon_added="Addon added",
+		n_url_empty="URL empty", n_loading="Loading", n_started="started",
+		n_error="Error", n_no_fire="No fireproximityprompt/fireclickdetector",
+		n_ucs_loaded="UCS v1.3.0 loaded",
+		n_name_taken="Name taken", n_point_saved="Point saved",
+		n_reload_for_lang="Restart UCS to apply language",
+		n_update="🔔 UCS v",
+		n_update_you=" available (you: v",
+		n_addons_updated="Addon list updated",
+		n_addon_fetch_fail="Failed to fetch addon list",
+		n_addon_update="🔔 Update: ",
+		n_clicktp_hint="Click on screen point",
+	},
+}
+local function t(k)
+	local tbl = L[S.lang] or L.en
+	return tbl[k] or (L.en[k]) or k
+end
+S.t = t
+
+-- ===== LIVE LANG SYSTEM =====
+S._langListeners = {}
+S._langRefs = {}
+S.tabButtons = {}
+function S.onLangChange(fn) table.insert(S._langListeners, fn) end
+function S.langRef(obj, prop, keyOrFn)
+	table.insert(S._langRefs, {obj=obj, prop=prop, key=keyOrFn})
+end
+function S.fireLangChange()
+	for _,fn in ipairs(S._langListeners) do pcall(fn) end
+end
+function S.refreshLang()
+	for _,r in ipairs(S._langRefs) do
+		if r.obj and r.obj.Parent then
+			local txt = (type(r.key)=="function") and r.key() or t(r.key)
+			pcall(function() r.obj[r.prop] = txt end)
+		end
+	end
+	if S.tabButtons and S._tabLabelKeys then
+		for n, b in pairs(S.tabButtons) do
+			if b and b.Parent and S._tabLabelKeys[n] then
+				pcall(function() b.Text = t(S._tabLabelKeys[n]) end)
+			end
+		end
+	end
+	for _, tg in pairs(S.toggles) do
+		if tg.btn and tg.cb then pcall(tg.cb, tg.btn, "refresh") end
+	end
+	S.fireLangChange()
+end
+
+-- ===== VERSION / BRAND =====
+S.VERSION = "1.3.0"
+S.AUTHOR  = "@Chester-pdf"
+S.BRAND   = "UCS"
+S.VERSION_URL   = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/version.txt"
+S.ADDONS_URL    = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/addons.json"
+S.CHANGELOG_URL = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/changelog.json"
+
+S.C={sEn=false,tSp=100,fEn=false,fSp=4,jpEn=false,jPw=100,jEn=false,nEn=false,
+autojumpEn=false,
+eEn=false,xrayEn=false,xrayOpacity=100,fbEn=false,nofogEn=false,fovEn=false,fovValue=90,
+avEn=false,voidY=-50,
+clicktpEn=false,freezePlayerEn=false,freezeCamEn=false,
+dashPower=200,dashDuration=0.20,dashMoveMode=false,
+dashX=-150,dashY=-100,arEn=false,
+fiEn=false,fiRange=15,fiSafe=false,platEn=false,
+platX=-220,platY=-100,platDnX=-220,platDnY=-170,
+showHotkeys=true,panelTransparency=0,
+hkDash=true,hkPlat=true,hkFly=true,hkNoClip=true,hkPanel=true,
+flyBtnX=-150,flyBtnY=-170,noClipBtnX=-220,noClipBtnY=-170,
+panelBtnX=-270,panelBtnY=-170,panelHideEn=false,
+stealthHidden=false,stealthCorner="TL",
+hideJoystick=false,hideJumpBtn=false,customJumpBtn=false,customJumpX=-120,customJumpY=-220,
+lang="en"}
+S.skipTP=0; S.tasks={}; S.conns={}; S.toggles={}; S.screenButtons={}
+
+function S.addScreenBtn(btn,key)
+	if not btn then return end
+	S.screenButtons[#S.screenButtons+1]={btn=btn,key=key}
+end
+function S.refreshScreenButtons() end
+function S.skipTPNow(s) S.skipTP=tick()+(s or 0.5) end
+function S.addT(n,f,i) S.tasks[n]={f=f,i=i or 0,l=0} end
+function S.delT(n) S.tasks[n]=nil end
+function S.dis(k) if S.conns[k] then pcall(function() S.conns[k]:Disconnect() end); S.conns[k]=nil end end
+function S.col(c,s) if not c then return end for _,p in ipairs(c:GetDescendants()) do if p:IsA("BasePart") then pcall(function() p.CanCollide=s end) end end end
+S.conns.main=RS.Heartbeat:Connect(function() local n=tick() for k,tt in pairs(S.tasks) do if n-tt.l>=tt.i then tt.l=n; pcall(tt.f) end end end)
+
+local pG=LP:WaitForChild("PlayerGui",15)
+if not pG then return warn("[UCS] no PlayerGui") end
+S.pG=pG
+if pG:FindFirstChild("UniversalDeltaPanel") then pG.UniversalDeltaPanel:Destroy() end
+local SG=Instance.new("ScreenGui")
+SG.Name="UniversalDeltaPanel"; SG.ResetOnSpawn=false
+SG.ZIndexBehavior=Enum.ZIndexBehavior.Sibling; SG.IgnoreGuiInset=true
+SG.Enabled=true; SG.DisplayOrder=2147483647; SG.Parent=pG
+S.SG=SG
+
+function S.notify(txt,c)
+	c=c or Color3.fromRGB(255,140,0)
+	local n=Instance.new("TextLabel",SG)
+	n.Size=UDim2.new(0,236,0,22); n.Position=UDim2.new(0.5,-118,0,14)
+	n.BackgroundColor3=Color3.fromRGB(25,25,25); n.BackgroundTransparency=0.25
+	n.TextColor3=c; n.Text=txt; n.Font=Enum.Font.SourceSans; n.TextSize=10
+	n.TextStrokeTransparency=1
+	n.TextXAlignment=Enum.TextXAlignment.Center; n.ZIndex=999
+	Instance.new("UICorner",n).CornerRadius=UDim.new(0,6)
+	local st=Instance.new("UIStroke",n); st.Color=c; st.Thickness=0.5; st.Transparency=0.3
+	task.delay(2,function() if n.Parent then local tw=Tween:Create(n,TweenInfo.new(0.3),{BackgroundTransparency=1,TextTransparency=1}); local t2=Tween:Create(st,TweenInfo.new(0.3),{Transparency=1}); tw:Play(); t2:Play(); tw.Completed:Wait() end; if n.Parent then n:Destroy() end end)
+end
+
+local MF=Instance.new("Frame",SG)
+MF.Size=UDim2.new(0,290,0,376); MF.Position=UDim2.new(0.5,-145,0.5,-188)
+MF.BackgroundColor3=Color3.fromRGB(28,28,28); MF.BorderSizePixel=0
+MF.Active=true; MF.ClipsDescendants=true; MF.Visible=true
+Instance.new("UICorner",MF).CornerRadius=UDim.new(0,10)
+Instance.new("UIStroke",MF).Color=Color3.fromRGB(255,140,0)
+S.MF=MF
+
+do
+	local wm = Instance.new("TextLabel", MF)
+	wm.Name = "UCS_Watermark"
+	wm.Size = UDim2.new(1, 0, 0, 16)
+	wm.Position = UDim2.new(0, 0, 1, -16)
+	wm.BackgroundTransparency = 1
+	wm.Text = S.BRAND.." v"..S.VERSION.."  ·  "..S.AUTHOR
+	wm.TextColor3 = Color3.fromRGB(255, 140, 0)
+	wm.TextTransparency = 0.25
+	wm.Font = Enum.Font.SourceSans
+	wm.TextSize = 10
+	wm.TextXAlignment = Enum.TextXAlignment.Center
+	wm.ZIndex = 50
+	S._watermark = wm
+end
+
+local Tl=Instance.new("TextLabel",MF)
+Tl.Size=UDim2.new(1,-40,0,35); Tl.BackgroundColor3=Color3.fromRGB(42,42,42)
+Tl.BorderSizePixel=0; Tl.Text="UNIVERSAL CHEAT SCRIPT v"..S.VERSION
+Tl.TextColor3=Color3.fromRGB(255,140,0); Tl.Font=Enum.Font.SourceSansBold; Tl.TextSize=10
+S.MFHeader=Tl
+local Cl=Instance.new("TextButton",MF)
+Cl.Size=UDim2.new(0,35,0,35); Cl.Position=UDim2.new(1,-35,0,0)
+Cl.Text="X"; Cl.TextColor3=Color3.new(1,1,1); Cl.BackgroundTransparency=1
+Cl.Font=Enum.Font.SourceSansBold; Cl.TextSize=16; Cl.ZIndex=10
+local StealthBtn=Instance.new("TextButton",MF)
+StealthBtn.Size=UDim2.new(0,35,0,35); StealthBtn.Position=UDim2.new(1,-70,0,0)
+StealthBtn.Text="👻"; StealthBtn.TextColor3=Color3.fromRGB(200,200,255)
+StealthBtn.BackgroundTransparency=1; StealthBtn.TextSize=18
+StealthBtn.Font=Enum.Font.SourceSansBold; StealthBtn.ZIndex=11
+local Op=Instance.new("TextButton",SG)
+Op.Size=UDim2.new(0,148,0,24); Op.Position=UDim2.new(0.02,0,0.5,0)
+Op.Text="UNIVERSAL CHEAT SCRIPT"; Op.BackgroundColor3=Color3.fromRGB(42,42,42)
+Op.TextColor3=Color3.fromRGB(255,140,0); Op.Font=Enum.Font.SourceSans
+Op.TextSize=9; Op.Visible=false
+Instance.new("UICorner",Op).CornerRadius=UDim.new(0,6)
+Instance.new("UIStroke",Op).Color=Color3.fromRGB(255,140,0)
+S.Op=Op
+Cl.MouseButton1Click:Connect(function() Op.Position=MF.Position; MF.Position=UDim2.new(0,-9999,0,-9999); Op.Visible=true end)
+Op.MouseButton1Click:Connect(function() MF.Position=Op.Position; Op.Visible=false end)
+do local d,s,p
+MF.InputBegan:Connect(function(i)
+	if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then
+		d=true; s=i.Position; p=MF.Position
+		i.Changed:Connect(function() if i.UserInputState==Enum.UserInputState.End then d=false end end)
+	end
+end)
+UIS.InputChanged:Connect(function(i)
+	if d and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then
+		local dd=i.Position-s
+		MF.Position=UDim2.new(p.X.Scale,p.X.Offset+dd.X,p.Y.Scale,p.Y.Offset+dd.Y)
+	end
+end)
+end
+
+local TB=Instance.new("Frame",MF)
+TB.Size=UDim2.new(1,0,0,30); TB.Position=UDim2.new(0,0,0,35)
+TB.BackgroundColor3=Color3.fromRGB(36,36,36); TB.BorderSizePixel=0
+S.MFTabBar=TB
+S.Tabs={}
+local names={"Main","Func","Visual","Players","WP","Addons","Settings"}
+local labelKeys={Main="tab_main",Func="tab_func",Visual="tab_vis",Players="tab_play",WP="tab_wp",Addons="tab_addons",Settings="tab_settings"}
+S._tabLabelKeys=labelKeys
+local tabW=1/#names
+for i,n in ipairs(names) do
+	local sc=Instance.new("ScrollingFrame",MF)
+	sc.Size=UDim2.new(1,-10,1,-91); sc.Position=UDim2.new(0,5,0,70)
+	sc.BackgroundTransparency=1; sc.BorderSizePixel=0; sc.ScrollBarThickness=3
+	sc.ScrollBarImageColor3=Color3.fromRGB(255,140,0)
+	sc.CanvasSize=UDim2.new(0,0,0,0); sc.AutomaticCanvasSize=Enum.AutomaticSize.Y
+	sc.ScrollingEnabled=true; sc.ScrollingDirection=Enum.ScrollingDirection.Y
+	sc.Visible=(i==1)
+	local pad=Instance.new("UIPadding",sc)
+	pad.PaddingTop=UDim.new(0,4); pad.PaddingBottom=UDim.new(0,26)
+	local lay=Instance.new("UIListLayout",sc)
+	lay.Padding=UDim.new(0,5)
+	lay.SortOrder=Enum.SortOrder.LayoutOrder
+	S.Tabs[n]=sc
+	local b=Instance.new("TextButton",TB)
+	b.Size=UDim2.new(tabW,-2,1,0); b.Position=UDim2.new((i-1)*tabW,0,0,0)
+	b.Text=t(labelKeys[n])
+	b.BackgroundColor3=(i==1) and Color3.fromRGB(60,60,60) or Color3.fromRGB(42,42,42)
+	b.TextColor3=Color3.new(1,1,1); b.BorderSizePixel=0
+	b.Font=Enum.Font.SourceSansBold; b.TextSize=9
+	Instance.new("UICorner",b).CornerRadius=UDim.new(0,4)
+	S.tabButtons[n]=b
+	b.MouseButton1Click:Connect(function()
+		for tn,fr in pairs(S.Tabs) do fr.Visible=(tn==n) end
+		for _,btn in ipairs(TB:GetChildren()) do if btn:IsA("TextButton") then btn.BackgroundColor3=Color3.fromRGB(42,42,42) end end
+		b.BackgroundColor3=Color3.fromRGB(60,60,60)
+	end)
+end
+
+function S.addR(tab,txt,cb,hasS,key)
+	local R=Instance.new("Frame",S.Tabs[tab])
+	R.Size=UDim2.new(1,-5,0,32); R.BackgroundTransparency=1
+	local MB=Instance.new("TextButton",R)
+	MB.Size=hasS and UDim2.new(0.68,-5,1,0) or UDim2.new(1,0,1,0)
+	MB.BackgroundColor3=Color3.fromRGB(50,50,50); MB.BorderSizePixel=0
+	MB.Text=txt; MB.TextColor3=Color3.new(1,1,1)
+	MB.Font=Enum.Font.SourceSansBold; MB.TextSize=12
+	Instance.new("UICorner",MB).CornerRadius=UDim.new(0,4)
+	local function wrapped(b,a)
+		if key and type(S.C[key])=="boolean" then
+			if a=="on" then if not S.C[key] then cb(b,"toggle") end return
+			elseif a=="off" then if S.C[key] then cb(b,"toggle") end return end
+		end
+		cb(b,a)
+	end
+	MB.MouseButton1Click:Connect(function() wrapped(MB,"toggle") end)
+	if hasS then
+		local function sld(lbl,p,a)
+			local btn=Instance.new("TextButton",R)
+			btn.Size=UDim2.new(0,25,1,0); btn.Position=UDim2.new(0.68,p,0,0)
+			btn.BackgroundColor3=Color3.fromRGB(45,45,45); btn.BorderSizePixel=0
+			btn.Text=lbl; btn.TextColor3=Color3.new(1,1,1)
+			btn.Font=Enum.Font.SourceSansBold
+			Instance.new("UICorner",btn).CornerRadius=UDim.new(0,4)
+			btn.MouseButton1Click:Connect(function() wrapped(MB,a) end)
+		end
+		sld("-",0,"minus"); sld("+",28,"plus")
+	end
+	if key then S.toggles[key]={btn=MB,cb=wrapped} end
+	return MB
+end
+local C=S.C
+local addR=S.addR
+
+function S.applyPanelTransparency(v)
+	local tt=math.clamp(v/100,0,0.9)
+	pcall(function() MF.BackgroundTransparency=tt end)
+	pcall(function() Tl.BackgroundTransparency=math.clamp(tt+0.05,0,1) end)
+	pcall(function() TB.BackgroundTransparency=math.clamp(tt+0.05,0,1) end)
+end
+
+-- STEALTH
+local stealthTrigger=nil
+local function ensureStealth()
+	if stealthTrigger and stealthTrigger.Parent then return end
+	stealthTrigger=Instance.new("TextButton",SG)
+	stealthTrigger.Size=UDim2.new(0,40,0,40)
+	stealthTrigger.BackgroundTransparency=1; stealthTrigger.Text=""
+	stealthTrigger.AutoButtonColor=false; stealthTrigger.ZIndex=9999
+	if C.stealthCorner=="TL" then stealthTrigger.Position=UDim2.new(0,0,0,0)
+	elseif C.stealthCorner=="TR" then stealthTrigger.Position=UDim2.new(1,-40,0,0)
+	elseif C.stealthCorner=="BL" then stealthTrigger.Position=UDim2.new(0,0,1,-40)
+	else stealthTrigger.Position=UDim2.new(1,-40,1,-40) end
+	local lastTap=0
+	stealthTrigger.MouseButton1Click:Connect(function()
+		local now=tick()
+		if now-lastTap<0.6 then S.exitStealth() end
+		lastTap=now
+	end)
+end
+function S.enterStealth()
+	C.stealthHidden=true
+	pcall(function() MF.Visible=false end)
+	pcall(function() Op.Visible=false end)
+	ensureStealth()
+	S.notify(t("n_stealth_on"),Color3.fromRGB(120,200,255))
+end
+function S.exitStealth()
+	C.stealthHidden=false
+	if MF.Position.X.Offset<=-9000 then MF.Position=UDim2.new(0.5,-145,0.5,-188) end
+	MF.Visible=true; Op.Visible=false
+	if stealthTrigger then pcall(function() stealthTrigger:Destroy() end); stealthTrigger=nil end
+	S.notify(t("n_stealth_off"),Color3.fromRGB(120,200,255))
+end
+StealthBtn.MouseButton1Click:Connect(function() S.enterStealth() end)
+
+-- ============================================================
+-- MAIN
+-- ============================================================
+local function applySpd(_,reset) pcall(function() local h=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid"); if h then h.WalkSpeed=reset and 16 or C.tSp end end) end
+addR("Main",t("run").." ("..C.tSp..")",function(b,a)
+	if a=="toggle" then C.sEn=not C.sEn
+		if C.sEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); S.addT("Speed",applySpd,0.1); applySpd()
+		else b.BackgroundColor3=Color3.fromRGB(50,50,50); S.delT("Speed"); applySpd(nil,true) end
+	elseif a=="minus" then C.tSp=math.max(16,C.tSp-10); if C.sEn then applySpd() end
+	elseif a=="plus" then C.tSp=math.min(500,C.tSp+10); if C.sEn then applySpd() end end
+	b.Text=t("run")..": "..(C.sEn and t("on") or t("off")).." ("..C.tSp..")"
+end,true,"sEn")
+
+local flyBV
+local function startFly()
+	local char=LP.Character
+	local root=char and char:FindFirstChild("HumanoidRootPart")
+	local hum=char and char:FindFirstChildOfClass("Humanoid")
+	if not root or not hum then C.fEn=false; return end
+	hum.PlatformStand=true
+	if flyBV and flyBV.Parent then flyBV:Destroy() end
+	flyBV=Instance.new("BodyPosition",root); flyBV.Name="UcsFlyPos"
+	flyBV.MaxForce=Vector3.new(9e9,9e9,9e9); flyBV.Position=root.Position
+	S.dis("Fly")
+	S.conns.Fly=RS.RenderStepped:Connect(function()
+		if not root.Parent or not flyBV or not flyBV.Parent then return end
+		root.Velocity=Vector3.zero; root.RotVelocity=Vector3.zero
+		local md=hum.MoveDirection; local np=flyBV.Position
+		if md.Magnitude>0 then
+			local lv=Cam.CFrame.LookVector
+			local dir=md:Dot(lv*Vector3.new(1,0,1))>0 and lv or -lv
+			np=np+dir.Unit*C.fSp
+		end
+		flyBV.Position=np
+		root.CFrame=CFrame.new(root.Position,root.Position+Vector3.new(Cam.CFrame.LookVector.X,0,Cam.CFrame.LookVector.Z))
+	end)
+end
+local function stopFly()
+	S.dis("Fly")
+	pcall(function()
+		local char=LP.Character
+		local root=char and char:FindFirstChild("HumanoidRootPart")
+		local hum=char and char:FindFirstChildOfClass("Humanoid")
+		if root and root:FindFirstChild("UcsFlyPos") then root.UcsFlyPos:Destroy() end
+		if hum then hum.PlatformStand=false end
+	end)
+	flyBV=nil
+end
+S.startFly=startFly; S.stopFly=stopFly
+function S.toggleFly()
+	C.fEn=not C.fEn
+	if C.fEn then startFly() else stopFly() end
+	if S.toggles.fEn then
+		local tb=S.toggles.fEn.btn
+		if C.fEn then tb.Text=t("fly")..": "..t("on").." ("..C.fSp..")"; tb.BackgroundColor3=Color3.fromRGB(0,120,0)
+		else tb.Text=t("fly")..": "..t("off").." ("..C.fSp..")"; tb.BackgroundColor3=Color3.fromRGB(50,50,50) end
+	end
+end
+addR("Main",t("fly").." ("..C.fSp..")",function(b,a)
+	if a=="toggle" then C.fEn=not C.fEn
+		if C.fEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); startFly()
+		else b.BackgroundColor3=Color3.fromRGB(50,50,50); stopFly() end
+	elseif a=="minus" then C.fSp=math.max(1,C.fSp-1)
+	elseif a=="plus" then C.fSp=math.min(50,C.fSp+1) end
+	b.Text=t("fly")..": "..(C.fEn and t("on") or t("off")).." ("..C.fSp..")"
+end,true,"fEn")
+
+addR("Main",t("jump").." ("..C.jPw..")",function(b,a)
+	if a=="toggle" then C.jpEn=not C.jpEn
+		if C.jpEn then b.BackgroundColor3=Color3.fromRGB(0,120,0)
+			S.addT("Jump",function() pcall(function() local h=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid"); if h then h.UseJumpPower=true; h.JumpPower=C.jPw end end) end,0.2)
+		else b.BackgroundColor3=Color3.fromRGB(50,50,50); S.delT("Jump")
+			pcall(function() local h=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid"); if h then h.JumpPower=50 end end) end
+	elseif a=="minus" then C.jPw=math.max(30,C.jPw-10)
+	elseif a=="plus" then C.jPw=math.min(1000,C.jPw+10) end
+	b.Text=t("jump")..": "..(C.jpEn and t("on") or t("off")).." ("..C.jPw..")"
+end,true,"jpEn")
+
+addR("Main",t("infjump"),function(b,a)
+	if a=="toggle" then
+		C.jEn=not C.jEn
+		if C.jEn then
+			S.conns.InfJump=UIS.JumpRequest:Connect(function() pcall(function() local h=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid"); if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end end) end)
+		else S.dis("InfJump") end
+	end
+	if C.jEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("infjump")..": "..t("on")
+	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("infjump")..": "..t("off") end
+end,false,"jEn")
+
+addR("Main",t("autojump"),function(b,a)
+	if a=="toggle" then
+		C.autojumpEn=not C.autojumpEn
+		if C.autojumpEn then
+			S.conns.AutoJump=RS.Heartbeat:Connect(function()
+				local hum=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+				if not hum then return end
+				if hum.MoveDirection.Magnitude>0.1 and hum:GetState()==Enum.HumanoidStateType.Running then
+					pcall(function() hum:ChangeState(Enum.HumanoidStateType.Jumping) end)
+				end
+			end)
+		else S.dis("AutoJump") end
+	end
+	if C.autojumpEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("autojump")..": "..t("on")
+	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("autojump")..": "..t("off") end
+end,false,"autojumpEn")
+
+addR("Main",t("noclip"),function(b,a)
+	if a=="toggle" then
+		C.nEn=not C.nEn
+		if C.nEn then
+			S.conns.Noclip=RS.PreSimulation:Connect(function() S.col(LP.Character,false) end)
+		else
+			S.dis("Noclip"); S.col(LP.Character,true)
+		end
+	end
+	if C.nEn then
+		b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("noclip")..": "..t("on")
+	else
+		b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("noclip")..": "..t("off")
+	end
+end,false,"nEn")
+
+-- Click TP
+local function doClickTP(pos)
+	local root=LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+	local ray=Cam:ViewportPointToRay(pos.X, pos.Y)
+	local params=RaycastParams.new()
+	params.FilterType=Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances={LP.Character}
+	local res=workspace:Raycast(ray.Origin, ray.Direction*1000, params)
+	if res then
+		S.skipTPNow(0.3)
+		root.Velocity=Vector3.zero
+		root.CFrame=CFrame.new(res.Position + Vector3.new(0,3,0))
+	else
+		S.skipTPNow(0.3)
+		root.Velocity=Vector3.zero
+		root.CFrame=CFrame.new(ray.Origin + ray.Direction*50)
+	end
+end
+S.conns.ClickTP=UIS.InputBegan:Connect(function(i,gp)
+	if gp then return end
+	if not C.clicktpEn then return end
+	if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then
+		if MF.Visible then return end
+		doClickTP(i.Position)
+	end
+end)
+addR("Main",t("clicktp"),function(b,a)
+	if a=="toggle" then C.clicktpEn=not C.clicktpEn end
+	if C.clicktpEn then b.BackgroundColor3=Color3.fromRGB(120,60,180); b.Text=t("clicktp_on")
+	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("clicktp")..": "..t("off") end
+end,false,"clicktpEn")
+
+-- ============================================================
+-- FREEZECAM (PC only)
+-- ============================================================
+local freezePlayerActive=false
+local freezePlayerSavedWS, freezePlayerSavedJP, freezePlayerSavedAR
+local freezePlayerPos
+
+local function startFreezePlayer()
+	local hum=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+	if not hum then return end
+	freezePlayerSavedWS=hum.WalkSpeed
+	freezePlayerSavedJP=hum.JumpPower
+	freezePlayerSavedAR=hum.AutoRotate
+	freezePlayerPos=Cam.CFrame.Position
+	S.dis("FreezePlayer")
+	S.conns.FreezePlayer=RS.RenderStepped:Connect(function()
+		if not freezePlayerActive then return end
+		local h=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+		if h then
+			h.WalkSpeed=0
+			h.JumpPower=0
+			h.AutoRotate=false
+		end
+		local look=Cam.CFrame.LookVector
+		Cam.CFrame=CFrame.new(freezePlayerPos, freezePlayerPos+look)
+	end)
+end
+local function stopFreezePlayer()
+	S.dis("FreezePlayer")
+	local hum=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+	if hum then
+		if freezePlayerSavedWS then hum.WalkSpeed=freezePlayerSavedWS end
+		if freezePlayerSavedJP then hum.JumpPower=freezePlayerSavedJP end
+		if freezePlayerSavedAR~=nil then hum.AutoRotate=freezePlayerSavedAR end
+	end
+end
+S.toggleFreezePlayer=function()
+	freezePlayerActive=not freezePlayerActive
+	if freezePlayerActive then startFreezePlayer() else stopFreezePlayer() end
+	if S.toggles.freezePlayerEn then
+		local tb=S.toggles.freezePlayerEn.btn
+		if freezePlayerActive then tb.Text=t("freeze_player")..": "..t("on"); tb.BackgroundColor3=Color3.fromRGB(0,120,200)
+		else tb.Text=t("freeze_player")..": "..t("off"); tb.BackgroundColor3=Color3.fromRGB(50,50,50) end
+	end
+end
+addR("Visual",t("freeze_player"),function(b,a)
+	if a~="toggle" then
+		if C.freezePlayerEn then b.Text=t("freeze_player")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(0,120,200)
+		else b.Text=t("freeze_player")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
+		return
+	end
+	C.freezePlayerEn=not C.freezePlayerEn
+	S.toggleFreezePlayer()
+end,false,"freezePlayerEn")
+
+local freezeCamActive=false
+local freezeCamCF=nil
+
+local function startFreezeCam()
+	freezeCamCF=Cam.CFrame
+	Cam.CameraType=Enum.CameraType.Scriptable
+	S.dis("FreezeCam")
+	S.conns.FreezeCam=RS.RenderStepped:Connect(function()
+		if not freezeCamActive then return end
+		Cam.CFrame=freezeCamCF
+	end)
+end
+local function stopFreezeCam()
+	S.dis("FreezeCam")
+	Cam.CameraType=Enum.CameraType.Custom
+	local hum=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+	if hum then Cam.CameraSubject=hum end
+end
+S.toggleFreezeCam=function()
+	freezeCamActive=not freezeCamActive
+	if freezeCamActive then startFreezeCam() else stopFreezeCam() end
+	if S.toggles.freezeCamEn then
+		local tb=S.toggles.freezeCamEn.btn
+		if freezeCamActive then tb.Text=t("freeze_cam")..": "..t("on"); tb.BackgroundColor3=Color3.fromRGB(0,120,200)
+		else tb.Text=t("freeze_cam")..": "..t("off"); tb.BackgroundColor3=Color3.fromRGB(50,50,50) end
+	end
+end
+addR("Visual",t("freeze_cam"),function(b,a)
+	if a~="toggle" then
+		if C.freezeCamEn then b.Text=t("freeze_cam")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(0,120,200)
+		else b.Text=t("freeze_cam")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
+		return
+	end
+	C.freezeCamEn=not C.freezeCamEn
+	S.toggleFreezeCam()
+end,false,"freezeCamEn")
+
+-- PLATFORM
+local plat=Instance.new("Part")
+plat.Name="UCS_Platform"; plat.Size=Vector3.new(10,1,10); plat.Anchored=true
+plat.CanCollide=false; plat.CanQuery=false; plat.CanTouch=false; plat.CastShadow=false
+plat.Transparency=0.5; plat.Material=Enum.Material.Neon
+plat.Color=Color3.fromRGB(0,200,255); plat.TopSurface=Enum.SurfaceType.Smooth
+plat.BottomSurface=Enum.SurfaceType.Smooth; plat.Parent=nil
+S.plat=plat
+local platBP=nil; local platY=0
+local function startPlat()
+	local root=LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+	platY=root.Position.Y-3.5
+	plat.Position=Vector3.new(root.Position.X,platY,root.Position.Z)
+	plat.Parent=workspace
+	if platBP then platBP:Destroy() end
+	platBP=Instance.new("BodyPosition",root); platBP.Name="UCS_PlatBP"
+	platBP.MaxForce=Vector3.new(0,1e6,0); platBP.P=1e5; platBP.D=100
+	platBP.Position=root.Position
+	S.dis("PlatConn")
+	S.conns.PlatConn=RS.RenderStepped:Connect(function()
+		if not C.platEn then return end
+		local r=LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+		if not r then return end
+		if not platBP or not platBP.Parent then
+			platBP=Instance.new("BodyPosition",r); platBP.Name="UCS_PlatBP"
+			platBP.MaxForce=Vector3.new(0,1e6,0); platBP.P=1e5; platBP.D=100
+		end
+		platBP.Position=Vector3.new(r.Position.X,platY+3.5,r.Position.Z)
+		plat.Position=Vector3.new(r.Position.X,platY,r.Position.Z)
+	end)
+end
+local function stopPlat()
+	S.dis("PlatConn")
+	if platBP then platBP:Destroy(); platBP=nil end
+	if plat then plat.Parent=nil end
+end
+S.startPlat=startPlat; S.stopPlat=stopPlat
+addR("Main",t("platform")..": "..t("off"),function(b,a)
+	if a=="toggle" then
+		C.platEn=not C.platEn
+		if C.platEn then startPlat() else stopPlat() end
+	end
+	if C.platEn then
+		b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("platform")..": "..t("on")
+	else
+		b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("platform")..": "..t("off")
+	end
+end,false,"platEn")
+
+-- SCREEN BUTTONS — отключены на ПК
+local function makeScreenBtn() return nil end
+
+S.PlatToggleBtn=nil
+S.PlatDownBtn=nil
+S.FlyBtn=nil
+S.NoClipBtn=nil
+S.DashBtn=nil
+S.PanelHideBtn=nil
+
+local function doDash()
+	local char=LP.Character
+	local root=char and char:FindFirstChild("HumanoidRootPart")
+	local hum=char and char:FindFirstChildOfClass("Humanoid")
+	if not root or not hum then return end
+	local dir=hum.MoveDirection
+	if dir.Magnitude<0.1 then local lv=Cam.CFrame.LookVector; dir=Vector3.new(lv.X,0,lv.Z) end
+	if dir.Magnitude<0.1 then return end
+	dir=dir.Unit
+	local bv=Instance.new("BodyVelocity",root)
+	bv.MaxForce=Vector3.new(1e5,1e5,1e5); bv.P=2000; bv.Velocity=dir*C.dashPower
+	task.delay(C.dashDuration,function() if bv and bv.Parent then bv:Destroy() end end)
+end
+S.doDash=doDash
+
+addR("Main",t("hotkeys_work"),function(b,a)
+	if a=="toggle" then C.dashMoveMode=not C.dashMoveMode end
+	if C.dashMoveMode then b.Text=t("hotkeys_move"); b.BackgroundColor3=Color3.fromRGB(80,60,180)
+	else b.Text=t("hotkeys_work"); b.BackgroundColor3=Color3.fromRGB(0,150,0) end
+end,false,"dashMoveMode")
+
+local function doRespawn()
+	local hum=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+	if hum and hum.Health>0 then pcall(function() hum.Health=0 end) end
+	task.wait(0.1)
+	pcall(function() LP:LoadCharacter() end)
+end
+S.doRespawn=doRespawn
+print("[UCS] Main ok")
+
+-- ============================================================
+-- FUNC
+-- ============================================================
+local promptCache={}; local clickCache={}; local fiHoldSaved={}; local fiLosSaved={}
+local function fiApplyPrompt(o)
+	if not o.Parent then return end
+	if C.fiSafe then return end
+	if fiHoldSaved[o]==nil then fiHoldSaved[o]=o.HoldDuration end
+	if fiLosSaved[o]==nil then fiLosSaved[o]=o.RequiresLineOfSight end
+	pcall(function() o.HoldDuration=0; o.RequiresLineOfSight=false end)
+end
+local function fiRestorePrompt(o)
+	pcall(function()
+		if fiHoldSaved[o]~=nil then o.HoldDuration=fiHoldSaved[o] end
+		if fiLosSaved[o]~=nil then o.RequiresLineOfSight=fiLosSaved[o] end
+	end)
+	fiHoldSaved[o]=nil; fiLosSaved[o]=nil
+end
+local function fiAdd(o)
+	if o:IsA("ProximityPrompt") then promptCache[o]=o; if C.fiEn then fiApplyPrompt(o) end
+	elseif o:IsA("ClickDetector") then clickCache[o]=o end
+end
+local function fiRm(o) promptCache[o]=nil; clickCache[o]=nil; fiHoldSaved[o]=nil; fiLosSaved[o]=nil end
+for _,o in ipairs(workspace:GetDescendants()) do fiAdd(o) end
+S.conns.FI_Add=workspace.DescendantAdded:Connect(function(o) if o:IsA("ProximityPrompt") or o:IsA("ClickDetector") then task.defer(function() if o.Parent then fiAdd(o) end end) end end)
+S.conns.FI_Rem=workspace.DescendantRemoving:Connect(function(o) if o:IsA("ProximityPrompt") or o:IsA("ClickDetector") then fiRm(o) end end)
+local FI_P=(typeof(fireproximityprompt)=="function")
+local FI_C=(typeof(fireclickdetector)=="function")
+local function doFastInteract()
+	local root=LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+	local pos=root.Position; local rad=C.fiRange
+	if FI_P then
+		for o in pairs(promptCache) do
+			if not o.Parent then promptCache[o]=nil; fiHoldSaved[o]=nil; fiLosSaved[o]=nil
+			elseif o.Enabled then
+				local part=o.Parent
+				if part and part:IsA("BasePart") and (part.Position-pos).Magnitude<=rad then
+					pcall(fireproximityprompt,o)
+				end
+			end
+		end
+	end
+	if FI_C then
+		for o in pairs(clickCache) do
+			if not o.Parent then clickCache[o]=nil
+			else
+				local part=o.Parent
+				if part and part:IsA("BasePart") and (part.Position-pos).Magnitude<=rad then
+					pcall(fireclickdetector,o)
+				end
+			end
+		end
+	end
+end
+addR("Func",t("fastint"),function(b,a)
+	if a~="toggle" then
+		if C.fiEn then b.Text=t("fastint")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(0,120,0)
+		else b.Text=t("fastint")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
+		return
+	end
+	if not FI_P and not FI_C then S.notify(t("n_no_fire"),Color3.fromRGB(255,80,80)); return end
+	C.fiEn=not C.fiEn
+	if C.fiEn then
+		for o in pairs(promptCache) do if o.Parent then fiApplyPrompt(o) end end
+		b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("fastint")..": "..t("on")
+		S.addT("FastInteract",doFastInteract,0.1)
+	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("fastint")..": "..t("off"); S.delT("FastInteract")
+		for o in pairs(promptCache) do fiRestorePrompt(o) end end
+end,false,"fiEn")
+
+addR("Func",t("fi_safe"),function(b,a)
+	if a=="toggle" then
+		C.fiSafe=not C.fiSafe
+		if C.fiSafe then
+			for o in pairs(promptCache) do if o.Parent then fiRestorePrompt(o) end end
+		elseif C.fiEn then
+			for o in pairs(promptCache) do if o.Parent then fiApplyPrompt(o) end end
+		end
+	end
+	if C.fiSafe then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("fi_safe")..": "..t("on")
+	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("fi_safe")..": "..t("off") end
+end,false,"fiSafe")
+
+local ARc={}
+local function applyAR(char)
+	local hum=char and char:FindFirstChildOfClass("Humanoid")
+	if not hum then return end
+	pcall(function() hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll,false); hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown,false) end)
+	if ARc[char] then ARc[char]:Disconnect() end
+	ARc[char]=hum.StateChanged:Connect(function(_,new)
+		if C.arEn and (new==Enum.HumanoidStateType.Ragdoll or new==Enum.HumanoidStateType.FallingDown or new==Enum.HumanoidStateType.Physics) then
+			pcall(function() hum.PlatformStand=false; hum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
+		end
+	end)
+end
+S.applyAR=applyAR
+addR("Func",t("antiragdoll"),function(b,a)
+	if a~="toggle" then
+		if C.arEn then b.Text=t("antiragdoll")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(0,120,0)
+		else b.Text=t("antiragdoll")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
+		return
+	end
+	C.arEn=not C.arEn
+	if C.arEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("antiragdoll")..": "..t("on"); if LP.Character then applyAR(LP.Character) end
+	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("antiragdoll")..": "..t("off")
+		pcall(function() local h=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+			if h then h:SetStateEnabled(Enum.HumanoidStateType.Ragdoll,true); h:SetStateEnabled(Enum.HumanoidStateType.FallingDown,true) end end) end
+end,false,"arEn")
+
+local voidLastSafe=nil
+addR("Func",t("antivoid").." ("..C.voidY..")",function(b,a)
+	if a=="toggle" then C.avEn=not C.avEn
+		if C.avEn then
+			b.BackgroundColor3=Color3.fromRGB(0,120,0)
+			voidLastSafe=nil
+			S.addT("AntiVoid",function()
+				local root=LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+				if not root then return end
+				local p=root.Position
+				if p.Y > C.voidY + 20 then voidLastSafe=p end
+				if p.Y < C.voidY and voidLastSafe then
+					S.skipTPNow(0.5)
+					root.Velocity=Vector3.zero
+					root.CFrame=CFrame.new(voidLastSafe + Vector3.new(0,3,0))
+					voidLastSafe=nil
+				end
+			end,0.1)
+		else b.BackgroundColor3=Color3.fromRGB(50,50,50); S.delT("AntiVoid"); voidLastSafe=nil end
+	elseif a=="minus" then C.voidY=math.max(-500,C.voidY-10)
+	elseif a=="plus" then C.voidY=math.min(50,C.voidY+10) end
+	b.Text=t("antivoid")..": "..(C.avEn and t("on") or t("off")).." ("..C.voidY..")"
+end,true,"avEn")
+print("[UCS] Func ok")
+
+-- ============================================================
+-- NPC
+-- ============================================================
+local NPCList={}
+S.NPCList=NPCList
+local NPCCache={}
+local function isPlayerChar(m) return m and Players:GetPlayerFromCharacter(m)~=nil end
+local function regNPC(h)
+	local m=h.Parent
+	if not m or NPCCache[m] or isPlayerChar(m) then return end
+	NPCCache[m]=h; NPCList[#NPCList+1]=m
+end
+local function unregNPC(m)
+	if not NPCCache[m] then return end
+	NPCCache[m]=nil
+	for i=#NPCList,1,-1 do if NPCList[i]==m then table.remove(NPCList,i); break end end
+end
+pcall(function() for _,h in ipairs(workspace:GetDescendants()) do if h:IsA("Humanoid") and h.Health>0 then regNPC(h) end end end)
+S.conns.NPCReg=workspace.DescendantAdded:Connect(function(o) if o:IsA("Humanoid") then task.defer(function() if o.Parent and o.Health>0 then regNPC(o) end end) end end)
+S.conns.NPCUnreg=workspace.DescendantRemoving:Connect(function(o) if o:IsA("Model") then unregNPC(o) end end)
+S.addT("NPCCleanup",function()
+	for i=#NPCList,1,-1 do
+		local m=NPCList[i]; local h=NPCCache[m]
+		if not m.Parent or not h or h.Health<=0 then unregNPC(m) end
+	end
+end,1.5)
+print("[UCS] NPC ok")
+
+-- ============================================================
+-- VISUAL
+-- ============================================================
+local espC={}
+local function applyESP(p)
+	if p==LP then return end
+	local function ap(c)
+		if not c or not C.eEn then return end
+		local old=c:FindFirstChild("UCS_HL"); if old then old:Destroy() end
+		local hl=Instance.new("Highlight",c)
+		hl.Name="UCS_HL"; hl.FillColor=Color3.fromRGB(255,30,30)
+		hl.FillTransparency=0.4; hl.OutlineColor=Color3.fromRGB(255,255,255)
+	end
+	if espC[p] then espC[p]:Disconnect() end
+	espC[p]=p.CharacterAdded:Connect(function(c) task.wait(0.2); if C.eEn then ap(c) end end)
+	if p.Character then ap(p.Character) end
+end
+local function rmESP(p)
+	if espC[p] then espC[p]:Disconnect(); espC[p]=nil end
+	pcall(function() local c=p.Character; if c and c:FindFirstChild("UCS_HL") then c.UCS_HL:Destroy() end end)
+end
+S.rmESP=rmESP
+addR("Visual",t("espp"),function(b,a)
+	if a~="toggle" then
+		if C.eEn then b.Text=t("espp")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(0,120,0)
+		else b.Text=t("espp")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
+		return
+	end
+	C.eEn=not C.eEn
+	if C.eEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("espp")..": "..t("on")
+		for _,p in ipairs(Players:GetPlayers()) do applyESP(p) end
+		S.conns.EspAdd=Players.PlayerAdded:Connect(function(p) task.wait(0.5); if C.eEn then applyESP(p) end end)
+		S.conns.EspRem=Players.PlayerRemoving:Connect(function(p) if espC[p] then espC[p]:Disconnect(); espC[p]=nil end end)
+	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("espp")..": "..t("off"); S.dis("EspAdd"); S.dis("EspRem")
+		for _,p in ipairs(Players:GetPlayers()) do rmESP(p) end end
+end,false,"eEn")
+
+local npcESP={}
+local function addNH(m)
+	if npcESP[m] or m:FindFirstChild("UCS_NPC_HL") then return end
+	local hl=Instance.new("Highlight",m)
+	hl.Name="UCS_NPC_HL"; hl.FillColor=Color3.fromRGB(255,140,0)
+	hl.FillTransparency=0.5; hl.OutlineColor=Color3.fromRGB(255,255,0)
+	npcESP[m]=hl
+end
+local function clearNH()
+	for _,hl in pairs(npcESP) do pcall(function() hl:Destroy() end) end
+	npcESP={}
+end
+S.clearNH=clearNH
+addR("Visual",t("espnpc"),function(b,a)
+	if a~="toggle" then return end
+	if next(npcESP) then
+		clearNH(); S.delT("NPCespSync")
+		b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("espnpc")..": "..t("off")
+	else
+		b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("espnpc")..": "..t("on")
+		local list=S.NPCList or {}
+		for i=1,#list do addNH(list[i]) end
+		S.addT("NPCespSync",function()
+			local list2=S.NPCList or {}
+			for i=1,#list2 do local m=list2[i]; if not npcESP[m] then addNH(m) end end
+			for m,hl in pairs(npcESP) do if not m.Parent then pcall(function() hl:Destroy() end); npcESP[m]=nil end end
+		end,1)
+	end
+end,false)
+
+local function isCharPart(p)
+	local parent=p.Parent
+	if not parent then return false end
+	if parent:IsA("Model") and parent:FindFirstChildOfClass("Humanoid") then return true end
+	return false
+end
+local function applyXray(p)
+	if p:IsA("BasePart") and not isCharPart(p) then
+		pcall(function() p.LocalTransparencyModifier=math.clamp(C.xrayOpacity/100,0,1) end)
+	end
+end
+local function clearXrayFrom(p)
+	if p:IsA("BasePart") and not isCharPart(p) then
+		pcall(function() p.LocalTransparencyModifier=0 end)
+	end
+end
+function S.clearXray()
+	for _,o in ipairs(workspace:GetDescendants()) do clearXrayFrom(o) end
+end
+function S.applyXrayAll()
+	for _,o in ipairs(workspace:GetDescendants()) do applyXray(o) end
+end
+addR("Visual",t("xray").." ("..C.xrayOpacity.."%)",function(b,a)
+	if a=="toggle" then
+		C.xrayEn=not C.xrayEn
+		if C.xrayEn then
+			b.BackgroundColor3=Color3.fromRGB(0,120,0)
+			S.applyXrayAll()
+			S.conns.XrayAdd=workspace.DescendantAdded:Connect(function(o)
+				if not C.xrayEn then return end
+				if o:IsA("BasePart") then task.defer(function() task.wait(0.15); if C.xrayEn and o.Parent then applyXray(o) end end) end
+			end)
+		else b.BackgroundColor3=Color3.fromRGB(50,50,50); S.dis("XrayAdd"); S.clearXray() end
+	elseif a=="minus" then C.xrayOpacity=math.max(0,C.xrayOpacity-10); if C.xrayEn then S.applyXrayAll() end
+	elseif a=="plus" then C.xrayOpacity=math.min(100,C.xrayOpacity+10); if C.xrayEn then S.applyXrayAll() end end
+	b.Text=t("xray")..": "..(C.xrayEn and t("on") or t("off")).." ("..C.xrayOpacity.."%)"
+end,true,"xrayEn")
+
+local fbSaved=nil
+addR("Visual",t("fullbright"),function(b,a)
+	if a~="toggle" then
+		if C.fbEn then b.Text=t("fullbright")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(0,120,0)
+		else b.Text=t("fullbright")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
+		return
+	end
+	C.fbEn=not C.fbEn
+	local L2=Lighting
+	if C.fbEn then
+		if not fbSaved then
+			local atm=L2:FindFirstChildOfClass("Atmosphere")
+			fbSaved={Ambient=L2.Ambient,OutdoorAmbient=L2.OutdoorAmbient,Brightness=L2.Brightness,FogEnd=L2.FogEnd,FogStart=L2.FogStart,GlobalShadows=L2.GlobalShadows,ClockTime=L2.ClockTime,EnvironmentDiffuseScale=L2.EnvironmentDiffuseScale,EnvironmentSpecularScale=L2.EnvironmentSpecularScale,AtmDensity=atm and atm.Density or nil,AtmHaze=atm and atm.Haze or nil}
+		end
+		b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("fullbright")..": "..t("on")
+		S.addT("Fullbright",function()
+			L2.Ambient=Color3.fromRGB(255,255,255); L2.OutdoorAmbient=Color3.fromRGB(255,255,255)
+			L2.Brightness=2; L2.FogEnd=1e9; L2.FogStart=1e9; L2.GlobalShadows=false; L2.ClockTime=12
+			L2.EnvironmentDiffuseScale=1; L2.EnvironmentSpecularScale=0
+			local atm=L2:FindFirstChildOfClass("Atmosphere")
+			if atm then atm.Density=0; atm.Haze=0 end
+		end,0.1)
+	else
+		b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("fullbright")..": "..t("off")
+		S.delT("Fullbright")
+		if fbSaved then pcall(function()
+			L2.Ambient=fbSaved.Ambient; L2.OutdoorAmbient=fbSaved.OutdoorAmbient
+			L2.Brightness=fbSaved.Brightness; L2.FogEnd=fbSaved.FogEnd; L2.FogStart=fbSaved.FogStart
+			L2.GlobalShadows=fbSaved.GlobalShadows; L2.ClockTime=fbSaved.ClockTime
+			L2.EnvironmentDiffuseScale=fbSaved.EnvironmentDiffuseScale; L2.EnvironmentSpecularScale=fbSaved.EnvironmentSpecularScale
+			local atm=L2:FindFirstChildOfClass("Atmosphere")
+			if atm then if fbSaved.AtmDensity then atm.Density=fbSaved.AtmDensity end; if fbSaved.AtmHaze then atm.Haze=fbSaved.AtmHaze end end
+		end) end
+	end
+end,false,"fbEn")
+
+local nofogSaved=nil
+addR("Visual",t("nofog"),function(b,a)
+	if a~="toggle" then
+		if C.nofogEn then b.Text=t("nofog")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(0,120,0)
+		else b.Text=t("nofog")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
+		return
+	end
+	C.nofogEn=not C.nofogEn
+	local L2=Lighting
+	if C.nofogEn then
+		if not nofogSaved then
+			nofogSaved={FogEnd=L2.FogEnd, FogStart=L2.FogStart}
+			local atm=L2:FindFirstChildOfClass("Atmosphere")
+			if atm then
+				nofogSaved.AtmDensity=atm.Density
+				nofogSaved.AtmHaze=atm.Haze
+				nofogSaved.AtmOffset=atm.Offset
+			end
+		end
+		b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("nofog")..": "..t("on")
+		S.addT("NoFog",function()
+			L2.FogEnd=1e7; L2.FogStart=1e7
+			local atm=L2:FindFirstChildOfClass("Atmosphere")
+			if atm then atm.Density=0; atm.Haze=0; atm.Offset=0 end
+		end,0.2)
+	else
+		b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("nofog")..": "..t("off")
+		S.delT("NoFog")
+		if nofogSaved then pcall(function()
+			L2.FogEnd=nofogSaved.FogEnd; L2.FogStart=nofogSaved.FogStart
+			local atm=L2:FindFirstChildOfClass("Atmosphere")
+			if atm then
+				if nofogSaved.AtmDensity then atm.Density=nofogSaved.AtmDensity end
+				if nofogSaved.AtmHaze then atm.Haze=nofogSaved.AtmHaze end
+				if nofogSaved.AtmOffset then atm.Offset=nofogSaved.AtmOffset end
+			end
+		end) end
+		nofogSaved=nil
+	end
+end,false,"nofogEn")
+
+local fovSaved=nil
+addR("Visual",t("fov").." ("..C.fovValue..")",function(b,a)
+	if a=="toggle" then
+		C.fovEn=not C.fovEn
+		if C.fovEn then
+			fovSaved=Cam.FieldOfView
+			Cam.FieldOfView=C.fovValue
+		else
+			if fovSaved then Cam.FieldOfView=fovSaved; fovSaved=nil end
+		end
+	elseif a=="minus" then
+		C.fovValue=math.max(40,C.fovValue-5)
+		if C.fovEn then Cam.FieldOfView=C.fovValue end
+	elseif a=="plus" then
+		C.fovValue=math.min(120,C.fovValue+5)
+		if C.fovEn then Cam.FieldOfView=C.fovValue end
+	end
+	if C.fovEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("fov")..": "..t("on").." ("..C.fovValue..")"
+	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("fov")..": "..t("off").." ("..C.fovValue..")" end
+end,true,"fovEn")
+print("[UCS] Visual ok")
+
+-- ============================================================
+-- WP
+-- ============================================================
+local WP_FILE="UCS_Waypoints.json"
+local waypoints={}
+local function saveWP() pcall(function() writefile(WP_FILE,Http:JSONEncode(waypoints)) end) end
+local function loadWP() pcall(function()
+	if isfile and isfile(WP_FILE) then
+		local data=Http:JSONDecode(readfile(WP_FILE))
+		if type(data)=="table" then
+			for k,v in pairs(data) do
+				if type(v)=="table" and v.x and v.y and v.z then waypoints[k]={x=v.x,y=v.y,z=v.z} end
+			end
+		end
+	end
+end) end
+loadWP()
+local wpName=Instance.new("TextBox",S.Tabs.WP)
+wpName.Size=UDim2.new(1,-5,0,30); wpName.BackgroundColor3=Color3.fromRGB(45,45,45)
+wpName.BorderSizePixel=0; wpName.Text=""; wpName.PlaceholderText=t("wp_name_ph")
+wpName.TextColor3=Color3.new(1,1,1); wpName.PlaceholderColor3=Color3.fromRGB(140,140,140)
+wpName.Font=Enum.Font.SourceSansBold; wpName.TextSize=12
+wpName.ClearTextOnFocus=false; wpName.TextXAlignment=Enum.TextXAlignment.Left; wpName.LayoutOrder=1
+Instance.new("UICorner",wpName).CornerRadius=UDim.new(0,4)
+local function autoName() local n=1 while waypoints[tostring(n)] do n=n+1 end return tostring(n) end
+local wpSave=addR("WP",t("wp_save"),function(b)
+	local name=(wpName.Text or ""):gsub("^%s+",""):gsub("%s+$","")
+	if name=="" then name=autoName() end
+	if waypoints[name] then S.notify(t("n_name_taken"),Color3.fromRGB(255,80,80)); return end
+	local root=LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+	waypoints[name]={x=root.Position.X,y=root.Position.Y,z=root.Position.Z}
+	saveWP(); if S.refreshWP then S.refreshWP() end
+	wpName.Text=""
+	S.notify(t("n_point_saved").." "..name,Color3.fromRGB(0,180,0))
+	b.BackgroundColor3=Color3.fromRGB(0,120,180); task.wait(0.3); b.BackgroundColor3=Color3.fromRGB(50,50,50)
+end,false)
+if wpSave and wpSave.Parent then wpSave.Parent.LayoutOrder=2 end
+local wpClear=addR("WP",t("wp_clear"),function(b)
+	waypoints={}; saveWP(); if S.refreshWP then S.refreshWP() end
+	b.BackgroundColor3=Color3.fromRGB(120,50,50); task.wait(0.3); b.BackgroundColor3=Color3.fromRGB(50,50,50)
+end,false)
+if wpClear and wpClear.Parent then wpClear.Parent.LayoutOrder=3 end
+local WPlf=Instance.new("Frame",S.Tabs.WP)
+WPlf.Size=UDim2.new(1,-5,0,0); WPlf.AutomaticSize=Enum.AutomaticSize.Y
+WPlf.BackgroundTransparency=1; WPlf.LayoutOrder=4
+Instance.new("UIListLayout",WPlf).Padding=UDim.new(0,4)
+local function refreshWP()
+	for _,c in ipairs(WPlf:GetChildren()) do if c:IsA("Frame") then c:Destroy() end end
+	local sorted={}; for name in pairs(waypoints) do sorted[#sorted+1]=name end
+	table.sort(sorted,function(a,b)
+		local na=tonumber(a); local nb=tonumber(b)
+		if na and nb then return na<nb end
+		if na then return true end
+		if nb then return false end
+		return a<b
+	end)
+	for _,name in ipairs(sorted) do
+		local pos=waypoints[name]
+		local row=Instance.new("Frame",WPlf); row.Size=UDim2.new(1,0,0,30)
+		row.BackgroundColor3=Color3.fromRGB(50,50,50); row.BorderSizePixel=0
+		Instance.new("UICorner",row).CornerRadius=UDim.new(0,4)
+		local lbl=Instance.new("TextLabel",row)
+		lbl.Size=UDim2.new(1,-90,1,0); lbl.Position=UDim2.new(0,6,0,0)
+		lbl.BackgroundTransparency=1; lbl.Text=name; lbl.TextColor3=Color3.new(1,1,1)
+		lbl.Font=Enum.Font.SourceSansBold; lbl.TextSize=11
+		lbl.TextXAlignment=Enum.TextXAlignment.Left; lbl.TextTruncate=Enum.TextTruncate.AtEnd
+		local tp=Instance.new("TextButton",row)
+		tp.Size=UDim2.new(0,38,1,-4); tp.Position=UDim2.new(1,-84,0,2)
+		tp.BackgroundColor3=Color3.fromRGB(0,120,180); tp.BorderSizePixel=0
+		tp.Text="TP"; tp.TextColor3=Color3.new(1,1,1); tp.Font=Enum.Font.SourceSansBold; tp.TextSize=11
+		Instance.new("UICorner",tp).CornerRadius=UDim.new(0,3)
+		local del=Instance.new("TextButton",row)
+		del.Size=UDim2.new(0,38,1,-4); del.Position=UDim2.new(1,-42,0,2)
+		del.BackgroundColor3=Color3.fromRGB(150,40,40); del.BorderSizePixel=0
+		del.Text="X"; del.TextColor3=Color3.new(1,1,1); del.Font=Enum.Font.SourceSansBold; del.TextSize=12
+		Instance.new("UICorner",del).CornerRadius=UDim.new(0,3)
+		tp.MouseButton1Click:Connect(function()
+			local root=LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+			if not root then return end
+			S.skipTPNow(1); root.Velocity=Vector3.zero; root.CFrame=CFrame.new(pos.x,pos.y+3,pos.z)
+		end)
+		del.MouseButton1Click:Connect(function() waypoints[name]=nil; saveWP(); refreshWP() end)
+	end
+end
+S.refreshWP=refreshWP
+refreshWP()
+S.waypoints=waypoints
+print("[UCS] WP ok")
+
+-- ============================================================
+-- PLAYERS
+-- ============================================================
+local searchBox=Instance.new("TextBox",S.Tabs.Players)
+searchBox.Size=UDim2.new(1,-5,0,30); searchBox.BackgroundColor3=Color3.fromRGB(45,45,45)
+searchBox.BorderSizePixel=0; searchBox.Text=""
+searchBox.PlaceholderText=t("search_players")
+searchBox.TextColor3=Color3.new(1,1,1); searchBox.PlaceholderColor3=Color3.fromRGB(140,140,140)
+searchBox.Font=Enum.Font.SourceSansBold; searchBox.TextSize=12
+Instance.new("UICorner",searchBox).CornerRadius=UDim.new(0,4)
+
+local PLf=Instance.new("Frame",S.Tabs.Players)
+PLf.Size=UDim2.new(1,-5,0,0); PLf.Position=UDim2.new(0,0,0,35)
+PLf.AutomaticSize=Enum.AutomaticSize.Y; PLf.BackgroundTransparency=1
+Instance.new("UIListLayout",PLf).Padding=UDim.new(0,4)
+local FAV_FILE="UCS_Favorites.json"
+local favorites={}
+local function saveFav() pcall(function() local e={}; for id,name in pairs(favorites) do e[tostring(id)]=name end; writefile(FAV_FILE,Http:JSONEncode(e)) end) end
+local function loadFav() pcall(function() if isfile and isfile(FAV_FILE) then local d=Http:JSONDecode(readfile(FAV_FILE)); for id,name in pairs(d) do favorites[tonumber(id) or id]=name end end end) end
+loadFav()
+local hidden={}; local hideC={}
+local function hideP(p)
+	hidden[p]=true; local c=p.Character; if not c then return end
+	for _,o in ipairs(c:GetDescendants()) do if o:IsA("BasePart") then o.LocalTransparencyModifier=1 end end
+	if hideC[p] then hideC[p]:Disconnect() end
+	hideC[p]=c.DescendantAdded:Connect(function(o) if hidden[p] and o:IsA("BasePart") then task.wait(0.05); if hidden[p] and o.Parent then o.LocalTransparencyModifier=1 end end end)
+end
+local function showP(p)
+	hidden[p]=nil
+	if hideC[p] then hideC[p]:Disconnect(); hideC[p]=nil end
+	local c=p.Character; if not c then return end
+	for _,o in ipairs(c:GetDescendants()) do if o:IsA("BasePart") then o.LocalTransparencyModifier=0 end end
+end
+local function getDisplay(p)
+	if p.DisplayName and p.DisplayName~="" and p.DisplayName~=p.Name then return p.DisplayName end
+	return nil
+end
+local function getLabel(p, isFav)
+	local prefix = isFav and "* " or ""
+	local dn = getDisplay(p)
+	if dn then return prefix..dn.." (@"..p.Name..")" end
+	return prefix..p.Name
+end
+local function matchQuery(p, q)
+	if q=="" then return true end
+	q=q:gsub("^@","")
+	local dn=string.lower(p.DisplayName or "")
+	local nm=string.lower(p.Name or "")
+	return string.find(dn,q,1,true)~=nil or string.find(nm,q,1,true)~=nil
+end
+local function refreshP()
+	for _,c in ipairs(PLf:GetChildren()) do if c:IsA("Frame") then c:Destroy() end end
+	local q=string.lower(searchBox.Text or "")
+	local list={}
+	for _,p in ipairs(Players:GetPlayers()) do
+		if p~=LP and matchQuery(p,q) then list[#list+1]=p end
+	end
+	table.sort(list,function(a,b)
+		local fa=favorites[a.UserId] and 1 or 0; local fb=favorites[b.UserId] and 1 or 0
+		if fa~=fb then return fa>fb end
+		return string.lower(a.Name)<string.lower(b.Name)
+	end)
+	for _,p in ipairs(list) do
+		local isFav=favorites[p.UserId] and true or false
+		local row=Instance.new("Frame",PLf); row.Size=UDim2.new(1,-5,0,30)
+		row.BackgroundColor3=isFav and Color3.fromRGB(70,55,20) or Color3.fromRGB(50,50,50)
+		row.BorderSizePixel=0
+		Instance.new("UICorner",row).CornerRadius=UDim.new(0,4)
+		local nm=Instance.new("TextLabel",row)
+		nm.Size=UDim2.new(1,-165,1,0); nm.Position=UDim2.new(0,6,0,0)
+		nm.BackgroundTransparency=1; nm.Text=getLabel(p,isFav)
+		nm.TextColor3=isFav and Color3.fromRGB(255,220,80) or Color3.new(1,1,1)
+		nm.Font=Enum.Font.SourceSansBold; nm.TextSize=10
+		nm.TextXAlignment=Enum.TextXAlignment.Left; nm.TextTruncate=Enum.TextTruncate.AtEnd
+		local fav=Instance.new("TextButton",row)
+		fav.Size=UDim2.new(0,26,1,-4); fav.Position=UDim2.new(1,-135,0,2)
+		fav.BackgroundColor3=isFav and Color3.fromRGB(150,110,20) or Color3.fromRGB(70,70,70)
+		fav.BorderSizePixel=0; fav.Text=isFav and "*" or "o"
+		fav.TextColor3=Color3.new(1,1,1); fav.Font=Enum.Font.SourceSansBold; fav.TextSize=14
+		Instance.new("UICorner",fav).CornerRadius=UDim.new(0,3)
+		local tp=Instance.new("TextButton",row)
+		tp.Size=UDim2.new(0,38,1,-4); tp.Position=UDim2.new(1,-105,0,2)
+		tp.BackgroundColor3=Color3.fromRGB(70,70,70); tp.BorderSizePixel=0
+		tp.Text="TP"; tp.TextColor3=Color3.new(1,1,1); tp.Font=Enum.Font.SourceSansBold; tp.TextSize=10
+		Instance.new("UICorner",tp).CornerRadius=UDim.new(0,3)
+		local sp=Instance.new("TextButton",row)
+		sp.Size=UDim2.new(0,40,1,-4); sp.Position=UDim2.new(1,-63,0,2)
+		sp.BackgroundColor3=Color3.fromRGB(70,70,70); sp.BorderSizePixel=0
+		sp.Text=t("spectate"); sp.TextColor3=Color3.new(1,1,1); sp.Font=Enum.Font.SourceSansBold; sp.TextSize=8
+		Instance.new("UICorner",sp).CornerRadius=UDim.new(0,3)
+		local hd=Instance.new("TextButton",row)
+		hd.Size=UDim2.new(0,56,1,-4); hd.Position=UDim2.new(1,-19,0,2)
+		hd.BackgroundColor3=Color3.fromRGB(70,70,70); hd.BorderSizePixel=0
+		hd.Text=hidden[p] and t("show") or t("hide"); hd.TextColor3=Color3.new(1,1,1)
+		hd.Font=Enum.Font.SourceSansBold; hd.TextSize=8
+		Instance.new("UICorner",hd).CornerRadius=UDim.new(0,3)
+		tp.MouseButton1Click:Connect(function()
+			local mr=LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+			local tr=p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+			if mr and tr then S.skipTPNow(0.5); mr.CFrame=CFrame.new(tr.Position+Vector3.new(0,3,0)) end
+		end)
+		local watching=false
+		sp.MouseButton1Click:Connect(function()
+			if watching then watching=false; sp.Text=t("spectate"); sp.BackgroundColor3=Color3.fromRGB(70,70,70)
+				local mh=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+				if mh then Cam.CameraSubject=mh; Cam.CameraType=Enum.CameraType.Custom end
+			else watching=true; sp.Text=t("stop"); sp.BackgroundColor3=Color3.fromRGB(0,120,0)
+				local h=p.Character and p.Character:FindFirstChildOfClass("Humanoid")
+				if h then Cam.CameraSubject=h; Cam.CameraType=Enum.CameraType.Custom end end
+		end)
+		hd.MouseButton1Click:Connect(function()
+			if hidden[p] then showP(p); hd.Text=t("hide"); hd.BackgroundColor3=Color3.fromRGB(70,70,70)
+			else hideP(p); hd.Text=t("show"); hd.BackgroundColor3=Color3.fromRGB(0,120,0) end
+		end)
+		fav.MouseButton1Click:Connect(function()
+			if favorites[p.UserId] then favorites[p.UserId]=nil else favorites[p.UserId]=p.Name end
+			saveFav(); refreshP()
+		end)
+	end
+end
+S.refreshPlayers = refreshP
+searchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshP() end)
+refreshP()
+Players.PlayerAdded:Connect(function() task.wait(0.5); refreshP() end)
+Players.PlayerRemoving:Connect(function(p) task.wait(0.1); hidden[p]=nil; if hideC[p] then hideC[p]:Disconnect(); hideC[p]=nil end; refreshP() end)
+print("[UCS] Players ok")
+
+-- ============================================================
+-- ADDONS v3
+-- ============================================================
+local ADDON_FILE="UCS_Addons.json"
+local addonStore = {remote={version="0", addons={}}, localVersion={}, hidden={}, custom={}, autoLoad={}}
+local runningAddons = {}
+
+local function saveAddonStore()
+	pcall(function() writefile(ADDON_FILE, Http:JSONEncode(addonStore)) end)
+end
+local function loadAddonStore()
+	pcall(function()
+		if isfile and isfile(ADDON_FILE) then
+			local raw = readfile(ADDON_FILE)
+			local d = Http:JSONDecode(raw)
+			if type(d) == "table" then
+				if d[1] and d[1].url then
+					addonStore.custom = d
+				else
+					if type(d.remote)=="table" then addonStore.remote=d.remote end
+					if type(d.localVersion)=="table" then addonStore.localVersion=d.localVersion end
+					if type(d.hidden)=="table" then addonStore.hidden=d.hidden end
+					if type(d.custom)=="table" then addonStore.custom=d.custom end
+					if type(d.autoLoad)=="table" then addonStore.autoLoad=d.autoLoad end
+				end
+			end
+		end
+	end)
+end
+loadAddonStore()
+
+local function fetchRemoteAddons()
+	local ok, src = pcall(function() return game:HttpGet(S.ADDONS_URL.."?t="..tostring(tick()), true) end)
+	if not ok or not src or #src < 20 then return false end
+	local ok2, data = pcall(function() return Http:JSONDecode(src) end)
+	if not ok2 or type(data) ~= "table" or type(data.addons) ~= "table" then return false end
+	addonStore.remote = data
+	saveAddonStore()
+	return true
+end
+
+local function getMergedAddons()
+	local list = {}
+	for _,a in ipairs(addonStore.remote.addons or {}) do
+		if type(a)=="table" and a.url and not addonStore.hidden[a.url] then
+			table.insert(list, {name=a.name or "Addon", url=a.url, desc=a.desc or "",
+				version=tostring(a.version or "1.0.0"), author=a.author or "", source="remote"})
+		end
+	end
+	for _,a in ipairs(addonStore.custom or {}) do
+		if type(a)=="table" and a.url and not addonStore.hidden[a.url] then
+			table.insert(list, {name=a.name or "Addon", url=a.url, desc=a.desc or "",
+				version=tostring(a.version or "1.0.0"), author=a.author or "", source="custom"})
+		end
+	end
+	return list
+end
+
+local function hasUpdate(url, remoteVersion)
+	local localV = addonStore.localVersion[url]
+	if not localV then return false end
+	return tostring(localV) ~= tostring(remoteVersion)
+end
+
+local function snapshotUnloadFns()
+	local set = {}
+	for k,v in pairs(_G) do
+		if type(k)=="string" and k:match("^UCS_.+_Unload$") and type(v)=="function" then set[k]=true end
+	end
+	return set
+end
+local function detectNewUnload(before)
+	for k,v in pairs(_G) do
+		if type(k)=="string" and k:match("^UCS_.+_Unload$") and type(v)=="function" and not before[k] then
+			return v
+		end
+	end
+	return nil
+end
+local function runAddon(url, name, version, source)
+	if runningAddons[url] then return false, "already running" end
+	local before = snapshotUnloadFns()
+	local ok, err = pcall(function()
+		local src = game:HttpGet(url)
+		if not src or #src < 100 then error("empty response") end
+		local fn, perr = loadstring(src)
+		if not fn then error(perr or "loadstring nil") end
+		fn()
+	end)
+	if not ok then return false, tostring(err) end
+	local unloadFn = detectNewUnload(before)
+	runningAddons[url] = {name=name, unload=unloadFn or function() end}
+	if source=="remote" and version then
+		addonStore.localVersion[url] = version
+	end
+	return true
+end
+
+local ALf=Instance.new("Frame",S.Tabs.Addons)
+ALf.Size=UDim2.new(1,-5,0,0); ALf.AutomaticSize=Enum.AutomaticSize.Y
+ALf.BackgroundTransparency=1
+Instance.new("UIListLayout",ALf).Padding=UDim.new(0,4)
+
+local refreshBtn=Instance.new("TextButton",S.Tabs.Addons)
+refreshBtn.Size=UDim2.new(1,-5,0,28); refreshBtn.LayoutOrder=0
+refreshBtn.BackgroundColor3=Color3.fromRGB(60,60,110); refreshBtn.BorderSizePixel=0
+refreshBtn.Text=t("addon_refresh"); refreshBtn.TextColor3=Color3.new(1,1,1)
+refreshBtn.Font=Enum.Font.SourceSansBold; refreshBtn.TextSize=11
+Instance.new("UICorner",refreshBtn).CornerRadius=UDim.new(0,4)
+
+local addBox=Instance.new("TextBox",S.Tabs.Addons)
+addBox.Size=UDim2.new(1,-5,0,30); addBox.LayoutOrder=1
+addBox.BackgroundColor3=Color3.fromRGB(45,45,45); addBox.BorderSizePixel=0
+addBox.Text=""; addBox.PlaceholderText=t("addon_url_ph")
+addBox.TextColor3=Color3.new(1,1,1); addBox.PlaceholderColor3=Color3.fromRGB(140,140,140)
+addBox.Font=Enum.Font.SourceSansBold; addBox.TextSize=11; addBox.ClearTextOnFocus=false
+Instance.new("UICorner",addBox).CornerRadius=UDim.new(0,4)
+local nameBox=Instance.new("TextBox",S.Tabs.Addons)
+nameBox.Size=UDim2.new(1,-5,0,30); nameBox.LayoutOrder=2
+nameBox.BackgroundColor3=Color3.fromRGB(45,45,45); nameBox.BorderSizePixel=0
+nameBox.Text=""; nameBox.PlaceholderText=t("addon_name_ph")
+nameBox.TextColor3=Color3.new(1,1,1); nameBox.PlaceholderColor3=Color3.fromRGB(140,140,140)
+nameBox.Font=Enum.Font.SourceSansBold; nameBox.TextSize=11; nameBox.ClearTextOnFocus=false
+Instance.new("UICorner",nameBox).CornerRadius=UDim.new(0,4)
+local addBtn=Instance.new("TextButton",S.Tabs.Addons)
+addBtn.Size=UDim2.new(1,-5,0,30); addBtn.LayoutOrder=3
+addBtn.BackgroundColor3=Color3.fromRGB(0,120,180); addBtn.BorderSizePixel=0
+addBtn.Text=t("addon_add"); addBtn.TextColor3=Color3.new(1,1,1)
+addBtn.Font=Enum.Font.SourceSansBold; addBtn.TextSize=12
+Instance.new("UICorner",addBtn).CornerRadius=UDim.new(0,4)
+local clearBtn=Instance.new("TextButton",S.Tabs.Addons)
+clearBtn.Size=UDim2.new(1,-5,0,28); clearBtn.LayoutOrder=4
+clearBtn.BackgroundColor3=Color3.fromRGB(120,40,40); clearBtn.BorderSizePixel=0
+clearBtn.Text=t("addon_clear"); clearBtn.TextColor3=Color3.new(1,1,1)
+clearBtn.Font=Enum.Font.SourceSansBold; clearBtn.TextSize=11
+Instance.new("UICorner",clearBtn).CornerRadius=UDim.new(0,4)
+
+local function refreshAddons()
+	for _,c in ipairs(ALf:GetChildren()) do if c:IsA("Frame") then c:Destroy() end end
+	local list = getMergedAddons()
+	if #list == 0 then
+		local empty=Instance.new("Frame",ALf); empty.Size=UDim2.new(1,0,0,40); empty.BackgroundTransparency=1
+		local lbl=Instance.new("TextLabel",empty); lbl.Size=UDim2.new(1,0,1,0); lbl.BackgroundTransparency=1
+		lbl.Text=t("addon_empty"); lbl.TextColor3=Color3.fromRGB(140,140,140)
+		lbl.Font=Enum.Font.SourceSansBold; lbl.TextSize=11
+		return
+	end
+	for i,a in ipairs(list) do
+		local isRunning = runningAddons[a.url] ~= nil
+		local upd = (not isRunning) and (a.source=="remote") and hasUpdate(a.url, a.version)
+		local row=Instance.new("Frame",ALf); row.Size=UDim2.new(1,0,0,52)
+		row.BackgroundColor3=Color3.fromRGB(45,45,45); row.BorderSizePixel=0
+		Instance.new("UICorner",row).CornerRadius=UDim.new(0,4)
+		if upd then
+			local bar=Instance.new("Frame",row)
+			bar.Size=UDim2.new(0,3,1,-8); bar.Position=UDim2.new(0,4,0,4)
+			bar.BackgroundColor3=Color3.fromRGB(255,200,60); bar.BorderSizePixel=0
+			Instance.new("UICorner",bar).CornerRadius=UDim.new(0,2)
+		elseif isRunning then
+			local bar=Instance.new("Frame",row)
+			bar.Size=UDim2.new(0,3,1,-8); bar.Position=UDim2.new(0,4,0,4)
+			bar.BackgroundColor3=Color3.fromRGB(80,200,80); bar.BorderSizePixel=0
+			Instance.new("UICorner",bar).CornerRadius=UDim.new(0,2)
+		end
+		local leftOffset = (upd or isRunning) and 12 or 6
+		local name=Instance.new("TextLabel",row)
+		name.Size=UDim2.new(1,-92,0,18); name.Position=UDim2.new(0,leftOffset,0,2)
+		name.BackgroundTransparency=1; name.Text=a.name; name.TextColor3=Color3.new(1,1,1)
+		name.Font=Enum.Font.SourceSansBold; name.TextSize=12
+		name.TextXAlignment=Enum.TextXAlignment.Left; name.TextTruncate=Enum.TextTruncate.AtEnd
+		local versionLine = t("addon_version")..a.version
+		if upd then
+			local localV = addonStore.localVersion[a.url]
+			versionLine = t("addon_version")..tostring(localV).."  →  "..t("addon_version")..a.version
+		end
+		if a.author ~= "" then versionLine = versionLine .. "  ·  "..t("addon_author").." "..a.author end
+		local desc=Instance.new("TextLabel",row)
+		desc.Size=UDim2.new(1,-92,0,14); desc.Position=UDim2.new(0,leftOffset,0,20)
+		desc.BackgroundTransparency=1
+		desc.Text = versionLine.."   "..(a.desc~="" and ("— "..a.desc) or "")
+		desc.TextColor3 = upd and Color3.fromRGB(255,210,80) or (isRunning and Color3.fromRGB(120,220,120) or Color3.fromRGB(150,150,150))
+		desc.Font=Enum.Font.SourceSans; desc.TextSize=9
+		desc.TextXAlignment=Enum.TextXAlignment.Left; desc.TextTruncate=Enum.TextTruncate.AtEnd
+		local status=Instance.new("TextLabel",row)
+		status.Size=UDim2.new(0,90,0,12); status.Position=UDim2.new(0,leftOffset,0,36)
+		status.BackgroundTransparency=1
+		status.Text = isRunning and t("addon_status_running") or ""
+		status.TextColor3 = isRunning and Color3.fromRGB(80,200,80) or Color3.fromRGB(180,180,180)
+		status.Font=Enum.Font.SourceSansBold; status.TextSize=8
+		status.TextXAlignment=Enum.TextXAlignment.Left
+		local runBtn=Instance.new("TextButton",row)
+		runBtn.Size=UDim2.new(0,50,1,-8); runBtn.Position=UDim2.new(1,-84,0,4)
+		if isRunning then
+			runBtn.BackgroundColor3=Color3.fromRGB(180,60,60); runBtn.Text="STOP"; runBtn.TextSize=11
+		elseif upd then
+			runBtn.BackgroundColor3=Color3.fromRGB(200,150,0); runBtn.Text=t("addon_update_badge"); runBtn.TextSize=8
+		else
+			runBtn.BackgroundColor3=Color3.fromRGB(0,140,60); runBtn.Text="RUN"; runBtn.TextSize=11
+		end
+		runBtn.BorderSizePixel=0
+		runBtn.TextColor3=Color3.new(1,1,1); runBtn.Font=Enum.Font.SourceSansBold
+		Instance.new("UICorner",runBtn).CornerRadius=UDim.new(0,3)
+		local delBtn=Instance.new("TextButton",row)
+		delBtn.Size=UDim2.new(0,28,1,-8); delBtn.Position=UDim2.new(1,-32,0,4)
+		delBtn.BackgroundColor3=Color3.fromRGB(140,40,40); delBtn.BorderSizePixel=0
+		delBtn.Text="X"; delBtn.TextColor3=Color3.new(1,1,1); delBtn.Font=Enum.Font.SourceSansBold; delBtn.TextSize=12
+		Instance.new("UICorner",delBtn).CornerRadius=UDim.new(0,3)
+		runBtn.MouseButton1Click:Connect(function()
+			if runningAddons[a.url] then
+				local info = runningAddons[a.url]
+				if info and info.unload then pcall(info.unload) end
+				runningAddons[a.url] = nil
+				addonStore.autoLoad[a.url] = nil
+				saveAddonStore()
+				S.notify(a.name.." — "..t("addon_stopped"), Color3.fromRGB(200,100,80))
+				refreshAddons()
+				return
+			end
+			S.notify(t("n_loading").." "..a.name, Color3.fromRGB(180,180,80))
+			status.Text=""
+			task.spawn(function()
+				local ok, err = runAddon(a.url, a.name, a.version, a.source)
+				if not ok then
+					S.notify(t("n_error")..": "..tostring(err):sub(1,60),Color3.fromRGB(255,80,80))
+					status.Text=t("addon_status_err")
+					status.TextColor3=Color3.fromRGB(255,80,80)
+					row.BackgroundColor3=Color3.fromRGB(60,30,30)
+				else
+					addonStore.autoLoad[a.url] = true
+					saveAddonStore()
+					S.notify(a.name.." "..t("n_started"),Color3.fromRGB(0,180,0))
+					refreshAddons()
+				end
+			end)
+		end)
+		delBtn.MouseButton1Click:Connect(function()
+			local info = runningAddons[a.url]
+			if info and info.unload then pcall(info.unload) end
+			runningAddons[a.url] = nil
+			addonStore.autoLoad[a.url] = nil
+			if a.source == "remote" then
+				addonStore.hidden[a.url] = true
+			else
+				for j,c in ipairs(addonStore.custom) do
+					if c.url == a.url then table.remove(addonStore.custom, j); break end
+				end
+			end
+			saveAddonStore(); refreshAddons()
+		end)
+	end
+end
+
+refreshBtn.MouseButton1Click:Connect(function()
+	refreshBtn.Text = t("addon_refreshing")
+	local ok = fetchRemoteAddons()
+	refreshAddons()
+	refreshBtn.Text = t("addon_refresh")
+	if ok then
+		S.notify(t("n_addons_updated"), Color3.fromRGB(0,180,0))
+	else
+		S.notify(t("n_addon_fetch_fail"), Color3.fromRGB(255,80,80))
+	end
+end)
+
+addBtn.MouseButton1Click:Connect(function()
+	local url=(addBox.Text or ""):gsub("^%s+",""):gsub("%s+$","")
+	if url=="" then S.notify(t("n_url_empty"),Color3.fromRGB(255,180,100)); return end
+	local nm=(nameBox.Text or ""):gsub("^%s+",""):gsub("%s+$","")
+	if nm=="" then nm="Addon "..(#addonStore.custom+1) end
+	table.insert(addonStore.custom,{name=nm,url=url,desc="Saved URL",version="1.0.0",author=""})
+	addBox.Text=""; nameBox.Text=""
+	saveAddonStore(); refreshAddons()
+	S.notify(t("n_addon_added"),Color3.fromRGB(0,180,0))
+end)
+clearBtn.MouseButton1Click:Connect(function()
+	for url, info in pairs(runningAddons) do
+		if info and info.unload then pcall(info.unload) end
+	end
+	runningAddons = {}
+	addonStore.custom={}
+	saveAddonStore(); refreshAddons()
+	S.notify(t("n_cleared"),Color3.fromRGB(200,80,80))
+end)
+
+local restoreBtn=Instance.new("TextButton",S.Tabs.Addons)
+restoreBtn.Size=UDim2.new(1,-5,0,26); restoreBtn.LayoutOrder=5
+restoreBtn.BackgroundColor3=Color3.fromRGB(60,80,120); restoreBtn.BorderSizePixel=0
+restoreBtn.Text = (S.lang=="ru") and "♻ Восстановить скрытые аддоны" or "♻ Restore hidden addons"
+restoreBtn.TextColor3=Color3.new(1,1,1)
+restoreBtn.Font=Enum.Font.SourceSansBold; restoreBtn.TextSize=10
+Instance.new("UICorner",restoreBtn).CornerRadius=UDim.new(0,4)
+restoreBtn.MouseButton1Click:Connect(function()
+	local count = 0
+	for url, _ in pairs(addonStore.hidden) do count = count + 1 end
+	addonStore.hidden = {}
+	saveAddonStore()
+	refreshAddons()
+	S.notify((S.lang=="ru") and ("Восстановлено: "..count) or ("Restored: "..count), Color3.fromRGB(0,180,0))
+end)
+
+S.refreshAddons=refreshAddons
+refreshAddons()
+
+task.spawn(function()
+	task.wait(1)
+	local ok = fetchRemoteAddons()
+	if ok then refreshAddons() end
+end)
+
+task.spawn(function()
+	task.wait(2.5)
+	local started = {}
+	for url, _ in pairs(addonStore.autoLoad or {}) do
+		local found = nil
+		for _, a in ipairs(getMergedAddons()) do
+			if a.url == url then found = a; break end
+		end
+		if found then
+			local ok = runAddon(found.url, found.name, found.version, found.source)
+			if ok then table.insert(started, found.name) end
+		end
+	end
+	if #started > 0 then
+		refreshAddons()
+		S.notify((S.lang=="ru" and "Автозапуск: " or "Auto-loaded: ")..table.concat(started, ", "), Color3.fromRGB(0,200,0))
+	end
+end)
+print("[UCS] Addons v3 ok")
+
+-- ============================================================
+-- SETTINGS
+-- ============================================================
+addR("Settings",t("transp").." ("..C.panelTransparency.."%)",function(b,a)
+	if a=="minus" then C.panelTransparency=math.max(0,C.panelTransparency-10)
+	elseif a=="plus" then C.panelTransparency=math.min(90,C.panelTransparency+10) end
+	b.Text=t("transp").." ("..C.panelTransparency.."%)"
+	S.applyPanelTransparency(C.panelTransparency)
+end,true,"panelTransparency")
+addR("Settings",t("show_hotkeys"),function(b,a)
+	if a=="toggle" then C.showHotkeys=not C.showHotkeys end
+	if C.showHotkeys then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("show_hotkeys")..": "..t("on")
+	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("show_hotkeys")..": "..t("off") end
+end,false,"showHotkeys")
+addR("Settings",t("hide_all"),function(b,a)
+	if a~="toggle" then return end
+	b.BackgroundColor3=Color3.fromRGB(80,60,180); S.enterStealth()
+end,false)
+local cornerKeys={TL="corner_tl",TR="corner_tr",BL="corner_bl",BR="corner_br"}
+addR("Settings",t("stealth_corner").." ("..t(cornerKeys[C.stealthCorner] or "corner_tl")..")",function(b,a)
+	if a=="toggle" then
+		if C.stealthCorner=="TL" then C.stealthCorner="TR"
+		elseif C.stealthCorner=="TR" then C.stealthCorner="BR"
+		elseif C.stealthCorner=="BR" then C.stealthCorner="BL"
+		else C.stealthCorner="TL" end
+	end
+	b.Text=t("stealth_corner").." ("..t(cornerKeys[C.stealthCorner] or "corner_tl")..")"
+end,false,"stealthCorner")
+
+addR("Settings",t("language"),function(b,a)
+	if a=="toggle" then
+		S.lang = (S.lang=="ru") and "en" or "ru"
+		C.lang = S.lang
+		task.defer(function() S.refreshLang() end)
+	end
+	if S.lang=="ru" then b.Text=t("language").." 🇷🇺"
+	else b.Text=t("language").." 🇬🇧" end
+	b.BackgroundColor3=Color3.fromRGB(0,120,0)
+end,false,"lang")
+
+local CFILE2="UCS_Config_v1.json"
+addR("Settings",t("cfg_save"),function(b)
+	local t2={}
+	for k,v in pairs(C) do local tv=type(v); if tv=="number" or tv=="boolean" or tv=="string" then t2[k]=v end end
+	local ok=pcall(function() writefile(CFILE2,Http:JSONEncode(t2)) end)
+	S.notify(ok and t("n_saved") or t("n_no_writefile"),ok and Color3.fromRGB(0,180,0) or Color3.fromRGB(255,80,80))
+	b.BackgroundColor3=Color3.fromRGB(0,120,180); task.wait(0.3); b.BackgroundColor3=Color3.fromRGB(50,50,50)
+end,false)
+addR("Settings",t("cfg_load"),function(b)
+	local ok,data=pcall(function() if isfile and isfile(CFILE2) then return readfile(CFILE2) end end)
+	if not (ok and data) then S.notify(t("n_file_missing"),Color3.fromRGB(255,180,100)); b.BackgroundColor3=Color3.fromRGB(50,50,50); return end
+	local ok2,dec=pcall(function() return Http:JSONDecode(data) end)
+	if not (ok2 and type(dec)=="table") then S.notify(t("n_broken_cfg"),Color3.fromRGB(255,80,80)); b.BackgroundColor3=Color3.fromRGB(50,50,50); return end
+	local wanted={}
+	for k,v in pairs(dec) do if C[k]~=nil and type(C[k])==type(v) then wanted[k]=v end end
+	for k,v in pairs(wanted) do if type(v)~="boolean" then C[k]=v end end
+	for k,tg in pairs(S.toggles) do
+		if type(C[k])=="boolean" and wanted[k]~=nil then
+			pcall(tg.cb,tg.btn,wanted[k] and "on" or "off")
+		end
+	end
+	task.wait(0.1)
+	for k,tg in pairs(S.toggles) do
+		if C[k]~=nil and type(C[k])~="boolean" then pcall(tg.cb,tg.btn,"refresh") end
+	end
+	S.notify(t("n_loaded"),Color3.fromRGB(0,180,0))
+	b.BackgroundColor3=Color3.fromRGB(0,150,0); task.wait(0.3); b.BackgroundColor3=Color3.fromRGB(50,50,50)
+end,false)
+S.applyPanelTransparency(C.panelTransparency or 0)
+
+local PROF_FILE="UCS_Profiles.json"
+local profiles={}
+local function loadProfilesFile() pcall(function()
+	if isfile and isfile(PROF_FILE) then
+		local d=Http:JSONDecode(readfile(PROF_FILE))
+		if type(d)=="table" then profiles=d end
+	end
+end) end
+local function saveProfilesFile() pcall(function() writefile(PROF_FILE,Http:JSONEncode(profiles)) end) end
+loadProfilesFile()
+local profHeader=Instance.new("TextLabel",S.Tabs.Settings)
+profHeader.Size=UDim2.new(1,-5,0,22); profHeader.BackgroundTransparency=1
+profHeader.Text=t("profiles"); profHeader.TextColor3=Color3.fromRGB(255,180,80)
+profHeader.Font=Enum.Font.SourceSansBold; profHeader.TextSize=12
+profHeader.TextXAlignment=Enum.TextXAlignment.Left
+local profRow=Instance.new("Frame",S.Tabs.Settings)
+profRow.Size=UDim2.new(1,-5,0,32); profRow.BackgroundTransparency=1
+local profNameBox=Instance.new("TextBox",profRow)
+profNameBox.Size=UDim2.new(0.66,-3,1,0); profNameBox.BackgroundColor3=Color3.fromRGB(45,45,45)
+profNameBox.BorderSizePixel=0; profNameBox.Text=""; profNameBox.PlaceholderText=t("profile_name_ph")
+profNameBox.TextColor3=Color3.new(1,1,1); profNameBox.PlaceholderColor3=Color3.fromRGB(140,140,140)
+profNameBox.Font=Enum.Font.SourceSansBold; profNameBox.TextSize=11; profNameBox.ClearTextOnFocus=false
+Instance.new("UICorner",profNameBox).CornerRadius=UDim.new(0,4)
+local profSaveBtn=Instance.new("TextButton",profRow)
+profSaveBtn.Size=UDim2.new(0.34,-3,1,0); profSaveBtn.Position=UDim2.new(0.66,3,0,0)
+profSaveBtn.BackgroundColor3=Color3.fromRGB(0,120,180); profSaveBtn.BorderSizePixel=0
+profSaveBtn.Text=t("profile_save"); profSaveBtn.TextColor3=Color3.new(1,1,1)
+profSaveBtn.Font=Enum.Font.SourceSansBold; profSaveBtn.TextSize=11
+Instance.new("UICorner",profSaveBtn).CornerRadius=UDim.new(0,4)
+local profListFrame=Instance.new("Frame",S.Tabs.Settings)
+profListFrame.Size=UDim2.new(1,-5,0,0); profListFrame.AutomaticSize=Enum.AutomaticSize.Y
+profListFrame.BackgroundTransparency=1
+Instance.new("UIListLayout",profListFrame).Padding=UDim.new(0,3)
+local function refreshProfiles()
+	for _,c in ipairs(profListFrame:GetChildren()) do if c:IsA("Frame") then c:Destroy() end end
+	local names={}
+	for n in pairs(profiles) do table.insert(names,n) end
+	table.sort(names)
+	if #names==0 then
+		local empty=Instance.new("Frame",profListFrame)
+		empty.Size=UDim2.new(1,0,0,26); empty.BackgroundTransparency=1
+		local lbl=Instance.new("TextLabel",empty)
+		lbl.Size=UDim2.new(1,0,1,0); lbl.BackgroundTransparency=1
+		lbl.Text=t("profile_none"); lbl.TextColor3=Color3.fromRGB(120,120,120)
+		lbl.Font=Enum.Font.SourceSansBold; lbl.TextSize=11
+		lbl.TextXAlignment=Enum.TextXAlignment.Left
+		return
+	end
+	for _,name in ipairs(names) do
+		local row=Instance.new("Frame",profListFrame)
+		row.Size=UDim2.new(1,0,0,28); row.BackgroundColor3=Color3.fromRGB(45,45,45)
+		row.BorderSizePixel=0
+		Instance.new("UICorner",row).CornerRadius=UDim.new(0,4)
+		local lbl=Instance.new("TextLabel",row)
+		lbl.Size=UDim2.new(1,-90,1,0); lbl.Position=UDim2.new(0,6,0,0)
+		lbl.BackgroundTransparency=1; lbl.Text=name; lbl.TextColor3=Color3.new(1,1,1)
+		lbl.Font=Enum.Font.SourceSansBold; lbl.TextSize=11
+		lbl.TextXAlignment=Enum.TextXAlignment.Left; lbl.TextTruncate=Enum.TextTruncate.AtEnd
+		local loadBtn=Instance.new("TextButton",row)
+		loadBtn.Size=UDim2.new(0,50,1,-4); loadBtn.Position=UDim2.new(1,-82,0,2)
+		loadBtn.BackgroundColor3=Color3.fromRGB(0,140,60); loadBtn.BorderSizePixel=0
+		loadBtn.Text=t("profile_load"); loadBtn.TextColor3=Color3.new(1,1,1)
+		loadBtn.Font=Enum.Font.SourceSansBold; loadBtn.TextSize=10
+		Instance.new("UICorner",loadBtn).CornerRadius=UDim.new(0,3)
+		local delBtn=Instance.new("TextButton",row)
+		delBtn.Size=UDim2.new(0,28,1,-4); delBtn.Position=UDim2.new(1,-32,0,2)
+		delBtn.BackgroundColor3=Color3.fromRGB(140,40,40); delBtn.BorderSizePixel=0
+		delBtn.Text="X"; delBtn.TextColor3=Color3.new(1,1,1)
+		delBtn.Font=Enum.Font.SourceSansBold; delBtn.TextSize=11
+		Instance.new("UICorner",delBtn).CornerRadius=UDim.new(0,3)
+		loadBtn.MouseButton1Click:Connect(function()
+			local prof=profiles[name]
+			if not prof or type(prof)~="table" then return end
+			for k,v in pairs(prof) do
+				if C[k]~=nil and type(C[k])==type(v) and type(v)~="boolean" then C[k]=v end
+			end
+			for k,tg in pairs(S.toggles) do
+				if type(C[k])=="boolean" and prof[k]~=nil then
+					pcall(tg.cb,tg.btn,prof[k] and "on" or "off")
+				end
+			end
+			task.wait(0.1)
+			for k,tg in pairs(S.toggles) do
+				if C[k]~=nil and type(C[k])~="boolean" then pcall(tg.cb,tg.btn,"refresh") end
+			end
+			S.notify(t("n_prof_loaded")..": "..name,Color3.fromRGB(0,180,0))
+		end)
+		delBtn.MouseButton1Click:Connect(function()
+			profiles[name]=nil; saveProfilesFile(); refreshProfiles()
+			S.notify(t("n_prof_deleted")..": "..name,Color3.fromRGB(200,60,60))
+		end)
+	end
+end
+S.refreshProfiles = refreshProfiles
+profSaveBtn.MouseButton1Click:Connect(function()
+	local name=(profNameBox.Text or ""):gsub("^%s+",""):gsub("%s+$","")
+	if name=="" then S.notify(t("n_prof_name"),Color3.fromRGB(255,180,100)); return end
+	local t2={}
+	for k,v in pairs(C) do
+		local tv=type(v)
+		if tv=="number" or tv=="boolean" or tv=="string" then t2[k]=v end
+	end
+	profiles[name]=t2; saveProfilesFile(); profNameBox.Text=""
+	refreshProfiles()
+	S.notify(t("n_prof_saved")..": "..name,Color3.fromRGB(0,180,0))
+end)
+refreshProfiles()
+print("[UCS] Settings ok")
+print("[UCS] Profiles ok")
+
+-- ===== LANG REFS =====
+S.langRef(searchBox, "PlaceholderText", "search_players")
+S.langRef(wpName, "PlaceholderText", "wp_name_ph")
+S.langRef(addBox, "PlaceholderText", "addon_url_ph")
+S.langRef(nameBox, "PlaceholderText", "addon_name_ph")
+S.langRef(addBtn, "Text", "addon_add")
+S.langRef(clearBtn, "Text", "addon_clear")
+S.langRef(profNameBox, "PlaceholderText", "profile_name_ph")
+S.langRef(profSaveBtn, "Text", "profile_save")
+S.langRef(profHeader, "Text", "profiles")
+S.langRef(refreshBtn, "Text", "addon_refresh")
+S.langRef(restoreBtn, "Text", function()
+	return (S.lang=="ru") and "♻ Восстановить скрытые аддоны" or "♻ Restore hidden addons"
+end)
+
+S.onLangChange(function() if S.refreshPlayers then S.refreshPlayers() end end)
+S.onLangChange(function() if S.refreshAddons then S.refreshAddons() end end)
+S.onLangChange(function() if S.refreshProfiles then S.refreshProfiles() end end)
+
+S.conns.Respawn=LP.CharacterAdded:Connect(function(ch)
+	task.wait(1)
+	if C.nEn then task.spawn(function() while C.nEn and ch.Parent do S.col(ch,false); task.wait() end end) end
+	if C.arEn and S.applyAR then S.applyAR(ch) end
+	if C.fEn and S.stopFly then S.stopFly(); C.fEn=false end
+	if C.platEn and S.startPlat then task.wait(0.5); S.startPlat() end
+	if C.xrayEn then task.wait(0.2)
+		for _,o in ipairs(ch:GetDescendants()) do if o:IsA("BasePart") then pcall(function() o.LocalTransparencyModifier=0 end) end end
+	end
+end)
+
+S.conns.Hotkeys=UIS.InputBegan:Connect(function(i,gp)
+	if gp then return end
+	if i.KeyCode==Enum.KeyCode.F and S.toggleFly then S.toggleFly() end
+	if i.KeyCode==Enum.KeyCode.N then
+		C.nEn=not C.nEn
+		if C.nEn then
+			S.conns.Noclip=RS.PreSimulation:Connect(function() S.col(LP.Character,false) end)
+		else S.dis("Noclip"); S.col(LP.Character,true) end
+		if S.toggles.nEn then
+			local tb=S.toggles.nEn.btn
+			if C.nEn then tb.Text=t("noclip")..": "..t("on"); tb.BackgroundColor3=Color3.fromRGB(0,120,0)
+			else tb.Text=t("noclip")..": "..t("off"); tb.BackgroundColor3=Color3.fromRGB(50,50,50) end
+		end
+	end
+	if i.KeyCode==Enum.KeyCode.C then
+		C.platEn=not C.platEn
+		if C.platEn then S.startPlat() else S.stopPlat() end
+		if S.toggles.platEn then
+			local tb=S.toggles.platEn.btn
+			if C.platEn then tb.Text=t("platform")..": "..t("on"); tb.BackgroundColor3=Color3.fromRGB(0,120,0)
+			else tb.Text=t("platform")..": "..t("off"); tb.BackgroundColor3=Color3.fromRGB(50,50,50) end
+		end
+	end
+	if i.KeyCode==Enum.KeyCode.V and S.toggleFreezePlayer then S.toggleFreezePlayer() end
+	if i.KeyCode==Enum.KeyCode.B and S.toggleFreezeCam then S.toggleFreezeCam() end
+	if i.KeyCode==Enum.KeyCode.LeftControl and S.doDash then S.doDash() end
+	if i.KeyCode==Enum.KeyCode.R and UIS:IsKeyDown(Enum.KeyCode.LeftAlt) then if S.doRespawn then S.doRespawn() end end
+	if i.KeyCode==Enum.KeyCode.RightShift then
+		if S.MF.Visible then S.MF.Visible=false; if S.Op then S.Op.Visible=true end
+		else S.MF.Visible=true; if S.Op then S.Op.Visible=false end end
+	end
+end)
+
+task.spawn(function()
+	local url = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/add.raw?t=" .. tostring(tick())
+	local ok, src = pcall(game.HttpGet, game, url)
+	if ok and src and #src > 500 then
+		local fn, err = loadstring(src)
+		if fn then
+			local ok2, err2 = pcall(fn)
+			if not ok2 then warn("[UCS add] "..tostring(err2)) end
+		end
+	end
+end)
+
+-- ============================================================
+-- CHANGELOG
+-- ============================================================
+do
+	local CHANGELOG_FILE = "UCS_ChangelogCache.json"
+	local CHANGELOG_SEEN = "UCS_ChangelogSeen.json"
+	local changelogData = {entries={}}
+	local seenVersions = {}
+
+	pcall(function()
+		if isfile and isfile(CHANGELOG_FILE) then
+			local d = Http:JSONDecode(readfile(CHANGELOG_FILE))
+			if type(d)=="table" and type(d.entries)=="table" then changelogData=d end
+		end
+		if isfile and isfile(CHANGELOG_SEEN) then
+			local d2 = Http:JSONDecode(readfile(CHANGELOG_SEEN))
+			if type(d2)=="table" then seenVersions=d2 end
+		end
+	end)
+	local function saveChangelogCache() pcall(function() writefile(CHANGELOG_FILE, Http:JSONEncode(changelogData)) end) end
+	local function saveSeen() pcall(function() writefile(CHANGELOG_SEEN, Http:JSONEncode(seenVersions)) end) end
+
+	local function fetchChangelog()
+		if not S.CHANGELOG_URL then return false end
+		local ok, src = pcall(function() return game:HttpGet(S.CHANGELOG_URL.."?t="..tostring(tick()), true) end)
+		if not ok or not src or #src < 20 then return false end
+		local ok2, d = pcall(function() return Http:JSONDecode(src) end)
+		if not ok2 or type(d)~="table" or type(d.entries)~="table" then return false end
+		changelogData = d
+		saveChangelogCache()
+		return true
+	end
+
+	local function unseenCount()
+		local n = 0
+		for _,e in ipairs(changelogData.entries or {}) do
+			if e.version and not seenVersions[e.version] then n = n + 1 end
+		end
+		return n
+	end
+
+	local function markAllSeen()
+		for _,e in ipairs(changelogData.entries or {}) do
+			if e.version then seenVersions[e.version] = true end
+		end
+		saveSeen()
+	end
+
+	local function tcl(k)
+		local tbl = (L[S.lang] or L.en)
+		if tbl and tbl[k] then return tbl[k] end
+		return k
+	end
+
+	local clBtnRow = Instance.new("TextButton", S.Tabs.Settings)
+	clBtnRow.Name = "UCS_ChangelogBtn"
+	clBtnRow.Size = UDim2.new(1,-5,0,32)
+	clBtnRow.BackgroundColor3 = Color3.fromRGB(60,40,90)
+	clBtnRow.BorderSizePixel = 0
+	clBtnRow.Text = tcl("whats_new")
+	clBtnRow.TextColor3 = Color3.new(1,1,1)
+	clBtnRow.Font = Enum.Font.SourceSansBold
+	clBtnRow.TextSize = 12
+	clBtnRow.LayoutOrder = 9999
+	Instance.new("UICorner", clBtnRow).CornerRadius = UDim.new(0,4)
+
+	local CLPanel = Instance.new("Frame", SG)
+	CLPanel.Name = "UCS_ChangelogPanel"
+	CLPanel.Size = UDim2.new(0, 320, 0, 400)
+	CLPanel.Position = UDim2.new(0.5, -160, 0.5, -200)
+	CLPanel.BackgroundColor3 = Color3.fromRGB(22,22,28)
+	CLPanel.BorderSizePixel = 0
+	CLPanel.Visible = false
+	CLPanel.ZIndex = 100
+	Instance.new("UICorner", CLPanel).CornerRadius = UDim.new(0,8)
+	Instance.new("UIStroke", CLPanel).Color = Color3.fromRGB(180,140,255)
+
+	local clTitle = Instance.new("TextLabel", CLPanel)
+	clTitle.Size = UDim2.new(1,0,0,28)
+	clTitle.BackgroundColor3 = Color3.fromRGB(42,42,42)
+	clTitle.BorderSizePixel = 0
+	clTitle.Text = tcl("changelog_title")
+	clTitle.TextColor3 = Color3.fromRGB(180,140,255)
+	clTitle.Font = Enum.Font.SourceSansBold
+	clTitle.TextSize = 12
+	Instance.new("UICorner", clTitle).CornerRadius = UDim.new(0,8)
+
+	local clClose = Instance.new("TextButton", CLPanel)
+	clClose.Size = UDim2.new(0,28,0,28)
+	clClose.Position = UDim2.new(1,-28,0,0)
+	clClose.BackgroundTransparency = 1
+	clClose.Text = "×"
+	clClose.TextColor3 = Color3.new(1,1,1)
+	clClose.Font = Enum.Font.SourceSansBold
+	clClose.TextSize = 16
+
+	local clScroll = Instance.new("ScrollingFrame", CLPanel)
+	clScroll.Size = UDim2.new(1,-16,1,-40)
+	clScroll.Position = UDim2.new(0,8,0,34)
+	clScroll.BackgroundTransparency = 1
+	clScroll.BorderSizePixel = 0
+	clScroll.ScrollBarThickness = 4
+	clScroll.ScrollBarImageColor3 = Color3.fromRGB(180,140,255)
+	clScroll.CanvasSize = UDim2.new(0,0,0,0)
+	clScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	Instance.new("UIListLayout", clScroll).Padding = UDim.new(0,6)
+
+	local function renderChangelog()
+		for _,c in ipairs(clScroll:GetChildren()) do
+			if c:IsA("Frame") then c:Destroy() end
+		end
+		local list = changelogData.entries or {}
+		if #list == 0 then
+			local lbl = Instance.new("TextLabel", clScroll)
+			lbl.Size = UDim2.new(1,-5,0,30)
+			lbl.BackgroundTransparency = 1
+			lbl.Text = tcl("changelog_empty")
+			lbl.TextColor3 = Color3.fromRGB(140,140,140)
+			lbl.Font = Enum.Font.SourceSansBold
+			lbl.TextSize = 11
+			return
+		end
+		for _,e in ipairs(list) do
+			local isNew = e.version and not seenVersions[e.version]
+			local card = Instance.new("Frame", clScroll)
+			card.Size = UDim2.new(1,-5,0,0)
+			card.AutomaticSize = Enum.AutomaticSize.Y
+			card.BackgroundColor3 = isNew and Color3.fromRGB(45,35,60) or Color3.fromRGB(36,36,42)
+			card.BorderSizePixel = 0
+			Instance.new("UICorner", card).CornerRadius = UDim.new(0,6)
+			local pad = Instance.new("UIPadding", card)
+			pad.PaddingTop = UDim.new(0,8); pad.PaddingBottom = UDim.new(0,8)
+			pad.PaddingLeft = UDim.new(0,10); pad.PaddingRight = UDim.new(0,10)
+			local lay = Instance.new("UIListLayout", card)
+			lay.Padding = UDim.new(0,4)
+			lay.SortOrder = Enum.SortOrder.LayoutOrder
+
+			local header = Instance.new("Frame", card)
+			header.Size = UDim2.new(1,0,0,18)
+			header.BackgroundTransparency = 1
+			header.LayoutOrder = 1
+
+			local vLabel = Instance.new("TextLabel", header)
+			vLabel.Size = UDim2.new(0,80,1,0)
+			vLabel.BackgroundTransparency = 1
+			vLabel.Text = "v"..tostring(e.version or "?")
+			vLabel.TextColor3 = Color3.fromRGB(255,180,80)
+			vLabel.Font = Enum.Font.SourceSansBold; vLabel.TextSize = 12
+			vLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+			local dLabel = Instance.new("TextLabel", header)
+			dLabel.Size = UDim2.new(1,-80,1,0); dLabel.Position = UDim2.new(0,80,0,0)
+			dLabel.BackgroundTransparency = 1
+			dLabel.Text = tostring(e.date or "")
+			dLabel.TextColor3 = Color3.fromRGB(150,150,150)
+			dLabel.Font = Enum.Font.SourceSans; dLabel.TextSize = 10
+			dLabel.TextXAlignment = Enum.TextXAlignment.Right
+
+			if isNew then
+				local badge = Instance.new("TextLabel", header)
+				badge.Size = UDim2.new(0,52,0,16)
+				badge.Position = UDim2.new(1,-132,0,1)
+				badge.BackgroundColor3 = Color3.fromRGB(180,120,255)
+				badge.BorderSizePixel = 0
+				badge.Text = tcl("changelog_new_badge")
+				badge.TextColor3 = Color3.new(1,1,1)
+				badge.Font = Enum.Font.SourceSansBold; badge.TextSize = 8
+				Instance.new("UICorner", badge).CornerRadius = UDim.new(0,4)
+			end
+
+			local changes = (e.changes and (e.changes[S.lang] or e.changes.en)) or {}
+			for _,line in ipairs(changes) do
+				local bullet = Instance.new("TextLabel", card)
+				bullet.Size = UDim2.new(1,0,0,0)
+				bullet.AutomaticSize = Enum.AutomaticSize.Y
+				bullet.BackgroundTransparency = 1
+				bullet.Text = "•  "..tostring(line)
+				bullet.TextColor3 = Color3.fromRGB(220,220,220)
+				bullet.Font = Enum.Font.SourceSans; bullet.TextSize = 11
+				bullet.TextXAlignment = Enum.TextXAlignment.Left
+				bullet.TextWrapped = true
+				bullet.LayoutOrder = 2
+			end
+		end
+	end
+
+	local function refreshClButton()
+		local n = unseenCount()
+		if n > 0 then
+			clBtnRow.Text = tcl("whats_new").."  ("..n..")"
+			clBtnRow.BackgroundColor3 = Color3.fromRGB(120,80,180)
+		else
+			clBtnRow.Text = tcl("whats_new")
+			clBtnRow.BackgroundColor3 = Color3.fromRGB(60,40,90)
+		end
+	end
+
+	clBtnRow.MouseButton1Click:Connect(function()
+		if not CLPanel.Visible then
+			renderChangelog()
+			CLPanel.Visible = true
+			markAllSeen()
+			task.defer(refreshClButton)
+		else
+			CLPanel.Visible = false
+		end
+	end)
+	clClose.MouseButton1Click:Connect(function() CLPanel.Visible = false end)
+
+	refreshClButton()
+
+	task.spawn(function()
+		task.wait(2)
+		if fetchChangelog() then refreshClButton() end
+	end)
+
+	if S.onLangChange then
+		S.onLangChange(function()
+			pcall(function() clTitle.Text = tcl("changelog_title") end)
+			refreshClButton()
+			if CLPanel.Visible then renderChangelog() end
+		end)
+	end
+	print("[UCS] Changelog ok")
+end
+
+task.spawn(function()
+	task.wait(3)
+	local ok, remote = pcall(function()
+		return game:HttpGet(S.VERSION_URL.."?t="..tostring(tick()), true)
+	end)
+	if not ok or not remote then return end
+	remote = tostring(remote):gsub("%s+$",""):gsub("^%s+","")
+	if remote == "" or remote == S.VERSION then return end
+	local function vnum(s)
+		local a,b,c = tostring(s):match("^(%d+)%.(%d+)%.?(%d*)")
+		return (tonumber(a) or 0)*10000 + (tonumber(b) or 0)*100 + (tonumber(c) or 0)
+	end
+	if vnum(remote) > vnum(S.VERSION) then
+		S.notify(t("n_update")..remote..t("n_update_you")..S.VERSION..")",
+			Color3.fromRGB(255,200,80))
+		if S._watermark and S._watermark.Parent then
+			S._watermark.Text = "UCS v"..S.VERSION.."  →  v"..remote.."  ·  "..S.AUTHOR
+			S._watermark.TextColor3 = Color3.fromRGB(255,220,100)
+			S._watermark.TextTransparency = 0
+		end
+	end
+end)
+
+_G.UCS_Unload=function()
+	for k in pairs(S.conns) do S.dis(k) end
+	for n in pairs(S.tasks) do S.delT(n) end
+	if S._extrasCleanup then pcall(S._extrasCleanup) end
+	if S.stopPlat then pcall(S.stopPlat) end
+	if S.clearNH then pcall(S.clearNH) end
+	if S.clearXray then pcall(S.clearXray) end
+	S.dis("FreezePlayer"); S.dis("FreezeCam")
+	if stealthTrigger then pcall(function() stealthTrigger:Destroy() end) end
+	pcall(function() UIS.MouseBehavior=Enum.MouseBehavior.Default; Cam.CameraType=Enum.CameraType.Custom end)
+	pcall(function() S.col(LP.Character,true) end)
+	local h=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+	if h then h.PlatformStand=false; h.WalkSpeed=16 end
+	pcall(function() if S.plat then S.plat:Destroy() end end)
+	pcall(function() if S.SG then S.SG:Destroy() end end)
+	_G.UCS_Unload=nil
+	print("[UCS] Unloaded")
+end
+S.notify(t("n_ucs_loaded"),Color3.fromRGB(0,200,0))
+print("[UCS] DONE")
