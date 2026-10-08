@@ -21,35 +21,27 @@ _G.UCS=S
 S.lang = "en" -- "ru" | "en"
 local L = {
 	ru = {
-		-- tabs
 		tab_main="ДВИЖ", tab_func="ФУНК", tab_vis="ВИЗ", tab_play="ИГРОК",
 		tab_wp="ТОЧКИ", tab_addons="АДДОНЫ", tab_settings="⚙",
-		-- main
 		run="Бег", fly="Полёт", jump="Прыжок", infjump="Беск. Прыжок",
 		noclip="Ноуклип", platform="Платформа", hotkeys_work="Хоткеи: работа",
 		hotkeys_move="Хоткеи: перемещение", respawn="Респавн себя",
 		on="ВКЛ", off="ВЫКЛ",
-		-- func
 		fastint="Фаст Интеракт", oneshot="OneShot+ (Killer+Remote)",
 		rejoin="Авто-Реджоин", antiragdoll="Анти-Рэгдолл",
 		antivoid="Анти-Войд", antikb="Анти-Кнокбэк",
 		antitp="Анти-Телепорт", antiafk="Анти-АФК", antifling="Анти-Флинг",
-		-- visual
 		espp="ESP игроки", espnpc="ESP NPC", xray="X-Ray", fullbright="Фуллбрайт",
 		freecam="Freecam",
-		-- players
 		search_players="Поиск: имя или @username",
 		join_ph="UserID или @username", join="Войти",
 		hop_ph="UserID или @username (к другу)", hop="К другу",
 		spectate="СМОТР", stop="СТОП", hide="СКРЫТЬ", show="ПОКАЗ",
-		-- wp
 		wp_name_ph="Имя (пусто = авто)", wp_save="Сохранить позицию",
 		wp_clear="Удалить все",
-		-- addons
 		addon_url_ph="URL raw-скрипта", addon_name_ph="Имя аддона",
 		addon_add="Добавить аддон", addon_clear="Очистить список",
 		addon_empty="Список пуст.",
-		-- settings
 		transp="Прозрачность панели",
 		show_hotkeys="Показ хоткеев (общий)",
 		hk_dash="Хоткей DASH: показ", hk_plat="Хоткей Платформа: показ",
@@ -64,7 +56,6 @@ local L = {
 		profiles="📚 Профили конфигов", profile_name_ph="Имя профиля...",
 		profile_save="Сохранить", profile_load="Load", profile_none="Профилей пока нет",
 		language="Язык / Language",
-		-- notifications
 		n_stealth_on="Стелс ВКЛ", n_stealth_off="Стелс выключен",
 		n_file_missing="Файла нет", n_broken_cfg="Битый конфиг",
 		n_saved="Сохранено", n_loaded="Загружено", n_no_writefile="Нет writefile",
@@ -139,6 +130,41 @@ local function t(k)
 	return tbl[k] or (L.en[k]) or k
 end
 S.t = t
+
+-- ===== LIVE LANG SYSTEM =====
+S._langListeners = {}
+S._langRefs = {}
+S.tabButtons = {}
+function S.onLangChange(fn) table.insert(S._langListeners, fn) end
+function S.langRef(obj, prop, keyOrFn)
+	table.insert(S._langRefs, {obj=obj, prop=prop, key=keyOrFn})
+end
+function S.fireLangChange()
+	for _,fn in ipairs(S._langListeners) do pcall(fn) end
+end
+function S.refreshLang()
+	-- статические тексты через langRef
+	for _,r in ipairs(S._langRefs) do
+		if r.obj and r.obj.Parent then
+			local txt = (type(r.key)=="function") and r.key() or t(r.key)
+			pcall(function() r.obj[r.prop] = txt end)
+		end
+	end
+	-- кнопки табов
+	if S.tabButtons and S._tabLabelKeys then
+		for n, b in pairs(S.tabButtons) do
+			if b and b.Parent and S._tabLabelKeys[n] then
+				pcall(function() b.Text = t(S._tabLabelKeys[n]) end)
+			end
+		end
+	end
+	-- тогглы: просим обновить состояние/текст
+	for _, tg in pairs(S.toggles) do
+		if tg.btn and tg.cb then pcall(tg.cb, tg.btn, "refresh") end
+	end
+	-- аддоны
+	S.fireLangChange()
+end
 
 S.C={sEn=false,tSp=100,fEn=false,fSp=4,jpEn=false,jPw=100,jEn=false,nEn=false,
 eEn=false,xrayEn=false,xrayOpacity=100,fbEn=false,avEn=false,voidY=-50,akbEn=false,kbLimit=50,
@@ -256,6 +282,7 @@ S.MFTabBar=TB
 S.Tabs={}
 local names={"Main","Func","Visual","Players","WP","Addons","Settings"}
 local labelKeys={Main="tab_main",Func="tab_func",Visual="tab_vis",Players="tab_play",WP="tab_wp",Addons="tab_addons",Settings="tab_settings"}
+S._tabLabelKeys=labelKeys
 local tabW=1/#names
 for i,n in ipairs(names) do
 	local sc=Instance.new("ScrollingFrame",MF)
@@ -276,6 +303,7 @@ for i,n in ipairs(names) do
 	b.TextColor3=Color3.new(1,1,1); b.BorderSizePixel=0
 	b.Font=Enum.Font.SourceSansBold; b.TextSize=9
 	Instance.new("UICorner",b).CornerRadius=UDim.new(0,4)
+	S.tabButtons[n]=b
 	b.MouseButton1Click:Connect(function()
 		for tn,fr in pairs(S.Tabs) do fr.Visible=(tn==n) end
 		for _,btn in ipairs(TB:GetChildren()) do if btn:IsA("TextButton") then btn.BackgroundColor3=Color3.fromRGB(42,42,42) end end
@@ -445,22 +473,33 @@ addR("Main",t("jump").." ("..C.jPw..")",function(b,a)
 	b.Text=t("jump")..": "..(C.jpEn and t("on") or t("off")).." ("..C.jPw..")"
 end,true,"jpEn")
 
-addR("Main",t("infjump"),function(b)
-	C.jEn=not C.jEn
+addR("Main",t("infjump"),function(b,a)
+	if a=="toggle" then
+		C.jEn=not C.jEn
+		if C.jEn then
+			S.conns.InfJump=UIS.JumpRequest:Connect(function() pcall(function() local h=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid"); if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end end) end)
+		else
+			S.dis("InfJump")
+		end
+	end
 	if C.jEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("infjump")..": "..t("on")
-		S.conns.InfJump=UIS.JumpRequest:Connect(function() pcall(function() local h=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid"); if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end end) end)
-	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("infjump")..": "..t("off"); S.dis("InfJump") end
+	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("infjump")..": "..t("off") end
 end,false,"jEn")
 
-addR("Main",t("noclip"),function(b)
-	C.nEn=not C.nEn
+addR("Main",t("noclip"),function(b,a)
+	if a=="toggle" then
+		C.nEn=not C.nEn
+		if C.nEn then
+			S.conns.Noclip=RS.PreSimulation:Connect(function() S.col(LP.Character,false) end)
+		else
+			S.dis("Noclip"); S.col(LP.Character,true)
+		end
+	end
 	if C.nEn then
 		b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("noclip")..": "..t("on")
-		S.conns.Noclip=RS.PreSimulation:Connect(function() S.col(LP.Character,false) end)
 		if S.NoClipBtn then S.NoClipBtn.BackgroundColor3=Color3.fromRGB(0,150,0) end
 	else
 		b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("noclip")..": "..t("off")
-		S.dis("Noclip"); S.col(LP.Character,true)
 		if S.NoClipBtn then S.NoClipBtn.BackgroundColor3=Color3.fromRGB(40,40,60) end
 	end
 end,false,"nEn")
@@ -503,12 +542,18 @@ local function stopPlat()
 	if plat then plat.Parent=nil end
 end
 S.startPlat=startPlat; S.stopPlat=stopPlat
-addR("Main",t("platform")..": "..t("off"),function(b)
-	C.platEn=not C.platEn
-	if C.platEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("platform")..": "..t("on"); startPlat()
+addR("Main",t("platform")..": "..t("off"),function(b,a)
+	if a=="toggle" then
+		C.platEn=not C.platEn
+		if C.platEn then startPlat() else stopPlat() end
+	end
+	if C.platEn then
+		b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("platform")..": "..t("on")
 		if S.PlatToggleBtn then S.PlatToggleBtn.BackgroundColor3=Color3.fromRGB(0,150,0) end
-	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("platform")..": "..t("off"); stopPlat()
-		if S.PlatToggleBtn then S.PlatToggleBtn.BackgroundColor3=Color3.fromRGB(30,60,80) end end
+	else
+		b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("platform")..": "..t("off")
+		if S.PlatToggleBtn then S.PlatToggleBtn.BackgroundColor3=Color3.fromRGB(30,60,80) end
+	end
 end,false,"platEn")
 
 -- SCREEN BUTTONS
@@ -619,7 +664,8 @@ local function doRespawn()
 	pcall(function() LP:LoadCharacter() end)
 end
 S.doRespawn=doRespawn
-addR("Main",t("respawn"),function(b)
+addR("Main",t("respawn"),function(b,a)
+	if a~="toggle" then return end
 	doRespawn(); b.BackgroundColor3=Color3.fromRGB(0,120,180)
 	task.wait(0.3); b.BackgroundColor3=Color3.fromRGB(50,50,50)
 end,false)
@@ -679,7 +725,12 @@ local function doFastInteract()
 		end
 	end
 end
-addR("Func",t("fastint"),function(b)
+addR("Func",t("fastint"),function(b,a)
+	if a~="toggle" then
+		if C.fiEn then b.Text=t("fastint")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(0,120,0)
+		else b.Text=t("fastint")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
+		return
+	end
 	if not FI_P and not FI_C then S.notify(t("n_no_fire"),Color3.fromRGB(255,80,80)); return end
 	C.fiEn=not C.fiEn
 	if C.fiEn then
@@ -761,7 +812,12 @@ local function unhookAllOneShot()
 	end
 end
 S.unhookAllOneShot=unhookAllOneShot
-addR("Func",t("oneshot"),function(b)
+addR("Func",t("oneshot"),function(b,a)
+	if a~="toggle" then
+		if C.oneShotEn then b.Text=t("oneshot")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(200,0,0)
+		else b.Text=t("oneshot")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
+		return
+	end
 	C.oneShotEn=not C.oneShotEn
 	if C.oneShotEn then
 		b.Text=t("oneshot")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(200,0,0)
@@ -784,7 +840,12 @@ addR("Func",t("oneshot"),function(b)
 	end
 end,false,"oneShotEn")
 
-addR("Func",t("rejoin"),function(b)
+addR("Func",t("rejoin"),function(b,a)
+	if a~="toggle" then
+		if C.rejoinEn then b.Text=t("rejoin")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(0,120,0)
+		else b.Text=t("rejoin")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
+		return
+	end
 	C.rejoinEn=not C.rejoinEn
 	if C.rejoinEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("rejoin")..": "..t("on")
 		S.conns.Rejoin=Players.PlayerRemoving:Connect(function(p) if p==LP and C.rejoinEn then task.wait(1.5); pcall(function() TeleSvc:Teleport(game.PlaceId) end) end end)
@@ -804,7 +865,12 @@ local function applyAR(char)
 	end)
 end
 S.applyAR=applyAR
-addR("Func",t("antiragdoll"),function(b)
+addR("Func",t("antiragdoll"),function(b,a)
+	if a~="toggle" then
+		if C.arEn then b.Text=t("antiragdoll")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(0,120,0)
+		else b.Text=t("antiragdoll")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
+		return
+	end
 	C.arEn=not C.arEn
 	if C.arEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("antiragdoll")..": "..t("on"); if LP.Character then applyAR(LP.Character) end
 	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("antiragdoll")..": "..t("off")
@@ -858,7 +924,12 @@ addR("Func",t("antikb").." ("..C.kbLimit..")",function(b,a)
 	b.Text=t("antikb")..": "..(C.akbEn and t("on") or t("off")).." ("..C.kbLimit..")"
 end,true,"akbEn")
 
-addR("Func",t("antitp"),function(b)
+addR("Func",t("antitp"),function(b,a)
+	if a~="toggle" then
+		if C.atpEn then b.Text=t("antitp")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(0,120,0)
+		else b.Text=t("antitp")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
+		return
+	end
 	C.atpEn=not C.atpEn
 	if C.atpEn then
 		b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("antitp")..": "..t("on")
@@ -878,7 +949,12 @@ addR("Func",t("antitp"),function(b)
 	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("antitp")..": "..t("off"); S.delT("AntiTP") end
 end,false,"atpEn")
 
-addR("Func",t("antiafk"),function(b)
+addR("Func",t("antiafk"),function(b,a)
+	if a~="toggle" then
+		if C.afkEn then b.Text=t("antiafk")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(0,120,0)
+		else b.Text=t("antiafk")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
+		return
+	end
 	C.afkEn=not C.afkEn
 	if C.afkEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("antiafk")..": "..t("on")
 		S.addT("AntiAFK",function() pcall(function()
@@ -921,7 +997,12 @@ local function stopAntiFling()
 		if hum then hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll,true); hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown,true); hum:SetStateEnabled(Enum.HumanoidStateType.Physics,true) end end)
 end
 S.stopAntiFling=stopAntiFling
-addR("Func",t("antifling"),function(b)
+addR("Func",t("antifling"),function(b,a)
+	if a~="toggle" then
+		if C.aflingEn then b.Text=t("antifling")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(0,120,0)
+		else b.Text=t("antifling")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
+		return
+	end
 	C.aflingEn=not C.aflingEn
 	if C.aflingEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("antifling")..": "..t("on"); startAntiFling()
 	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("antifling")..": "..t("off"); stopAntiFling() end
@@ -974,7 +1055,12 @@ local function rmESP(p)
 	pcall(function() local c=p.Character; if c and c:FindFirstChild("UCS_HL") then c.UCS_HL:Destroy() end end)
 end
 S.rmESP=rmESP
-addR("Visual",t("espp"),function(b)
+addR("Visual",t("espp"),function(b,a)
+	if a~="toggle" then
+		if C.eEn then b.Text=t("espp")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(0,120,0)
+		else b.Text=t("espp")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
+		return
+	end
 	C.eEn=not C.eEn
 	if C.eEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("espp")..": "..t("on")
 		for _,p in ipairs(Players:GetPlayers()) do applyESP(p) end
@@ -997,7 +1083,8 @@ local function clearNH()
 	npcESP={}
 end
 S.clearNH=clearNH
-addR("Visual",t("espnpc"),function(b)
+addR("Visual",t("espnpc"),function(b,a)
+	if a~="toggle" then return end
 	if next(npcESP) then
 		clearNH(); S.delT("NPCespSync")
 		b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("espnpc")..": "..t("off")
@@ -1052,31 +1139,36 @@ addR("Visual",t("xray").." ("..C.xrayOpacity.."%)",function(b,a)
 end,true,"xrayEn")
 
 local fbSaved=nil
-addR("Visual",t("fullbright"),function(b)
+addR("Visual",t("fullbright"),function(b,a)
+	if a~="toggle" then
+		if C.fbEn then b.Text=t("fullbright")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(0,120,0)
+		else b.Text=t("fullbright")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
+		return
+	end
 	C.fbEn=not C.fbEn
-	local L=Lighting
+	local L2=Lighting
 	if C.fbEn then
 		if not fbSaved then
-			local atm=L:FindFirstChildOfClass("Atmosphere")
-			fbSaved={Ambient=L.Ambient,OutdoorAmbient=L.OutdoorAmbient,Brightness=L.Brightness,FogEnd=L.FogEnd,FogStart=L.FogStart,GlobalShadows=L.GlobalShadows,ClockTime=L.ClockTime,EnvironmentDiffuseScale=L.EnvironmentDiffuseScale,EnvironmentSpecularScale=L.EnvironmentSpecularScale,AtmDensity=atm and atm.Density or nil,AtmHaze=atm and atm.Haze or nil}
+			local atm=L2:FindFirstChildOfClass("Atmosphere")
+			fbSaved={Ambient=L2.Ambient,OutdoorAmbient=L2.OutdoorAmbient,Brightness=L2.Brightness,FogEnd=L2.FogEnd,FogStart=L2.FogStart,GlobalShadows=L2.GlobalShadows,ClockTime=L2.ClockTime,EnvironmentDiffuseScale=L2.EnvironmentDiffuseScale,EnvironmentSpecularScale=L2.EnvironmentSpecularScale,AtmDensity=atm and atm.Density or nil,AtmHaze=atm and atm.Haze or nil}
 		end
 		b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("fullbright")..": "..t("on")
 		S.addT("Fullbright",function()
-			L.Ambient=Color3.fromRGB(255,255,255); L.OutdoorAmbient=Color3.fromRGB(255,255,255)
-			L.Brightness=2; L.FogEnd=1e9; L.FogStart=1e9; L.GlobalShadows=false; L.ClockTime=12
-			L.EnvironmentDiffuseScale=1; L.EnvironmentSpecularScale=0
-			local atm=L:FindFirstChildOfClass("Atmosphere")
+			L2.Ambient=Color3.fromRGB(255,255,255); L2.OutdoorAmbient=Color3.fromRGB(255,255,255)
+			L2.Brightness=2; L2.FogEnd=1e9; L2.FogStart=1e9; L2.GlobalShadows=false; L2.ClockTime=12
+			L2.EnvironmentDiffuseScale=1; L2.EnvironmentSpecularScale=0
+			local atm=L2:FindFirstChildOfClass("Atmosphere")
 			if atm then atm.Density=0; atm.Haze=0 end
 		end,0.1)
 	else
 		b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("fullbright")..": "..t("off")
 		S.delT("Fullbright")
 		if fbSaved then pcall(function()
-			L.Ambient=fbSaved.Ambient; L.OutdoorAmbient=fbSaved.OutdoorAmbient
-			L.Brightness=fbSaved.Brightness; L.FogEnd=fbSaved.FogEnd; L.FogStart=fbSaved.FogStart
-			L.GlobalShadows=fbSaved.GlobalShadows; L.ClockTime=fbSaved.ClockTime
-			L.EnvironmentDiffuseScale=fbSaved.EnvironmentDiffuseScale; L.EnvironmentSpecularScale=fbSaved.EnvironmentSpecularScale
-			local atm=L:FindFirstChildOfClass("Atmosphere")
+			L2.Ambient=fbSaved.Ambient; L2.OutdoorAmbient=fbSaved.OutdoorAmbient
+			L2.Brightness=fbSaved.Brightness; L2.FogEnd=fbSaved.FogEnd; L2.FogStart=fbSaved.FogStart
+			L2.GlobalShadows=fbSaved.GlobalShadows; L2.ClockTime=fbSaved.ClockTime
+			L2.EnvironmentDiffuseScale=fbSaved.EnvironmentDiffuseScale; L2.EnvironmentSpecularScale=fbSaved.EnvironmentSpecularScale
+			local atm=L2:FindFirstChildOfClass("Atmosphere")
 			if atm then if fbSaved.AtmDensity then atm.Density=fbSaved.AtmDensity end; if fbSaved.AtmHaze then atm.Haze=fbSaved.AtmHaze end end
 		end) end
 	end
@@ -1380,6 +1472,7 @@ local function refreshP()
 		end)
 	end
 end
+S.refreshPlayers = refreshP
 searchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshP() end)
 refreshP()
 Players.PlayerAdded:Connect(function() task.wait(0.5); refreshP() end)
@@ -1551,7 +1644,8 @@ addR("Settings",t("hk_panel"),function(b,a)
 	if C.hkPanel then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("hk_panel")
 	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("hk_panel"):gsub(": visible",": hidden"):gsub(": показ",": скрыт") end
 end,false,"hkPanel")
-addR("Settings",t("hide_all"),function(b)
+addR("Settings",t("hide_all"),function(b,a)
+	if a~="toggle" then return end
 	b.BackgroundColor3=Color3.fromRGB(80,60,180); S.enterStealth()
 end,false)
 local cornerKeys={TL="corner_tl",TR="corner_tr",BL="corner_bl",BR="corner_br"}
@@ -1570,11 +1664,12 @@ addR("Settings",t("language"),function(b,a)
 	if a=="toggle" then
 		S.lang = (S.lang=="ru") and "en" or "ru"
 		C.lang = S.lang
+		-- мгновенное применение ко всем текстам
+		task.defer(function() S.refreshLang() end)
 	end
 	if S.lang=="ru" then b.Text=t("language").." 🇷🇺"
 	else b.Text=t("language").." 🇬🇧" end
 	b.BackgroundColor3=Color3.fromRGB(0,120,0)
-	S.notify(t("n_reload_for_lang"),Color3.fromRGB(255,180,80))
 end,false,"lang")
 
 -- МОБИЛЬНОЕ УПРАВЛЕНИЕ
@@ -1815,6 +1910,7 @@ local function refreshProfiles()
 		end)
 	end
 end
+S.refreshProfiles = refreshProfiles
 profSaveBtn.MouseButton1Click:Connect(function()
 	local name=(profNameBox.Text or ""):gsub("^%s+",""):gsub("%s+$","")
 	if name=="" then S.notify(t("n_prof_name"),Color3.fromRGB(255,180,100)); return end
@@ -1830,6 +1926,26 @@ end)
 refreshProfiles()
 print("[UCS] Settings ok")
 print("[UCS] Profiles ok")
+
+-- ===== LANG REFS: плейсхолдеры и статические кнопки =====
+S.langRef(searchBox, "PlaceholderText", "search_players")
+S.langRef(joinIdBox, "PlaceholderText", "join_ph")
+S.langRef(hopBox, "PlaceholderText", "hop_ph")
+S.langRef(joinBtn, "Text", "join")
+S.langRef(hopBtn, "Text", "hop")
+S.langRef(wpName, "PlaceholderText", "wp_name_ph")
+S.langRef(addBox, "PlaceholderText", "addon_url_ph")
+S.langRef(nameBox, "PlaceholderText", "addon_name_ph")
+S.langRef(addBtn, "Text", "addon_add")
+S.langRef(clearBtn, "Text", "addon_clear")
+S.langRef(profNameBox, "PlaceholderText", "profile_name_ph")
+S.langRef(profSaveBtn, "Text", "profile_save")
+S.langRef(profHeader, "Text", "profiles")
+
+-- при смене языка перерисовываем списки (у них в кнопках перевод)
+S.onLangChange(function() if S.refreshPlayers then S.refreshPlayers() end end)
+S.onLangChange(function() if S.refreshAddons then S.refreshAddons() end end)
+S.onLangChange(function() if S.refreshProfiles then S.refreshProfiles() end end)
 
 -- RESPAWN
 S.conns.Respawn=LP.CharacterAdded:Connect(function(ch)
