@@ -226,13 +226,13 @@ S.SG=SG
 function S.notify(txt,c)
 	c=c or Color3.fromRGB(255,140,0)
 	local n=Instance.new("TextLabel",SG)
-	n.Size=UDim2.new(0,280,0,28); n.Position=UDim2.new(0.5,-140,0,20)
-	n.BackgroundColor3=Color3.fromRGB(25,25,25); n.BackgroundTransparency=0.15
-	n.TextColor3=c; n.Text=txt; n.Font=Enum.Font.SourceSans; n.TextSize=11
+	n.Size=UDim2.new(0,236,0,22); n.Position=UDim2.new(0.5,-118,0,14)
+	n.BackgroundColor3=Color3.fromRGB(25,25,25); n.BackgroundTransparency=0.25
+	n.TextColor3=c; n.Text=txt; n.Font=Enum.Font.SourceSans; n.TextSize=10
 	n.TextStrokeTransparency=1
 	n.TextXAlignment=Enum.TextXAlignment.Center; n.ZIndex=999
 	Instance.new("UICorner",n).CornerRadius=UDim.new(0,6)
-	local st=Instance.new("UIStroke",n); st.Color=c; st.Thickness=1
+	local st=Instance.new("UIStroke",n); st.Color=c; st.Thickness=0.5; st.Transparency=0.3
 	task.delay(2,function() if n.Parent then local tw=Tween:Create(n,TweenInfo.new(0.3),{BackgroundTransparency=1,TextTransparency=1}); local t2=Tween:Create(st,TweenInfo.new(0.3),{Transparency=1}); tw:Play(); t2:Play(); tw.Completed:Wait() end; if n.Parent then n:Destroy() end end)
 end
 
@@ -276,10 +276,10 @@ StealthBtn.Text="👻"; StealthBtn.TextColor3=Color3.fromRGB(200,200,255)
 StealthBtn.BackgroundTransparency=1; StealthBtn.TextSize=18
 StealthBtn.Font=Enum.Font.SourceSansBold; StealthBtn.ZIndex=11
 local Op=Instance.new("TextButton",SG)
-Op.Size=UDim2.new(0,190,0,32); Op.Position=UDim2.new(0.02,0,0.5,0)
+Op.Size=UDim2.new(0,148,0,24); Op.Position=UDim2.new(0.02,0,0.5,0)
 Op.Text="UNIVERSAL CHEAT SCRIPT"; Op.BackgroundColor3=Color3.fromRGB(42,42,42)
-Op.TextColor3=Color3.fromRGB(255,140,0); Op.Font=Enum.Font.SourceSansBold
-Op.TextSize=10; Op.Visible=false
+Op.TextColor3=Color3.fromRGB(255,140,0); Op.Font=Enum.Font.SourceSans
+Op.TextSize=9; Op.Visible=false
 Instance.new("UICorner",Op).CornerRadius=UDim.new(0,6)
 Instance.new("UIStroke",Op).Color=Color3.fromRGB(255,140,0)
 S.Op=Op
