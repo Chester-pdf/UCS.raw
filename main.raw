@@ -2012,4 +2012,57 @@ _G.UCS_Unload=function()
 	print("[UCS] Unloaded")
 end
 S.notify(t("n_ucs_loaded"),Color3.fromRGB(0,200,0))
+-- ============================================================
+-- VERSION + WATERMARK + AUTO-UPDATE
+-- ============================================================
+S.VERSION = "1.0.4"
+S.AUTHOR  = "@Chester-pdf"
+S.BRAND   = "UCS"
+S.VERSION_URL = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/version.txt"
+
+-- ВОДЯНОЙ ЗНАК
+do
+	local wm = Instance.new("TextLabel", SG)
+	wm.Name = "UCS_Watermark"
+	wm.Size = UDim2.new(0, 180, 0, 22)
+	wm.Position = UDim2.new(0, 8, 0, 6)
+	wm.BackgroundColor3 = Color3.fromRGB(25,25,25)
+	wm.BackgroundTransparency = 0.35
+	wm.BorderSizePixel = 0
+	wm.Text = S.BRAND.." v"..S.VERSION.."  |  "..S.AUTHOR
+	wm.TextColor3 = Color3.fromRGB(255,140,0)
+	wm.Font = Enum.Font.SourceSansBold
+	wm.TextSize = 11
+	wm.TextXAlignment = Enum.TextXAlignment.Center
+	wm.ZIndex = 900
+	wm.Visible = true
+	Instance.new("UICorner", wm).CornerRadius = UDim.new(0, 4)
+	local st = Instance.new("UIStroke", wm)
+	st.Color = Color3.fromRGB(255,140,0); st.Thickness = 1
+	S._watermark = wm
+end
+
+-- АВТО-ПРОВЕРКА ОБНОВЛЕНИЙ
+task.spawn(function()
+	task.wait(3) -- не мешаем загрузке
+	local ok, remote = pcall(function()
+		return game:HttpGet(S.VERSION_URL.."?t="..tostring(tick()), true)
+	end)
+	if not ok or not remote then return end
+	remote = tostring(remote):gsub("%s+$",""):gsub("^%s+","")
+	if remote == "" or remote == S.VERSION then return end
+	-- сравнение по числам: 1.0.4 > 1.0.3
+	local function vnum(s)
+		local a,b,c = tostring(s):match("^(%d+)%.(%d+)%.?(%d*)")
+		return (tonumber(a) or 0)*10000 + (tonumber(b) or 0)*100 + (tonumber(c) or 0)
+	end
+	if vnum(remote) > vnum(S.VERSION) then
+		S.notify("🔔 "..S.BRAND.." v"..remote.." available (you: v"..S.VERSION..")",
+			Color3.fromRGB(255,200,80))
+		if S._watermark and S._watermark.Parent then
+			S._watermark.Text = S.BRAND.." v"..S.VERSION.."  →  v"..remote
+			S._watermark.TextColor3 = Color3.fromRGB(255,220,100)
+		end
+	end
+end)
 print("[UCS] DONE")
