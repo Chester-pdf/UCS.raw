@@ -83,7 +83,6 @@ S.t_addon = t
 -- ===== берём систему слушателей из main.raw =====
 local onLangChange  = S.onLangChange  or function() end
 local fireLangChange = S.fireLangChange or function() end
--- (S.refreshLang дёргает fireLangChange сам, ручной хук на кнопку языка не нужен)
 
 print(t("loading"))
 
@@ -300,7 +299,16 @@ else
 		end
 	end
 
-	addR("Visual", t("freecam_name"), function(b)
+	-- FIX: колбек реагирует ТОЛЬКО на клик, "refresh" пропускает
+	addR("Visual", t("freecam_name"), function(b,a)
+		if a~="toggle" then
+			if C.freecam then
+				b.Text = t("freecam_on"); b.BackgroundColor3 = Color3.fromRGB(0,120,0)
+			else
+				b.Text = t("freecam_off"); b.BackgroundColor3 = Color3.fromRGB(50,50,50)
+			end
+			return
+		end
 		S._setFreecam(not C.freecam)
 	end, false, "freecam")
 
@@ -466,7 +474,10 @@ else
 		end
 	end)
 	dpClose.MouseButton1Click:Connect(function() dumperPanel.Visible = false end)
-	addR("Settings", t("dumper_title"), function(b)
+
+	-- FIX: колбек реагирует ТОЛЬКО на клик, "refresh" пропускает
+	addR("Settings", t("dumper_title"), function(b,a)
+		if a~="toggle" then return end
 		if not dumperPanel.Visible then refreshDump(); dumperPanel.Visible = true
 		else dumperPanel.Visible = false end
 	end, false, "gameDumper")
