@@ -1683,7 +1683,23 @@ local function refreshAddons()
 			end)
 		end)
 		delBtn.MouseButton1Click:Connect(function()
-			local info = runningAddons[a.url]
+-- Кнопка "Восстановить скрытые"
+local restoreBtn=Instance.new("TextButton",S.Tabs.Addons)
+restoreBtn.Size=UDim2.new(1,-5,0,26); restoreBtn.LayoutOrder=5
+restoreBtn.BackgroundColor3=Color3.fromRGB(60,80,120); restoreBtn.BorderSizePixel=0
+restoreBtn.Text = (S.lang=="ru") and "♻ Восстановить скрытые аддоны" or "♻ Restore hidden addons"
+restoreBtn.TextColor3=Color3.new(1,1,1)
+restoreBtn.Font=Enum.Font.SourceSansBold; restoreBtn.TextSize=10
+Instance.new("UICorner",restoreBtn).CornerRadius=UDim.new(0,4)
+restoreBtn.MouseButton1Click:Connect(function()
+	local count = 0
+	for url, _ in pairs(addonStore.hidden) do count = count + 1 end
+	addonStore.hidden = {}
+	saveAddonStore()
+	refreshAddons()
+	S.notify((S.lang=="ru") and ("Восстановлено: "..count) or ("Restored: "..count), Color3.fromRGB(0,180,0))
+end)
+local info = runningAddons[a.url]
 			if info and info.unload then pcall(info.unload) end
 			runningAddons[a.url] = nil
 			if a.source == "remote" then
