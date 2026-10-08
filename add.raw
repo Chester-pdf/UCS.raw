@@ -1,5 +1,5 @@
 -- ============================================================
--- UCS ADD v1.0 — FULL LOCALIZED (RU + EN) + LIVE LANG
+-- UCS ADD v1.0.3 — LOCALIZED (RU + EN) + LIVE LANG
 -- ============================================================
 local S = _G.UCS
 if not S then warn("[UCS add] _G.UCS is empty / _G.UCS пуст"); return end
@@ -7,12 +7,12 @@ if not S then warn("[UCS add] _G.UCS is empty / _G.UCS пуст"); return end
 -- ===== LOCALIZATION =====
 local L = {
 	ru = {
-		loading="[UCS add] загрузка v1.0...",
+		loading="[UCS add] загрузка v1.0.3...",
 		already="[UCS add] уже загружен",
 		freecam_exists="[UCS add] Freecam уже есть",
 		dumper_exists="[UCS add] Game Info Dumper уже есть",
 		search_ready="[UCS add] search+stars готовы, fun-rows: ",
-		done="[UCS add] готово v1.0",
+		done="[UCS add] готово v1.0.3",
 		freecam_name="Freecam",
 		freecam_on="Freecam: ВКЛ",
 		freecam_off="Freecam: ВЫКЛ",
@@ -40,12 +40,12 @@ local L = {
 		search_ph="🔍 поиск...",
 	},
 	en = {
-		loading="[UCS add] loading v1.0...",
+		loading="[UCS add] loading v1.0.3...",
 		already="[UCS add] already loaded",
 		freecam_exists="[UCS add] Freecam already exists",
 		dumper_exists="[UCS add] Game Info Dumper already exists",
 		search_ready="[UCS add] search+stars ready, fun-rows: ",
-		done="[UCS add] done v1.0",
+		done="[UCS add] done v1.0.3",
 		freecam_name="Freecam",
 		freecam_on="Freecam: ON",
 		freecam_off="Freecam: OFF",
@@ -299,20 +299,13 @@ else
 		end
 	end
 
-	-- FIX: колбек реагирует ТОЛЬКО на клик, "refresh" пропускает
+	-- жёсткий фильтр: работает ТОЛЬКО на явный клик
 	addR("Visual", t("freecam_name"), function(b,a)
-		if a~="toggle" then
-			if C.freecam then
-				b.Text = t("freecam_on"); b.BackgroundColor3 = Color3.fromRGB(0,120,0)
-			else
-				b.Text = t("freecam_off"); b.BackgroundColor3 = Color3.fromRGB(50,50,50)
-			end
-			return
-		end
+		if a ~= "toggle" then return end
 		S._setFreecam(not C.freecam)
 	end, false, "freecam")
 
-	-- LIVE LANG: freecam toggle
+	-- обновление текста при смене языка
 	onLangChange(function()
 		local tog = S.toggles and S.toggles.freecam
 		if tog and tog.btn then
@@ -382,7 +375,6 @@ local function showInfo(p)
 end
 S._showPlayerInfo = showInfo
 
--- LIVE LANG: info panel title
 onLangChange(function()
 	pcall(function() ipTitle.Text = t("info_title") end)
 end)
@@ -475,14 +467,13 @@ else
 	end)
 	dpClose.MouseButton1Click:Connect(function() dumperPanel.Visible = false end)
 
-	-- FIX: колбек реагирует ТОЛЬКО на клик, "refresh" пропускает
+	-- жёсткий фильтр: работает ТОЛЬКО на явный клик
 	addR("Settings", t("dumper_title"), function(b,a)
-		if a~="toggle" then return end
+		if a ~= "toggle" then return end
 		if not dumperPanel.Visible then refreshDump(); dumperPanel.Visible = true
 		else dumperPanel.Visible = false end
 	end, false, "gameDumper")
 
-	-- LIVE LANG: dumper labels + toggle button
 	onLangChange(function()
 		pcall(function() dpTitle.Text = t("dumper_title") end)
 		pcall(function() dpCopy.Text = t("dumper_copy") end)
@@ -646,7 +637,6 @@ task.spawn(function()
 	print(t("search_ready")..n)
 end)
 
--- LIVE LANG: search placeholders
 onLangChange(function()
 	for _, tabName in ipairs({"Main","Func","Visual","WP","Addons","Settings"}) do
 		local tab = S.Tabs[tabName]
