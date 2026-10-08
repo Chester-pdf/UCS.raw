@@ -1,4 +1,4 @@
-print("[UCS] start v1.0.5")
+print("[UCS] start v1.1.0")
 if _G.UCS_Unload then pcall(_G.UCS_Unload) end
 _G.UCS = nil
 _G._UCS_AddLoaded = nil
@@ -27,10 +27,10 @@ local L = {
 		noclip="Ноуклип", platform="Платформа", hotkeys_work="Хоткеи: работа",
 		hotkeys_move="Хоткеи: перемещение", respawn="Респавн себя",
 		on="ВКЛ", off="ВЫКЛ",
-		fastint="Фаст Интеракт", oneshot="OneShot+ (Killer+Remote)",
+		fastint="Фаст Интеракт", fi_safe="FastInteract: Безопасно",
 		rejoin="Авто-Реджоин", antiragdoll="Анти-Рэгдолл",
 		antivoid="Анти-Войд", antikb="Анти-Кнокбэк",
-		antitp="Анти-Телепорт", antiafk="Анти-АФК", antifling="Анти-Флинг",
+		antiafk="Анти-АФК", antifling="Анти-Флинг",
 		espp="ESP игроки", espnpc="ESP NPC", xray="X-Ray", fullbright="Фуллбрайт",
 		freecam="Freecam",
 		search_players="Поиск: имя или @username",
@@ -45,12 +45,9 @@ local L = {
 		addon_refresh="🔄 Обновить список",
 		addon_refreshing="Загрузка списка...",
 		addon_update_badge="ОБНОВЛЕНИЕ",
-		addon_author="автор",
-		addon_version="v",
-		addon_status_ok="OK",
-		addon_status_err="ОШИБКА",
-		addon_status_running="РАБОТАЕТ",
-		addon_stopped="Остановлено",
+		addon_author="автор", addon_version="v",
+		addon_status_ok="OK", addon_status_err="ОШИБКА",
+		addon_status_running="РАБОТАЕТ", addon_stopped="Остановлено",
 		transp="Прозрачность панели",
 		show_hotkeys="Показ хоткеев (общий)",
 		hk_dash="Хоткей DASH: показ", hk_plat="Хоткей Платформа: показ",
@@ -83,7 +80,7 @@ local L = {
 		n_cleared="Очищено", n_addon_added="Аддон добавлен",
 		n_url_empty="URL пустой", n_loading="Загрузка", n_started="запущен",
 		n_error="Ошибка", n_no_fire="Нет fireproximityprompt/fireclickdetector",
-		n_ucs_loaded="UCS v1.0.5 загружен",
+		n_ucs_loaded="UCS v1.1.0 загружен",
 		n_name_taken="Имя занято", n_point_saved="Точка сохранена",
 		n_reload_for_lang="Перезапусти UCS чтобы применить язык",
 		n_update="🔔 Доступна UCS v",
@@ -92,6 +89,10 @@ local L = {
 		n_addon_fetch_fail="Не удалось загрузить список аддонов",
 		n_addon_update="🔔 Обновление: ",
 		n_addon_broken="Аддон не загрузился: ",
+		n_void_saved="Точка возврата сохранена",
+		n_void_returned="Возврат из войда",
+		n_void_no_point="Нет сохранённой точки — пропуск",
+		fi_safe_note="Безопасный режим: не трогает HoldDuration",
 	},
 	en = {
 		tab_main="MOVE", tab_func="FUNC", tab_vis="VISUAL", tab_play="PLAYERS",
@@ -100,10 +101,10 @@ local L = {
 		noclip="Noclip", platform="Platform", hotkeys_work="Hotkeys: action",
 		hotkeys_move="Hotkeys: move mode", respawn="Respawn Self",
 		on="ON", off="OFF",
-		fastint="Fast Interact", oneshot="OneShot+ (Killer+Remote)",
+		fastint="Fast Interact", fi_safe="FastInteract: Safe",
 		rejoin="Auto Rejoin", antiragdoll="Anti Ragdoll",
 		antivoid="Anti Void", antikb="Anti Knockback",
-		antitp="Anti Teleport", antiafk="Anti AFK", antifling="Anti Fling",
+		antiafk="Anti AFK", antifling="Anti Fling",
 		espp="ESP Players", espnpc="ESP NPC", xray="X-Ray", fullbright="Fullbright",
 		freecam="Freecam",
 		search_players="Search: name or @username",
@@ -118,12 +119,9 @@ local L = {
 		addon_refresh="🔄 Refresh List",
 		addon_refreshing="Fetching list...",
 		addon_update_badge="UPDATE",
-		addon_author="by",
-		addon_version="v",
-		addon_status_ok="OK",
-		addon_status_err="ERROR",
-		addon_status_running="RUNNING",
-		addon_stopped="Stopped",
+		addon_author="by", addon_version="v",
+		addon_status_ok="OK", addon_status_err="ERROR",
+		addon_status_running="RUNNING", addon_stopped="Stopped",
 		transp="Panel transparency",
 		show_hotkeys="Show hotkeys (all)",
 		hk_dash="Hotkey DASH: visible", hk_plat="Hotkey Platform: visible",
@@ -156,7 +154,7 @@ local L = {
 		n_cleared="Cleared", n_addon_added="Addon added",
 		n_url_empty="URL empty", n_loading="Loading", n_started="started",
 		n_error="Error", n_no_fire="No fireproximityprompt/fireclickdetector",
-		n_ucs_loaded="UCS v1.0.5 loaded",
+		n_ucs_loaded="UCS v1.1.0 loaded",
 		n_name_taken="Name taken", n_point_saved="Point saved",
 		n_reload_for_lang="Restart UCS to apply language",
 		n_update="🔔 UCS v",
@@ -165,6 +163,10 @@ local L = {
 		n_addon_fetch_fail="Failed to fetch addon list",
 		n_addon_update="🔔 Update: ",
 		n_addon_broken="Addon failed to load: ",
+		n_void_saved="Return point saved",
+		n_void_returned="Returned from void",
+		n_void_no_point="No saved point — skipping",
+		fi_safe_note="Safe mode: doesn't touch HoldDuration",
 	},
 }
 local function t(k)
@@ -205,7 +207,7 @@ function S.refreshLang()
 end
 
 -- ===== VERSION / BRAND =====
-S.VERSION = "1.0.5"
+S.VERSION = "1.1.0"
 S.AUTHOR  = "@Chester-pdf"
 S.BRAND   = "UCS"
 S.VERSION_URL   = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/version.txt"
@@ -215,8 +217,8 @@ S.CHANGELOG_URL = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/ch
 S.C={sEn=false,tSp=100,fEn=false,fSp=4,jpEn=false,jPw=100,jEn=false,nEn=false,
 eEn=false,xrayEn=false,xrayOpacity=100,fbEn=false,avEn=false,voidY=-50,akbEn=false,kbLimit=50,
 dashPower=200,dashDuration=0.20,dashMoveMode=false,
-dashX=-150,dashY=-100,arEn=false,atpEn=false,rejoinEn=false,oneShotEn=false,
-fiEn=false,fiRange=15,platEn=false,
+dashX=-150,dashY=-100,arEn=false,rejoinEn=false,
+fiEn=false,fiRange=15,fiSafe=false,platEn=false,
 platX=-220,platY=-100,platDnX=-220,platDnY=-170,
 afkEn=false,aflingEn=false,showHotkeys=true,panelTransparency=0,
 hkDash=true,hkPlat=true,hkFly=true,hkNoClip=true,hkPanel=true,
@@ -741,6 +743,7 @@ print("[UCS] Main ok")
 local promptCache={}; local clickCache={}; local fiHoldSaved={}; local fiLosSaved={}; local fiFiredCount=0
 local function fiApplyPrompt(o)
 	if not o.Parent then return end
+	if C.fiSafe then return end
 	if fiHoldSaved[o]==nil then fiHoldSaved[o]=o.HoldDuration end
 	if fiLosSaved[o]==nil then fiLosSaved[o]=o.RequiresLineOfSight end
 	pcall(function() o.HoldDuration=0; o.RequiresLineOfSight=false end)
@@ -807,104 +810,18 @@ addR("Func",t("fastint"),function(b,a)
 		for o in pairs(promptCache) do fiRestorePrompt(o) end end
 end,false,"fiEn")
 
--- OneShot+
-local oneShotConns={}
-local oneShotLastFire=0
-local oneShotRemoteCache=nil
-local oneShotRange=60
-local function rapidFire()
-	local char=LP.Character; if not char then return end
-	local tool=char:FindFirstChildOfClass("Tool")
-	if tool then pcall(function() tool:Activate() end) end
-end
-local function getDamageRemote()
-	if oneShotRemoteCache and oneShotRemoteCache.Parent then return oneShotRemoteCache end
-	local rem=game:GetService("ReplicatedStorage"):FindFirstChild("Modules")
-	if not rem then return nil end
-	local ok,result=pcall(function() return rem.Shared.Event.Remotes.DamageEntity end)
-	if ok and result then oneShotRemoteCache=result; return result end
-	return nil
-end
-local function findNearest(range)
-	local myChar=LP.Character
-	local myRoot=myChar and myChar:FindFirstChild("HumanoidRootPart")
-	if not myRoot then return nil end
-	local nearest,dist=nil,range or 60
-	for _,o in ipairs(workspace:GetDescendants()) do
-		if o:IsA("Humanoid") and o.Health>0 then
-			local m=o.Parent
-			if m and m~=myChar and not Players:GetPlayerFromCharacter(m) then
-				local r=m:FindFirstChild("HumanoidRootPart")
-				if r then
-					local d=(r.Position-myRoot.Position).Magnitude
-					if d<dist then nearest=m; dist=d end
-				end
-			end
+addR("Func",t("fi_safe"),function(b,a)
+	if a=="toggle" then
+		C.fiSafe=not C.fiSafe
+		if C.fiSafe then
+			for o in pairs(promptCache) do if o.Parent then fiRestorePrompt(o) end end
+		elseif C.fiEn then
+			for o in pairs(promptCache) do if o.Parent then fiApplyPrompt(o) end end
 		end
 	end
-	return nearest
-end
-local function oneShotRemoteLoop()
-	if not C.oneShotEn then return end
-	local now=tick()
-	if now-oneShotLastFire<0.02 then return end
-	oneShotLastFire=now
-	local remote=getDamageRemote()
-	if not remote then return end
-	local target=findNearest(oneShotRange)
-	if not target then return end
-	for i=1,5 do
-		pcall(function() remote:FireServer(target,nil,"Melee") end)
-	end
-end
-local function hookOneShot(h)
-	if not h or oneShotConns[h] then return end
-	if h.Parent==LP.Character then return end
-	if Players:GetPlayerFromCharacter(h.Parent) then return end
-	oneShotConns[h]=h.HealthChanged:Connect(function(hp)
-		if not C.oneShotEn or not h.Parent then return end
-		if hp<=0 or hp>=h.MaxHealth then return end
-		pcall(function() h.Health=0 end)
-		for _=1,15 do task.spawn(rapidFire) end
-	end)
-end
-local function unhookAllOneShot()
-	local keys={}; for h in pairs(oneShotConns) do keys[#keys+1]=h end
-	for _,h in ipairs(keys) do
-		if oneShotConns[h] then
-			pcall(function() oneShotConns[h]:Disconnect() end)
-			oneShotConns[h]=nil
-		end
-	end
-end
-S.unhookAllOneShot=unhookAllOneShot
-addR("Func",t("oneshot"),function(b,a)
-	if a~="toggle" then
-		if C.oneShotEn then b.Text=t("oneshot")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(200,0,0)
-		else b.Text=t("oneshot")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
-		return
-	end
-	C.oneShotEn=not C.oneShotEn
-	if C.oneShotEn then
-		b.Text=t("oneshot")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(200,0,0)
-		for _,o in ipairs(workspace:GetDescendants()) do
-			if o:IsA("Humanoid") and not Players:GetPlayerFromCharacter(o.Parent) then
-				hookOneShot(o)
-			end
-		end
-		S.conns.OneShotReg=workspace.DescendantAdded:Connect(function(o)
-			if o:IsA("Humanoid") and not Players:GetPlayerFromCharacter(o.Parent) then
-				task.defer(function() if o.Parent and C.oneShotEn then hookOneShot(o) end end)
-			end
-		end)
-		S.addT("OneShotRemote",oneShotRemoteLoop,0.02)
-	else
-		b.Text=t("oneshot")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50)
-		S.dis("OneShotReg")
-		S.delT("OneShotRemote")
-		unhookAllOneShot()
-	end
-end,false,"oneShotEn")
+	if C.fiSafe then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("fi_safe")..": "..t("on")
+	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("fi_safe")..": "..t("off") end
+end,false,"fiSafe")
 
 addR("Func",t("rejoin"),function(b,a)
 	if a~="toggle" then
@@ -944,17 +861,33 @@ addR("Func",t("antiragdoll"),function(b,a)
 			if h then h:SetStateEnabled(Enum.HumanoidStateType.Ragdoll,true); h:SetStateEnabled(Enum.HumanoidStateType.FallingDown,true) end end) end
 end,false,"arEn")
 
+-- AntiVoid v2: last-safe-position
+local voidLastSafe=nil
+S.voidLastSafe=function() return voidLastSafe end
 addR("Func",t("antivoid").." ("..C.voidY..")",function(b,a)
 	if a=="toggle" then C.avEn=not C.avEn
-		if C.avEn then b.BackgroundColor3=Color3.fromRGB(0,120,0)
+		if C.avEn then
+			b.BackgroundColor3=Color3.fromRGB(0,120,0)
+			voidLastSafe=nil
 			S.addT("AntiVoid",function()
 				local root=LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-				if root and root.Position.Y<C.voidY then
-					S.skipTPNow(0.3); root.Velocity=Vector3.zero
-					root.CFrame=CFrame.new(root.Position.X,100,root.Position.Z)
+				if not root then return end
+				local p=root.Position
+				if p.Y > C.voidY + 20 then
+					voidLastSafe=p
+				end
+				if p.Y < C.voidY then
+					if voidLastSafe then
+						S.skipTPNow(0.5)
+						root.Velocity=Vector3.zero
+						root.CFrame=CFrame.new(voidLastSafe + Vector3.new(0,3,0))
+						voidLastSafe=nil
+					end
 				end
 			end,0.1)
-		else b.BackgroundColor3=Color3.fromRGB(50,50,50); S.delT("AntiVoid") end
+		else
+			b.BackgroundColor3=Color3.fromRGB(50,50,50); S.delT("AntiVoid"); voidLastSafe=nil
+		end
 	elseif a=="minus" then C.voidY=math.max(-500,C.voidY-10)
 	elseif a=="plus" then C.voidY=math.min(50,C.voidY+10) end
 	b.Text=t("antivoid")..": "..(C.avEn and t("on") or t("off")).." ("..C.voidY..")"
@@ -989,31 +922,6 @@ addR("Func",t("antikb").." ("..C.kbLimit..")",function(b,a)
 	elseif a=="plus" then C.kbLimit=math.min(300,C.kbLimit+5) end
 	b.Text=t("antikb")..": "..(C.akbEn and t("on") or t("off")).." ("..C.kbLimit..")"
 end,true,"akbEn")
-
-addR("Func",t("antitp"),function(b,a)
-	if a~="toggle" then
-		if C.atpEn then b.Text=t("antitp")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(0,120,0)
-		else b.Text=t("antitp")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
-		return
-	end
-	C.atpEn=not C.atpEn
-	if C.atpEn then
-		b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("antitp")..": "..t("on")
-		local last=nil
-		S.addT("AntiTP",function()
-			local root=LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-			if not root then last=nil; return end
-			if last and tick()>S.skipTP then
-				local d=(root.Position-last).Magnitude
-				if d>300 then
-					S.skipTPNow(1); root.Velocity=Vector3.zero
-					root.CFrame=CFrame.new(last); return
-				end
-			end
-			last=root.Position
-		end,0.05)
-	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("antitp")..": "..t("off"); S.delT("AntiTP") end
-end,false,"atpEn")
 
 addR("Func",t("antiafk"),function(b,a)
 	if a~="toggle" then
@@ -1546,7 +1454,7 @@ Players.PlayerRemoving:Connect(function(p) task.wait(0.1); hidden[p]=nil; if hid
 print("[UCS] Players ok")
 
 -- ============================================================
--- ADDONS v3 — REMOTE LIST + VERSIONING + RUN/STOP
+-- ADDONS v3
 -- ============================================================
 local ADDON_FILE="UCS_Addons.json"
 local addonStore = {remote={version="0", addons={}}, localVersion={}, hidden={}, custom={}}
@@ -1589,20 +1497,14 @@ local function getMergedAddons()
 	local list = {}
 	for _,a in ipairs(addonStore.remote.addons or {}) do
 		if type(a)=="table" and a.url and not addonStore.hidden[a.url] then
-			table.insert(list, {
-				name=a.name or "Addon", url=a.url, desc=a.desc or "",
-				version=tostring(a.version or "1.0.0"), author=a.author or "",
-				source="remote",
-			})
+			table.insert(list, {name=a.name or "Addon", url=a.url, desc=a.desc or "",
+				version=tostring(a.version or "1.0.0"), author=a.author or "", source="remote"})
 		end
 	end
 	for _,a in ipairs(addonStore.custom or {}) do
 		if type(a)=="table" and a.url and not addonStore.hidden[a.url] then
-			table.insert(list, {
-				name=a.name or "Addon", url=a.url, desc=a.desc or "",
-				version=tostring(a.version or "1.0.0"), author=a.author or "",
-				source="custom",
-			})
+			table.insert(list, {name=a.name or "Addon", url=a.url, desc=a.desc or "",
+				version=tostring(a.version or "1.0.0"), author=a.author or "", source="custom"})
 		end
 	end
 	return list
@@ -1617,9 +1519,7 @@ end
 local function snapshotUnloadFns()
 	local set = {}
 	for k,v in pairs(_G) do
-		if type(k)=="string" and k:match("^UCS_.+_Unload$") and type(v)=="function" then
-			set[k] = true
-		end
+		if type(k)=="string" and k:match("^UCS_.+_Unload$") and type(v)=="function" then set[k]=true end
 	end
 	return set
 end
@@ -1687,7 +1587,6 @@ local function refreshAddons()
 		local row=Instance.new("Frame",ALf); row.Size=UDim2.new(1,0,0,52)
 		row.BackgroundColor3=Color3.fromRGB(45,45,45); row.BorderSizePixel=0
 		Instance.new("UICorner",row).CornerRadius=UDim.new(0,4)
-
 		if upd then
 			local bar=Instance.new("Frame",row)
 			bar.Size=UDim2.new(0,3,1,-8); bar.Position=UDim2.new(0,4,0,4)
@@ -1699,22 +1598,18 @@ local function refreshAddons()
 			bar.BackgroundColor3=Color3.fromRGB(80,200,80); bar.BorderSizePixel=0
 			Instance.new("UICorner",bar).CornerRadius=UDim.new(0,2)
 		end
-
 		local leftOffset = (upd or isRunning) and 12 or 6
-
 		local name=Instance.new("TextLabel",row)
 		name.Size=UDim2.new(1,-92,0,18); name.Position=UDim2.new(0,leftOffset,0,2)
 		name.BackgroundTransparency=1; name.Text=a.name; name.TextColor3=Color3.new(1,1,1)
 		name.Font=Enum.Font.SourceSansBold; name.TextSize=12
 		name.TextXAlignment=Enum.TextXAlignment.Left; name.TextTruncate=Enum.TextTruncate.AtEnd
-
 		local versionLine = t("addon_version")..a.version
 		if upd then
 			local localV = addonStore.localVersion[a.url]
 			versionLine = t("addon_version")..tostring(localV).."  →  "..t("addon_version")..a.version
 		end
 		if a.author ~= "" then versionLine = versionLine .. "  ·  "..t("addon_author").." "..a.author end
-
 		local desc=Instance.new("TextLabel",row)
 		desc.Size=UDim2.new(1,-92,0,14); desc.Position=UDim2.new(0,leftOffset,0,20)
 		desc.BackgroundTransparency=1
@@ -1722,7 +1617,6 @@ local function refreshAddons()
 		desc.TextColor3 = upd and Color3.fromRGB(255,210,80) or (isRunning and Color3.fromRGB(120,220,120) or Color3.fromRGB(150,150,150))
 		desc.Font=Enum.Font.SourceSans; desc.TextSize=9
 		desc.TextXAlignment=Enum.TextXAlignment.Left; desc.TextTruncate=Enum.TextTruncate.AtEnd
-
 		local status=Instance.new("TextLabel",row)
 		status.Size=UDim2.new(0,90,0,12); status.Position=UDim2.new(0,leftOffset,0,36)
 		status.BackgroundTransparency=1
@@ -1730,32 +1624,23 @@ local function refreshAddons()
 		status.TextColor3 = isRunning and Color3.fromRGB(80,200,80) or Color3.fromRGB(180,180,180)
 		status.Font=Enum.Font.SourceSansBold; status.TextSize=8
 		status.TextXAlignment=Enum.TextXAlignment.Left
-
 		local runBtn=Instance.new("TextButton",row)
 		runBtn.Size=UDim2.new(0,50,1,-8); runBtn.Position=UDim2.new(1,-84,0,4)
 		if isRunning then
-			runBtn.BackgroundColor3=Color3.fromRGB(180,60,60)
-			runBtn.Text="STOP"
-			runBtn.TextSize=11
+			runBtn.BackgroundColor3=Color3.fromRGB(180,60,60); runBtn.Text="STOP"; runBtn.TextSize=11
 		elseif upd then
-			runBtn.BackgroundColor3=Color3.fromRGB(200,150,0)
-			runBtn.Text=t("addon_update_badge")
-			runBtn.TextSize=8
+			runBtn.BackgroundColor3=Color3.fromRGB(200,150,0); runBtn.Text=t("addon_update_badge"); runBtn.TextSize=8
 		else
-			runBtn.BackgroundColor3=Color3.fromRGB(0,140,60)
-			runBtn.Text="RUN"
-			runBtn.TextSize=11
+			runBtn.BackgroundColor3=Color3.fromRGB(0,140,60); runBtn.Text="RUN"; runBtn.TextSize=11
 		end
 		runBtn.BorderSizePixel=0
 		runBtn.TextColor3=Color3.new(1,1,1); runBtn.Font=Enum.Font.SourceSansBold
 		Instance.new("UICorner",runBtn).CornerRadius=UDim.new(0,3)
-
 		local delBtn=Instance.new("TextButton",row)
 		delBtn.Size=UDim2.new(0,28,1,-8); delBtn.Position=UDim2.new(1,-32,0,4)
 		delBtn.BackgroundColor3=Color3.fromRGB(140,40,40); delBtn.BorderSizePixel=0
 		delBtn.Text="X"; delBtn.TextColor3=Color3.new(1,1,1); delBtn.Font=Enum.Font.SourceSansBold; delBtn.TextSize=12
 		Instance.new("UICorner",delBtn).CornerRadius=UDim.new(0,3)
-
 		runBtn.MouseButton1Click:Connect(function()
 			if runningAddons[a.url] then
 				local info = runningAddons[a.url]
@@ -1797,7 +1682,6 @@ local function refreshAddons()
 				end
 			end)
 		end)
-
 		delBtn.MouseButton1Click:Connect(function()
 			local info = runningAddons[a.url]
 			if info and info.unload then pcall(info.unload) end
@@ -2526,7 +2410,6 @@ _G.UCS_Unload=function()
 	for k in pairs(S.conns) do S.dis(k) end
 	for n in pairs(S.tasks) do S.delT(n) end
 	if S._extrasCleanup then pcall(S._extrasCleanup) end
-	if S.unhookAllOneShot then pcall(S.unhookAllOneShot) end
 	if S.stopAntiKB then pcall(S.stopAntiKB) end
 	if S.stopAntiFling then pcall(S.stopAntiFling) end
 	if S.stopPlat then pcall(S.stopPlat) end
