@@ -1,6 +1,26 @@
 {
   "entries": [
     {
+      "version": "1.1.0",
+      "date": "2026-10-08",
+      "changes": {
+        "ru": [
+          "OneShot+ вынесен в отдельный аддон — не жрёт CPU впустую",
+          "AntiTP удалён — конфликтовал с Fly, Dash, Platform",
+          "AntiVoid v2: запоминает последнюю безопасную точку и возвращает туда",
+          "FastInteract: добавлен 'Безопасный режим' — не трогает HoldDuration",
+          "Addon Manager v3: кнопка RUN превращается в STOP"
+        ],
+        "en": [
+          "OneShot+ moved to separate addon — no CPU waste",
+          "AntiTP removed — conflicted with Fly, Dash, Platform",
+          "AntiVoid v2: remembers last safe point and returns there",
+          "FastInteract: added 'Safe mode' — doesn't touch HoldDuration",
+          "Addon Manager v3: RUN button becomes STOP"
+        ]
+      }
+    },
+    {
       "version": "1.0.5",
       "date": "2026-10-08",
       "changes": {
