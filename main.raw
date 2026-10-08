@@ -1,4 +1,4 @@
-print("[UCS] start v1.1.0")
+print("[UCS] start v1.2.0")
 if _G.UCS_Unload then pcall(_G.UCS_Unload) end
 _G.UCS = nil
 _G._UCS_AddLoaded = nil
@@ -24,18 +24,18 @@ local L = {
 		tab_main="ДВИЖ", tab_func="ФУНК", tab_vis="ВИЗ", tab_play="ИГРОК",
 		tab_wp="ТОЧКИ", tab_addons="АДДОНЫ", tab_settings="⚙",
 		run="Бег", fly="Полёт", jump="Прыжок", infjump="Беск. Прыжок",
+		autojump="Авто-Прыжок",
 		noclip="Ноуклип", platform="Платформа", hotkeys_work="Хоткеи: работа",
 		hotkeys_move="Хоткеи: перемещение", respawn="Респавн себя",
+		clicktp="Click TP", clicktp_on="Click TP: ВКЛ (ЛКМ = ТП)",
 		on="ВКЛ", off="ВЫКЛ",
 		fastint="Фаст Интеракт", fi_safe="FastInteract: Безопасно",
-		rejoin="Авто-Реджоин", antiragdoll="Анти-Рэгдолл",
-		antivoid="Анти-Войд", antikb="Анти-Кнокбэк",
-		antiafk="Анти-АФК", antifling="Анти-Флинг",
+		antiragdoll="Анти-Рэгдолл",
+		antivoid="Анти-Войд",
 		espp="ESP игроки", espnpc="ESP NPC", xray="X-Ray", fullbright="Фуллбрайт",
+		nofog="Убрать туман", fov="Угол обзора (FOV)",
 		freecam="Freecam",
 		search_players="Поиск: имя или @username",
-		join_ph="UserID или @username", join="Войти",
-		hop_ph="UserID или @username (к другу)", hop="К другу",
 		spectate="СМОТР", stop="СТОП", hide="СКРЫТЬ", show="ПОКАЗ",
 		wp_name_ph="Имя (пусто = авто)", wp_save="Сохранить позицию",
 		wp_clear="Удалить все",
@@ -73,14 +73,10 @@ local L = {
 		n_saved="Сохранено", n_loaded="Загружено", n_no_writefile="Нет writefile",
 		n_prof_saved="Профиль сохранён", n_prof_loaded="Профиль загружен",
 		n_prof_deleted="Профиль удалён", n_prof_name="Введи имя профиля",
-		n_userid_notfound="Не нашёл UserID/@username",
-		n_resolve="Резолв", n_join_ok="Джойн",
-		n_hop="Хоп к", n_friend_offline="Друг не в сети или в другом месте",
-		n_tp_fail="Телепорт не удался", n_fail="Не удалось",
 		n_cleared="Очищено", n_addon_added="Аддон добавлен",
 		n_url_empty="URL пустой", n_loading="Загрузка", n_started="запущен",
 		n_error="Ошибка", n_no_fire="Нет fireproximityprompt/fireclickdetector",
-		n_ucs_loaded="UCS v1.1.0 загружен",
+		n_ucs_loaded="UCS v1.2.0 загружен",
 		n_name_taken="Имя занято", n_point_saved="Точка сохранена",
 		n_reload_for_lang="Перезапусти UCS чтобы применить язык",
 		n_update="🔔 Доступна UCS v",
@@ -88,28 +84,24 @@ local L = {
 		n_addons_updated="Список аддонов обновлён",
 		n_addon_fetch_fail="Не удалось загрузить список аддонов",
 		n_addon_update="🔔 Обновление: ",
-		n_addon_broken="Аддон не загрузился: ",
-		n_void_saved="Точка возврата сохранена",
-		n_void_returned="Возврат из войда",
-		n_void_no_point="Нет сохранённой точки — пропуск",
-		fi_safe_note="Безопасный режим: не трогает HoldDuration",
+		n_clicktp_hint="Кликни в точку на экране",
 	},
 	en = {
 		tab_main="MOVE", tab_func="FUNC", tab_vis="VISUAL", tab_play="PLAYERS",
 		tab_wp="WAYPTS", tab_addons="ADDONS", tab_settings="⚙",
 		run="Speed", fly="Fly", jump="Jump", infjump="Infinite Jump",
+		autojump="Auto Jump",
 		noclip="Noclip", platform="Platform", hotkeys_work="Hotkeys: action",
 		hotkeys_move="Hotkeys: move mode", respawn="Respawn Self",
+		clicktp="Click TP", clicktp_on="Click TP: ON (LMB = TP)",
 		on="ON", off="OFF",
 		fastint="Fast Interact", fi_safe="FastInteract: Safe",
-		rejoin="Auto Rejoin", antiragdoll="Anti Ragdoll",
-		antivoid="Anti Void", antikb="Anti Knockback",
-		antiafk="Anti AFK", antifling="Anti Fling",
+		antiragdoll="Anti Ragdoll",
+		antivoid="Anti Void",
 		espp="ESP Players", espnpc="ESP NPC", xray="X-Ray", fullbright="Fullbright",
+		nofog="No Fog", fov="Field of View (FOV)",
 		freecam="Freecam",
 		search_players="Search: name or @username",
-		join_ph="UserID or @username", join="Join",
-		hop_ph="UserID or @username (join friend)", hop="Join Friend",
 		spectate="SPECTATE", stop="STOP", hide="HIDE", show="SHOW",
 		wp_name_ph="Name (empty = auto)", wp_save="Save Position",
 		wp_clear="Delete All",
@@ -147,14 +139,10 @@ local L = {
 		n_saved="Saved", n_loaded="Loaded", n_no_writefile="No writefile",
 		n_prof_saved="Profile saved", n_prof_loaded="Profile loaded",
 		n_prof_deleted="Profile deleted", n_prof_name="Enter profile name",
-		n_userid_notfound="UserID/@username not found",
-		n_resolve="Resolved", n_join_ok="Joined",
-		n_hop="Hop to", n_friend_offline="Friend offline or in another place",
-		n_tp_fail="Teleport failed", n_fail="Failed",
 		n_cleared="Cleared", n_addon_added="Addon added",
 		n_url_empty="URL empty", n_loading="Loading", n_started="started",
 		n_error="Error", n_no_fire="No fireproximityprompt/fireclickdetector",
-		n_ucs_loaded="UCS v1.1.0 loaded",
+		n_ucs_loaded="UCS v1.2.0 loaded",
 		n_name_taken="Name taken", n_point_saved="Point saved",
 		n_reload_for_lang="Restart UCS to apply language",
 		n_update="🔔 UCS v",
@@ -162,11 +150,7 @@ local L = {
 		n_addons_updated="Addon list updated",
 		n_addon_fetch_fail="Failed to fetch addon list",
 		n_addon_update="🔔 Update: ",
-		n_addon_broken="Addon failed to load: ",
-		n_void_saved="Return point saved",
-		n_void_returned="Returned from void",
-		n_void_no_point="No saved point — skipping",
-		fi_safe_note="Safe mode: doesn't touch HoldDuration",
+		n_clicktp_hint="Click on screen point",
 	},
 }
 local function t(k)
@@ -207,7 +191,7 @@ function S.refreshLang()
 end
 
 -- ===== VERSION / BRAND =====
-S.VERSION = "1.1.0"
+S.VERSION = "1.2.0"
 S.AUTHOR  = "@Chester-pdf"
 S.BRAND   = "UCS"
 S.VERSION_URL   = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/version.txt"
@@ -215,12 +199,15 @@ S.ADDONS_URL    = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/ad
 S.CHANGELOG_URL = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/changelog.json"
 
 S.C={sEn=false,tSp=100,fEn=false,fSp=4,jpEn=false,jPw=100,jEn=false,nEn=false,
-eEn=false,xrayEn=false,xrayOpacity=100,fbEn=false,avEn=false,voidY=-50,akbEn=false,kbLimit=50,
+autojumpEn=false,
+eEn=false,xrayEn=false,xrayOpacity=100,fbEn=false,nofogEn=false,fovEn=false,fovValue=90,
+avEn=false,voidY=-50,
+clicktpEn=false,
 dashPower=200,dashDuration=0.20,dashMoveMode=false,
-dashX=-150,dashY=-100,arEn=false,rejoinEn=false,
+dashX=-150,dashY=-100,arEn=false,
 fiEn=false,fiRange=15,fiSafe=false,platEn=false,
 platX=-220,platY=-100,platDnX=-220,platDnY=-170,
-afkEn=false,aflingEn=false,showHotkeys=true,panelTransparency=0,
+showHotkeys=true,panelTransparency=0,
 hkDash=true,hkPlat=true,hkFly=true,hkNoClip=true,hkPanel=true,
 flyBtnX=-150,flyBtnY=-170,noClipBtnX=-220,noClipBtnY=-170,
 panelBtnX=-270,panelBtnY=-170,panelHideEn=false,
@@ -460,7 +447,9 @@ function S.exitStealth()
 end
 StealthBtn.MouseButton1Click:Connect(function() S.enterStealth() end)
 
+-- ============================================================
 -- MAIN
+-- ============================================================
 local function applySpd(_,reset) pcall(function() local h=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid"); if h then h.WalkSpeed=reset and 16 or C.tSp end end) end
 addR("Main",t("run").." ("..C.tSp..")",function(b,a)
 	if a=="toggle" then C.sEn=not C.sEn
@@ -546,13 +535,28 @@ addR("Main",t("infjump"),function(b,a)
 		C.jEn=not C.jEn
 		if C.jEn then
 			S.conns.InfJump=UIS.JumpRequest:Connect(function() pcall(function() local h=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid"); if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end end) end)
-		else
-			S.dis("InfJump")
-		end
+		else S.dis("InfJump") end
 	end
 	if C.jEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("infjump")..": "..t("on")
 	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("infjump")..": "..t("off") end
 end,false,"jEn")
+
+addR("Main",t("autojump"),function(b,a)
+	if a=="toggle" then
+		C.autojumpEn=not C.autojumpEn
+		if C.autojumpEn then
+			S.conns.AutoJump=RS.Heartbeat:Connect(function()
+				local hum=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+				if not hum then return end
+				if hum.MoveDirection.Magnitude>0.1 and hum:GetState()==Enum.HumanoidStateType.Running then
+					pcall(function() hum:ChangeState(Enum.HumanoidStateType.Jumping) end)
+				end
+			end)
+		else S.dis("AutoJump") end
+	end
+	if C.autojumpEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("autojump")..": "..t("on")
+	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("autojump")..": "..t("off") end
+end,false,"autojumpEn")
 
 addR("Main",t("noclip"),function(b,a)
 	if a=="toggle" then
@@ -571,6 +575,40 @@ addR("Main",t("noclip"),function(b,a)
 		if S.NoClipBtn then S.NoClipBtn.BackgroundColor3=Color3.fromRGB(40,40,60) end
 	end
 end,false,"nEn")
+
+-- Click TP
+local clicktpState=false
+local function doClickTP(pos)
+	local root=LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+	local ray=Cam:ViewportPointToRay(pos.X, pos.Y)
+	local params=RaycastParams.new()
+	params.FilterType=Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances={LP.Character}
+	local res=workspace:Raycast(ray.Origin, ray.Direction*1000, params)
+	if res then
+		S.skipTPNow(0.3)
+		root.Velocity=Vector3.zero
+		root.CFrame=CFrame.new(res.Position + Vector3.new(0,3,0))
+	else
+		S.skipTPNow(0.3)
+		root.Velocity=Vector3.zero
+		root.CFrame=CFrame.new(ray.Origin + ray.Direction*50)
+	end
+end
+S.conns.ClickTP=UIS.InputBegan:Connect(function(i,gp)
+	if gp then return end
+	if not C.clicktpEn then return end
+	if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then
+		if MF.Visible then return end
+		doClickTP(i.Position)
+	end
+end)
+addR("Main",t("clicktp"),function(b,a)
+	if a=="toggle" then C.clicktpEn=not C.clicktpEn end
+	if C.clicktpEn then b.BackgroundColor3=Color3.fromRGB(120,60,180); b.Text=t("clicktp_on")
+	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("clicktp")..": "..t("off") end
+end,false,"clicktpEn")
 
 -- PLATFORM
 local plat=Instance.new("Part")
@@ -732,15 +770,12 @@ local function doRespawn()
 	pcall(function() LP:LoadCharacter() end)
 end
 S.doRespawn=doRespawn
-addR("Main",t("respawn"),function(b,a)
-	if a~="toggle" then return end
-	doRespawn(); b.BackgroundColor3=Color3.fromRGB(0,120,180)
-	task.wait(0.3); b.BackgroundColor3=Color3.fromRGB(50,50,50)
-end,false)
 print("[UCS] Main ok")
 
+-- ============================================================
 -- FUNC
-local promptCache={}; local clickCache={}; local fiHoldSaved={}; local fiLosSaved={}; local fiFiredCount=0
+-- ============================================================
+local promptCache={}; local clickCache={}; local fiHoldSaved={}; local fiLosSaved={}
 local function fiApplyPrompt(o)
 	if not o.Parent then return end
 	if C.fiSafe then return end
@@ -775,8 +810,7 @@ local function doFastInteract()
 			elseif o.Enabled then
 				local part=o.Parent
 				if part and part:IsA("BasePart") and (part.Position-pos).Magnitude<=rad then
-					local ok=pcall(fireproximityprompt,o)
-					if ok then fiFiredCount=fiFiredCount+1 end
+					pcall(fireproximityprompt,o)
 				end
 			end
 		end
@@ -787,8 +821,7 @@ local function doFastInteract()
 			else
 				local part=o.Parent
 				if part and part:IsA("BasePart") and (part.Position-pos).Magnitude<=rad then
-					local ok=pcall(fireclickdetector,o)
-					if ok then fiFiredCount=fiFiredCount+1 end
+					pcall(fireclickdetector,o)
 				end
 			end
 		end
@@ -804,7 +837,7 @@ addR("Func",t("fastint"),function(b,a)
 	C.fiEn=not C.fiEn
 	if C.fiEn then
 		for o in pairs(promptCache) do if o.Parent then fiApplyPrompt(o) end end
-		fiFiredCount=0; b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("fastint")..": "..t("on")
+		b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("fastint")..": "..t("on")
 		S.addT("FastInteract",doFastInteract,0.1)
 	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("fastint")..": "..t("off"); S.delT("FastInteract")
 		for o in pairs(promptCache) do fiRestorePrompt(o) end end
@@ -822,18 +855,6 @@ addR("Func",t("fi_safe"),function(b,a)
 	if C.fiSafe then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("fi_safe")..": "..t("on")
 	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("fi_safe")..": "..t("off") end
 end,false,"fiSafe")
-
-addR("Func",t("rejoin"),function(b,a)
-	if a~="toggle" then
-		if C.rejoinEn then b.Text=t("rejoin")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(0,120,0)
-		else b.Text=t("rejoin")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
-		return
-	end
-	C.rejoinEn=not C.rejoinEn
-	if C.rejoinEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("rejoin")..": "..t("on")
-		S.conns.Rejoin=Players.PlayerRemoving:Connect(function(p) if p==LP and C.rejoinEn then task.wait(1.5); pcall(function() TeleSvc:Teleport(game.PlaceId) end) end end)
-	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("rejoin")..": "..t("off"); S.dis("Rejoin") end
-end,false,"rejoinEn")
 
 local ARc={}
 local function applyAR(char)
@@ -861,9 +882,7 @@ addR("Func",t("antiragdoll"),function(b,a)
 			if h then h:SetStateEnabled(Enum.HumanoidStateType.Ragdoll,true); h:SetStateEnabled(Enum.HumanoidStateType.FallingDown,true) end end) end
 end,false,"arEn")
 
--- AntiVoid v2: last-safe-position
 local voidLastSafe=nil
-S.voidLastSafe=function() return voidLastSafe end
 addR("Func",t("antivoid").." ("..C.voidY..")",function(b,a)
 	if a=="toggle" then C.avEn=not C.avEn
 		if C.avEn then
@@ -873,117 +892,24 @@ addR("Func",t("antivoid").." ("..C.voidY..")",function(b,a)
 				local root=LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
 				if not root then return end
 				local p=root.Position
-				if p.Y > C.voidY + 20 then
-					voidLastSafe=p
-				end
-				if p.Y < C.voidY then
-					if voidLastSafe then
-						S.skipTPNow(0.5)
-						root.Velocity=Vector3.zero
-						root.CFrame=CFrame.new(voidLastSafe + Vector3.new(0,3,0))
-						voidLastSafe=nil
-					end
+				if p.Y > C.voidY + 20 then voidLastSafe=p end
+				if p.Y < C.voidY and voidLastSafe then
+					S.skipTPNow(0.5)
+					root.Velocity=Vector3.zero
+					root.CFrame=CFrame.new(voidLastSafe + Vector3.new(0,3,0))
+					voidLastSafe=nil
 				end
 			end,0.1)
-		else
-			b.BackgroundColor3=Color3.fromRGB(50,50,50); S.delT("AntiVoid"); voidLastSafe=nil
-		end
+		else b.BackgroundColor3=Color3.fromRGB(50,50,50); S.delT("AntiVoid"); voidLastSafe=nil end
 	elseif a=="minus" then C.voidY=math.max(-500,C.voidY-10)
 	elseif a=="plus" then C.voidY=math.min(50,C.voidY+10) end
 	b.Text=t("antivoid")..": "..(C.avEn and t("on") or t("off")).." ("..C.voidY..")"
 end,true,"avEn")
-
-local kbConn=nil; local kbOrigWS
-local function startAntiKB()
-	kbOrigWS=nil
-	if kbConn then kbConn:Disconnect() end
-	kbConn=RS.RenderStepped:Connect(function()
-		local char=LP.Character
-		local root=char and char:FindFirstChild("HumanoidRootPart")
-		local hum=char and char:FindFirstChildOfClass("Humanoid")
-		if not root or not hum then return end
-		if not C.sEn then
-			if kbOrigWS==nil and hum.WalkSpeed>0 then kbOrigWS=hum.WalkSpeed end
-			if kbOrigWS and hum.WalkSpeed<kbOrigWS then hum.WalkSpeed=kbOrigWS end
-		end
-		local v=root.Velocity; local h=Vector3.new(v.X,0,v.Z)
-		if h.Magnitude>C.kbLimit then root.Velocity=Vector3.new(0,math.min(v.Y,0),0) end
-		if hum.PlatformStand then hum.PlatformStand=false; pcall(function() hum:ChangeState(Enum.HumanoidStateType.Running) end) end
-	end)
-end
-local function stopAntiKB() if kbConn then kbConn:Disconnect(); kbConn=nil end; kbOrigWS=nil end
-S.stopAntiKB=stopAntiKB
-addR("Func",t("antikb").." ("..C.kbLimit..")",function(b,a)
-	if a=="toggle" then C.akbEn=not C.akbEn
-		if C.akbEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("antikb")..": "..t("on").." ("..C.kbLimit..")"; startAntiKB()
-		else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("antikb")..": "..t("off").." ("..C.kbLimit..")"; stopAntiKB() end
-		return
-	elseif a=="minus" then C.kbLimit=math.max(1,C.kbLimit-5)
-	elseif a=="plus" then C.kbLimit=math.min(300,C.kbLimit+5) end
-	b.Text=t("antikb")..": "..(C.akbEn and t("on") or t("off")).." ("..C.kbLimit..")"
-end,true,"akbEn")
-
-addR("Func",t("antiafk"),function(b,a)
-	if a~="toggle" then
-		if C.afkEn then b.Text=t("antiafk")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(0,120,0)
-		else b.Text=t("antiafk")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
-		return
-	end
-	C.afkEn=not C.afkEn
-	if C.afkEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("antiafk")..": "..t("on")
-		S.addT("AntiAFK",function() pcall(function()
-			VIM:SendKeyEvent(true,Enum.KeyCode.Space,false,game)
-			task.wait(0.03)
-			VIM:SendKeyEvent(false,Enum.KeyCode.Space,false,game)
-		end) end,60)
-	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("antiafk")..": "..t("off"); S.delT("AntiAFK") end
-end,false,"afkEn")
-
-local aflingConn=nil; local aflingBaseWS,aflingBaseJP
-local function startAntiFling()
-	if aflingConn then aflingConn:Disconnect() end
-	aflingBaseWS=nil; aflingBaseJP=nil
-	aflingConn=RS.Heartbeat:Connect(function()
-		local char=LP.Character; if not char then return end
-		local hum=char:FindFirstChildOfClass("Humanoid")
-		local root=char:FindFirstChild("HumanoidRootPart")
-		if not hum or not root then return end
-		pcall(function()
-			hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll,false)
-			hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown,false)
-			hum:SetStateEnabled(Enum.HumanoidStateType.Physics,false)
-		end)
-		if aflingBaseWS==nil then aflingBaseWS=(C.sEn and C.tSp) or 16 end
-		if aflingBaseJP==nil then aflingBaseJP=(C.jpEn and C.jPw) or 50 end
-		local wantWS=C.sEn and C.tSp or aflingBaseWS
-		local wantJP=C.jpEn and C.jPw or aflingBaseJP
-		if hum.WalkSpeed~=wantWS then hum.WalkSpeed=wantWS end
-		if hum.JumpPower~=wantJP then hum.JumpPower=wantJP end
-		if hum.PlatformStand then hum.PlatformStand=false end
-		local v=root.AssemblyLinearVelocity
-		if v.Magnitude>200 then root.AssemblyLinearVelocity=Vector3.new(0,math.min(v.Y,50),0) end
-	end)
-end
-local function stopAntiFling()
-	if aflingConn then aflingConn:Disconnect(); aflingConn=nil end
-	aflingBaseWS=nil; aflingBaseJP=nil
-	pcall(function() local hum=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
-		if hum then hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll,true); hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown,true); hum:SetStateEnabled(Enum.HumanoidStateType.Physics,true) end end)
-end
-S.stopAntiFling=stopAntiFling
-addR("Func",t("antifling"),function(b,a)
-	if a~="toggle" then
-		if C.aflingEn then b.Text=t("antifling")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(0,120,0)
-		else b.Text=t("antifling")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
-		return
-	end
-	C.aflingEn=not C.aflingEn
-	if C.aflingEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("antifling")..": "..t("on"); startAntiFling()
-	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("antifling")..": "..t("off"); stopAntiFling() end
-end,false,"aflingEn")
 print("[UCS] Func ok")
 
+-- ============================================================
 -- NPC
+-- ============================================================
 local NPCList={}
 S.NPCList=NPCList
 local NPCCache={}
@@ -1009,7 +935,9 @@ S.addT("NPCCleanup",function()
 end,1.5)
 print("[UCS] NPC ok")
 
+-- ============================================================
 -- VISUAL
+-- ============================================================
 local espC={}
 local function applyESP(p)
 	if p==LP then return end
@@ -1147,9 +1075,73 @@ addR("Visual",t("fullbright"),function(b,a)
 		end) end
 	end
 end,false,"fbEn")
+
+local nofogSaved=nil
+addR("Visual",t("nofog"),function(b,a)
+	if a~="toggle" then
+		if C.nofogEn then b.Text=t("nofog")..": "..t("on"); b.BackgroundColor3=Color3.fromRGB(0,120,0)
+		else b.Text=t("nofog")..": "..t("off"); b.BackgroundColor3=Color3.fromRGB(50,50,50) end
+		return
+	end
+	C.nofogEn=not C.nofogEn
+	local L2=Lighting
+	if C.nofogEn then
+		if not nofogSaved then
+			nofogSaved={FogEnd=L2.FogEnd, FogStart=L2.FogStart}
+			local atm=L2:FindFirstChildOfClass("Atmosphere")
+			if atm then
+				nofogSaved.AtmDensity=atm.Density
+				nofogSaved.AtmHaze=atm.Haze
+				nofogSaved.AtmOffset=atm.Offset
+			end
+		end
+		b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("nofog")..": "..t("on")
+		S.addT("NoFog",function()
+			L2.FogEnd=1e7; L2.FogStart=1e7
+			local atm=L2:FindFirstChildOfClass("Atmosphere")
+			if atm then atm.Density=0; atm.Haze=0; atm.Offset=0 end
+		end,0.2)
+	else
+		b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("nofog")..": "..t("off")
+		S.delT("NoFog")
+		if nofogSaved then pcall(function()
+			L2.FogEnd=nofogSaved.FogEnd; L2.FogStart=nofogSaved.FogStart
+			local atm=L2:FindFirstChildOfClass("Atmosphere")
+			if atm then
+				if nofogSaved.AtmDensity then atm.Density=nofogSaved.AtmDensity end
+				if nofogSaved.AtmHaze then atm.Haze=nofogSaved.AtmHaze end
+				if nofogSaved.AtmOffset then atm.Offset=nofogSaved.AtmOffset end
+			end
+		end) end
+		nofogSaved=nil
+	end
+end,false,"nofogEn")
+
+local fovSaved=nil
+addR("Visual",t("fov").." ("..C.fovValue..")",function(b,a)
+	if a=="toggle" then
+		C.fovEn=not C.fovEn
+		if C.fovEn then
+			fovSaved=Cam.FieldOfView
+			Cam.FieldOfView=C.fovValue
+		else
+			if fovSaved then Cam.FieldOfView=fovSaved; fovSaved=nil end
+		end
+	elseif a=="minus" then
+		C.fovValue=math.max(40,C.fovValue-5)
+		if C.fovEn then Cam.FieldOfView=C.fovValue end
+	elseif a=="plus" then
+		C.fovValue=math.min(120,C.fovValue+5)
+		if C.fovEn then Cam.FieldOfView=C.fovValue end
+	end
+	if C.fovEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("fov")..": "..t("on").." ("..C.fovValue..")"
+	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("fov")..": "..t("off").." ("..C.fovValue..")" end
+end,true,"fovEn")
 print("[UCS] Visual ok")
 
+-- ============================================================
 -- WP
+-- ============================================================
 local WP_FILE="UCS_Waypoints.json"
 local waypoints={}
 local function saveWP() pcall(function() writefile(WP_FILE,Http:JSONEncode(waypoints)) end) end
@@ -1237,36 +1229,9 @@ refreshWP()
 S.waypoints=waypoints
 print("[UCS] WP ok")
 
--- resolveUserId
-local function resolveUserId(input)
-	input = (input or ""):gsub("^%s+",""):gsub("%s+$","")
-	if input == "" then return nil end
-	local num = tonumber(input)
-	if num then return num end
-	local name = input:gsub("^@","")
-	if name == "" then return nil end
-	local ok, uid = pcall(function() return Players:GetUserIdFromNameAsync(name) end)
-	if ok and uid then return uid end
-	local requester = request or http_request or (syn and syn.request)
-	if requester then
-		local ok2, res = pcall(function()
-			return requester({
-				Url = "https://users.roblox.com/v1/usernames/users",
-				Method = "POST",
-				Headers = {["Content-Type"] = "application/json"},
-				Body = Http:JSONEncode({usernames = {name}, excludeBannedUsers = false})
-			})
-		end)
-		if ok2 and res and res.Body then
-			local ok3, data = pcall(function() return Http:JSONDecode(res.Body) end)
-			if ok3 and data and data.data and data.data[1] then return data.data[1].id end
-		end
-	end
-	return nil
-end
-S.resolveUserId = resolveUserId
-
+-- ============================================================
 -- PLAYERS
+-- ============================================================
 local searchBox=Instance.new("TextBox",S.Tabs.Players)
 searchBox.Size=UDim2.new(1,-5,0,30); searchBox.BackgroundColor3=Color3.fromRGB(45,45,45)
 searchBox.BorderSizePixel=0; searchBox.Text=""
@@ -1275,70 +1240,8 @@ searchBox.TextColor3=Color3.new(1,1,1); searchBox.PlaceholderColor3=Color3.fromR
 searchBox.Font=Enum.Font.SourceSansBold; searchBox.TextSize=12
 Instance.new("UICorner",searchBox).CornerRadius=UDim.new(0,4)
 
-local joinRow=Instance.new("Frame",S.Tabs.Players)
-joinRow.Size=UDim2.new(1,-5,0,30); joinRow.Position=UDim2.new(0,0,0,35)
-joinRow.BackgroundTransparency=1
-local joinIdBox=Instance.new("TextBox",joinRow)
-joinIdBox.Size=UDim2.new(0.62,-4,1,0); joinIdBox.BackgroundColor3=Color3.fromRGB(45,45,45)
-joinIdBox.BorderSizePixel=0; joinIdBox.Text=""; joinIdBox.PlaceholderText=t("join_ph")
-joinIdBox.TextColor3=Color3.new(1,1,1); joinIdBox.PlaceholderColor3=Color3.fromRGB(140,140,140)
-joinIdBox.Font=Enum.Font.SourceSansBold; joinIdBox.TextSize=11; joinIdBox.ClearTextOnFocus=false
-Instance.new("UICorner",joinIdBox).CornerRadius=UDim.new(0,4)
-local joinBtn=Instance.new("TextButton",joinRow)
-joinBtn.Size=UDim2.new(0.38,-4,1,0); joinBtn.Position=UDim2.new(0.62,4,0,0)
-joinBtn.BackgroundColor3=Color3.fromRGB(0,120,180); joinBtn.BorderSizePixel=0
-joinBtn.Text=t("join"); joinBtn.TextColor3=Color3.new(1,1,1); joinBtn.Font=Enum.Font.SourceSansBold; joinBtn.TextSize=12
-Instance.new("UICorner",joinBtn).CornerRadius=UDim.new(0,4)
-joinBtn.MouseButton1Click:Connect(function()
-	local uid=resolveUserId(joinIdBox.Text)
-	if not uid then S.notify(t("n_userid_notfound"),Color3.fromRGB(255,80,80)); return end
-	S.notify(t("n_resolve")..": "..uid,Color3.fromRGB(0,180,0))
-	local ok=pcall(function()
-		local o=Instance.new("TeleportOptions")
-		o:SetFollowUserId(uid)
-		TeleSvc:TeleportAsync(game.PlaceId,{LP},o)
-	end)
-	if ok then S.notify(t("n_join_ok").." "..uid,Color3.fromRGB(0,180,0))
-	else S.notify(t("n_fail"),Color3.fromRGB(255,80,80)) end
-end)
-
-local hopRow=Instance.new("Frame",S.Tabs.Players)
-hopRow.Size=UDim2.new(1,-5,0,30); hopRow.Position=UDim2.new(0,0,0,70)
-hopRow.BackgroundTransparency=1
-local hopBox=Instance.new("TextBox",hopRow)
-hopBox.Size=UDim2.new(0.62,-4,1,0); hopBox.BackgroundColor3=Color3.fromRGB(45,45,45)
-hopBox.BorderSizePixel=0; hopBox.Text=""; hopBox.PlaceholderText=t("hop_ph")
-hopBox.TextColor3=Color3.new(1,1,1); hopBox.PlaceholderColor3=Color3.fromRGB(140,140,140)
-hopBox.Font=Enum.Font.SourceSansBold; hopBox.TextSize=11; hopBox.ClearTextOnFocus=false
-Instance.new("UICorner",hopBox).CornerRadius=UDim.new(0,4)
-local hopBtn=Instance.new("TextButton",hopRow)
-hopBtn.Size=UDim2.new(0.38,-4,1,0); hopBtn.Position=UDim2.new(0.62,4,0,0)
-hopBtn.BackgroundColor3=Color3.fromRGB(140,40,140); hopBtn.BorderSizePixel=0
-hopBtn.Text=t("hop"); hopBtn.TextColor3=Color3.new(1,1,1); hopBtn.Font=Enum.Font.SourceSansBold; hopBtn.TextSize=12
-Instance.new("UICorner",hopBtn).CornerRadius=UDim.new(0,4)
-hopBtn.MouseButton1Click:Connect(function()
-	local uid=resolveUserId(hopBox.Text)
-	if not uid then S.notify(t("n_userid_notfound"),Color3.fromRGB(255,80,80)); return end
-	S.notify(t("n_hop").." "..uid,Color3.fromRGB(0,180,0))
-	task.spawn(function()
-		local ok, errMsg, placeId, jobId = pcall(function()
-			return TeleSvc:GetPlayerPlaceInstanceAsync(uid)
-		end)
-		if not ok or not placeId or not jobId then
-			S.notify(t("n_friend_offline"),Color3.fromRGB(255,80,80))
-			return
-		end
-		local ok2 = pcall(function()
-			local opts=Instance.new("TeleportOptions")
-			opts.ServerInstanceId = jobId
-			TeleSvc:TeleportAsync(placeId,{LP},opts)
-		end)
-		if not ok2 then S.notify(t("n_tp_fail"),Color3.fromRGB(255,80,80)) end
-	end)
-end)
-
 local PLf=Instance.new("Frame",S.Tabs.Players)
-PLf.Size=UDim2.new(1,-5,0,0); PLf.Position=UDim2.new(0,0,0,105)
+PLf.Size=UDim2.new(1,-5,0,0); PLf.Position=UDim2.new(0,0,0,35)
 PLf.AutomaticSize=Enum.AutomaticSize.Y; PLf.BackgroundTransparency=1
 Instance.new("UIListLayout",PLf).Padding=UDim.new(0,4)
 local FAV_FILE="UCS_Favorites.json"
@@ -1683,23 +1586,7 @@ local function refreshAddons()
 			end)
 		end)
 		delBtn.MouseButton1Click:Connect(function()
--- Кнопка "Восстановить скрытые"
-local restoreBtn=Instance.new("TextButton",S.Tabs.Addons)
-restoreBtn.Size=UDim2.new(1,-5,0,26); restoreBtn.LayoutOrder=5
-restoreBtn.BackgroundColor3=Color3.fromRGB(60,80,120); restoreBtn.BorderSizePixel=0
-restoreBtn.Text = (S.lang=="ru") and "♻ Восстановить скрытые аддоны" or "♻ Restore hidden addons"
-restoreBtn.TextColor3=Color3.new(1,1,1)
-restoreBtn.Font=Enum.Font.SourceSansBold; restoreBtn.TextSize=10
-Instance.new("UICorner",restoreBtn).CornerRadius=UDim.new(0,4)
-restoreBtn.MouseButton1Click:Connect(function()
-	local count = 0
-	for url, _ in pairs(addonStore.hidden) do count = count + 1 end
-	addonStore.hidden = {}
-	saveAddonStore()
-	refreshAddons()
-	S.notify((S.lang=="ru") and ("Восстановлено: "..count) or ("Restored: "..count), Color3.fromRGB(0,180,0))
-end)
-local info = runningAddons[a.url]
+			local info = runningAddons[a.url]
 			if info and info.unload then pcall(info.unload) end
 			runningAddons[a.url] = nil
 			if a.source == "remote" then
@@ -1721,14 +1608,6 @@ refreshBtn.MouseButton1Click:Connect(function()
 	refreshBtn.Text = t("addon_refresh")
 	if ok then
 		S.notify(t("n_addons_updated"), Color3.fromRGB(0,180,0))
-		for _,a in ipairs(addonStore.remote.addons or {}) do
-			if type(a)=="table" and a.url and not runningAddons[a.url] then
-				local localV = addonStore.localVersion[a.url]
-				if localV and tostring(localV) ~= tostring(a.version) then
-					S.notify(t("n_addon_update")..a.name.." v"..tostring(a.version), Color3.fromRGB(255,200,80))
-				end
-			end
-		end
 	else
 		S.notify(t("n_addon_fetch_fail"), Color3.fromRGB(255,80,80))
 	end
@@ -1753,27 +1632,36 @@ clearBtn.MouseButton1Click:Connect(function()
 	saveAddonStore(); refreshAddons()
 	S.notify(t("n_cleared"),Color3.fromRGB(200,80,80))
 end)
+
+local restoreBtn=Instance.new("TextButton",S.Tabs.Addons)
+restoreBtn.Size=UDim2.new(1,-5,0,26); restoreBtn.LayoutOrder=5
+restoreBtn.BackgroundColor3=Color3.fromRGB(60,80,120); restoreBtn.BorderSizePixel=0
+restoreBtn.Text = (S.lang=="ru") and "♻ Восстановить скрытые аддоны" or "♻ Restore hidden addons"
+restoreBtn.TextColor3=Color3.new(1,1,1)
+restoreBtn.Font=Enum.Font.SourceSansBold; restoreBtn.TextSize=10
+Instance.new("UICorner",restoreBtn).CornerRadius=UDim.new(0,4)
+restoreBtn.MouseButton1Click:Connect(function()
+	local count = 0
+	for url, _ in pairs(addonStore.hidden) do count = count + 1 end
+	addonStore.hidden = {}
+	saveAddonStore()
+	refreshAddons()
+	S.notify((S.lang=="ru") and ("Восстановлено: "..count) or ("Restored: "..count), Color3.fromRGB(0,180,0))
+end)
+
 S.refreshAddons=refreshAddons
 refreshAddons()
 
 task.spawn(function()
 	task.wait(1)
 	local ok = fetchRemoteAddons()
-	if ok then
-		refreshAddons()
-		for _,a in ipairs(addonStore.remote.addons or {}) do
-			if type(a)=="table" and a.url and not runningAddons[a.url] then
-				local localV = addonStore.localVersion[a.url]
-				if localV and tostring(localV) ~= tostring(a.version) then
-					S.notify(t("n_addon_update")..a.name.." v"..tostring(a.version), Color3.fromRGB(255,200,80))
-				end
-			end
-		end
-	end
+	if ok then refreshAddons() end
 end)
 print("[UCS] Addons v3 ok")
 
+-- ============================================================
 -- SETTINGS
+-- ============================================================
 addR("Settings",t("transp").." ("..C.panelTransparency.."%)",function(b,a)
 	if a=="minus" then C.panelTransparency=math.max(0,C.panelTransparency-10)
 	elseif a=="plus" then C.panelTransparency=math.min(90,C.panelTransparency+10) end
@@ -1831,7 +1719,6 @@ addR("Settings",t("stealth_corner").." ("..t(cornerKeys[C.stealthCorner] or "cor
 	b.Text=t("stealth_corner").." ("..t(cornerKeys[C.stealthCorner] or "corner_tl")..")"
 end,false,"stealthCorner")
 
--- LANGUAGE SWITCH
 addR("Settings",t("language"),function(b,a)
 	if a=="toggle" then
 		S.lang = (S.lang=="ru") and "en" or "ru"
@@ -1843,7 +1730,9 @@ addR("Settings",t("language"),function(b,a)
 	b.BackgroundColor3=Color3.fromRGB(0,120,0)
 end,false,"lang")
 
+-- ============================================================
 -- МОБИЛЬНОЕ УПРАВЛЕНИЕ
+-- ============================================================
 local function findTouchControl()
 	local tg=pG:FindFirstChild("TouchGui")
 	if not tg then return nil end
@@ -1935,6 +1824,9 @@ addR("Settings",t("custom_jump"),function(b,a)
 	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("custom_jump")..": "..t("off") end
 end,false,"customJumpBtn")
 
+-- ============================================================
+-- CONFIG / PROFILES
+-- ============================================================
 local CFILE2="UCS_Config_v1.json"
 addR("Settings",t("cfg_save"),function(b)
 	local t2={}
@@ -1976,7 +1868,6 @@ addR("Settings",t("cfg_load"),function(b)
 end,false)
 S.applyPanelTransparency(C.panelTransparency or 0)
 
--- PROFILES
 local PROF_FILE="UCS_Profiles.json"
 local profiles={}
 local function loadProfilesFile() pcall(function()
@@ -2062,17 +1953,6 @@ local function refreshProfiles()
 			for k,tg in pairs(S.toggles) do
 				if C[k]~=nil and type(C[k])~="boolean" then pcall(tg.cb,tg.btn,"refresh") end
 			end
-			if S.DashBtn then S.DashBtn.Position=UDim2.new(1,C.dashX,1,C.dashY) end
-			if S.PlatToggleBtn then S.PlatToggleBtn.Position=UDim2.new(1,C.platX,1,C.platY) end
-			if S.PlatDownBtn then S.PlatDownBtn.Position=UDim2.new(1,C.platDnX,1,C.platDnY) end
-			if S.FlyBtn then S.FlyBtn.Position=UDim2.new(1,C.flyBtnX,1,C.flyBtnY) end
-			if S.NoClipBtn then S.NoClipBtn.Position=UDim2.new(1,C.noClipBtnX,1,C.noClipBtnY) end
-			if S.PanelHideBtn then S.PanelHideBtn.Position=UDim2.new(1,C.panelBtnX,1,C.panelBtnY) end
-			ensureCustomJumpBtn()
-			if customJumpBtn then customJumpBtn.Position=UDim2.new(1,C.customJumpX,1,C.customJumpY) end
-			applyTouchVisibility()
-			S.applyPanelTransparency(C.panelTransparency or 0)
-			S.refreshScreenButtons()
 			S.notify(t("n_prof_loaded")..": "..name,Color3.fromRGB(0,180,0))
 		end)
 		delBtn.MouseButton1Click:Connect(function()
@@ -2100,10 +1980,6 @@ print("[UCS] Profiles ok")
 
 -- ===== LANG REFS =====
 S.langRef(searchBox, "PlaceholderText", "search_players")
-S.langRef(joinIdBox, "PlaceholderText", "join_ph")
-S.langRef(hopBox, "PlaceholderText", "hop_ph")
-S.langRef(joinBtn, "Text", "join")
-S.langRef(hopBtn, "Text", "hop")
 S.langRef(wpName, "PlaceholderText", "wp_name_ph")
 S.langRef(addBox, "PlaceholderText", "addon_url_ph")
 S.langRef(nameBox, "PlaceholderText", "addon_name_ph")
@@ -2113,6 +1989,9 @@ S.langRef(profNameBox, "PlaceholderText", "profile_name_ph")
 S.langRef(profSaveBtn, "Text", "profile_save")
 S.langRef(profHeader, "Text", "profiles")
 S.langRef(refreshBtn, "Text", "addon_refresh")
+S.langRef(restoreBtn, "Text", function()
+	return (S.lang=="ru") and "♻ Восстановить скрытые аддоны" or "♻ Restore hidden addons"
+end)
 
 S.onLangChange(function() if S.refreshPlayers then S.refreshPlayers() end end)
 S.onLangChange(function() if S.refreshAddons then S.refreshAddons() end end)
@@ -2142,23 +2021,20 @@ S.conns.Hotkeys=UIS.InputBegan:Connect(function(i,gp)
 	end
 end)
 
+-- ============================================================
 -- LOAD ADD
+-- ============================================================
 task.spawn(function()
 	local url = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/add.raw?t=" .. tostring(tick())
 	print("[UCS] load add: "..url)
 	local ok, src = pcall(game.HttpGet, game, url)
-	print("[UCS] result: ok="..tostring(ok).." size="..tostring(ok and #src or tostring(src)))
 	if ok and src and #src > 500 then
 		local fn, err = loadstring(src)
 		if fn then
 			local ok2, err2 = pcall(fn)
 			if not ok2 then warn("[UCS add] "..tostring(err2)) end
-		else
-			warn("[UCS add] syntax: "..tostring(err))
-		end
-	else
-		warn("[UCS add] not downloaded")
-	end
+		else warn("[UCS add] syntax: "..tostring(err)) end
+	else warn("[UCS add] not downloaded") end
 end)
 
 -- ============================================================
@@ -2374,15 +2250,7 @@ do
 
 	task.spawn(function()
 		task.wait(2)
-		if fetchChangelog() then
-			refreshClButton()
-			for _,e in ipairs(changelogData.entries or {}) do
-				if e.version == S.VERSION and not seenVersions[e.version] then
-					S.notify(tcl("changelog_title")..": v"..tostring(e.version), Color3.fromRGB(180,140,255))
-					break
-				end
-			end
-		end
+		if fetchChangelog() then refreshClButton() end
 	end)
 
 	if S.onLangChange then
@@ -2392,12 +2260,11 @@ do
 			if CLPanel.Visible then renderChangelog() end
 		end)
 	end
-
 	print("[UCS] Changelog ok")
 end
 
 -- ============================================================
--- AUTO-UPDATE CHECK (main)
+-- AUTO-UPDATE
 -- ============================================================
 task.spawn(function()
 	task.wait(3)
@@ -2426,8 +2293,6 @@ _G.UCS_Unload=function()
 	for k in pairs(S.conns) do S.dis(k) end
 	for n in pairs(S.tasks) do S.delT(n) end
 	if S._extrasCleanup then pcall(S._extrasCleanup) end
-	if S.stopAntiKB then pcall(S.stopAntiKB) end
-	if S.stopAntiFling then pcall(S.stopAntiFling) end
 	if S.stopPlat then pcall(S.stopPlat) end
 	if S.clearNH then pcall(S.clearNH) end
 	if S.clearXray then pcall(S.clearXray) end
