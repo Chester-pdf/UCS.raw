@@ -1,4 +1,4 @@
-print("[UCS] mainPC start v1.3.0")
+print("[UCS] mainPC start v1.3.1")
 if _G.UCS_Unload then pcall(_G.UCS_Unload) end
 _G.UCS = nil
 _G._UCS_AddLoaded = nil
@@ -11,7 +11,6 @@ local VIM=game:GetService("VirtualInputManager")
 local Lighting=game:GetService("Lighting")
 local Tween=game:GetService("TweenService")
 local Http=game:GetService("HttpService")
-local TeleSvc=game:GetService("TeleportService")
 local LP=Players.LocalPlayer
 local Cam=workspace.CurrentCamera
 local S={}
@@ -36,7 +35,6 @@ local L = {
 		antivoid="Анти-Войд",
 		espp="ESP игроки", espnpc="ESP NPC", xray="X-Ray", fullbright="Фуллбрайт",
 		nofog="Убрать туман", fov="Угол обзора (FOV)",
-		freecam="Freecam",
 		search_players="Поиск: имя или @username",
 		spectate="СМОТР", stop="СТОП", hide="СКРЫТЬ", show="ПОКАЗ",
 		wp_name_ph="Имя (пусто = авто)", wp_save="Сохранить позицию",
@@ -70,6 +68,8 @@ local L = {
 		changelog_error="Не удалось загрузить changelog",
 		changelog_empty="Записей пока нет",
 		changelog_new_badge="НОВОЕ",
+		num_input_now="сейчас",
+		num_input_ok="OK",
 		n_stealth_on="Стелс ВКЛ", n_stealth_off="Стелс выключен",
 		n_file_missing="Файла нет", n_broken_cfg="Битый конфиг",
 		n_saved="Сохранено", n_loaded="Загружено", n_no_writefile="Нет writefile",
@@ -78,7 +78,7 @@ local L = {
 		n_cleared="Очищено", n_addon_added="Аддон добавлен",
 		n_url_empty="URL пустой", n_loading="Загрузка", n_started="запущен",
 		n_error="Ошибка", n_no_fire="Нет fireproximityprompt/fireclickdetector",
-		n_ucs_loaded="UCS v1.3.0 загружен",
+		n_ucs_loaded="UCS v1.3.1 загружен",
 		n_name_taken="Имя занято", n_point_saved="Точка сохранена",
 		n_reload_for_lang="Перезапусти UCS чтобы применить язык",
 		n_update="🔔 Доступна UCS v",
@@ -86,7 +86,6 @@ local L = {
 		n_addons_updated="Список аддонов обновлён",
 		n_addon_fetch_fail="Не удалось загрузить список аддонов",
 		n_addon_update="🔔 Обновление: ",
-		n_clicktp_hint="Кликни в точку на экране",
 	},
 	en = {
 		tab_main="MOVE", tab_func="FUNC", tab_vis="VISUAL", tab_play="PLAYERS",
@@ -104,7 +103,6 @@ local L = {
 		antivoid="Anti Void",
 		espp="ESP Players", espnpc="ESP NPC", xray="X-Ray", fullbright="Fullbright",
 		nofog="No Fog", fov="Field of View (FOV)",
-		freecam="Freecam",
 		search_players="Search: name or @username",
 		spectate="SPECTATE", stop="STOP", hide="HIDE", show="SHOW",
 		wp_name_ph="Name (empty = auto)", wp_save="Save Position",
@@ -138,6 +136,8 @@ local L = {
 		changelog_error="Failed to load changelog",
 		changelog_empty="No entries yet",
 		changelog_new_badge="NEW",
+		num_input_now="now",
+		num_input_ok="OK",
 		n_stealth_on="Stealth ON", n_stealth_off="Stealth OFF",
 		n_file_missing="File not found", n_broken_cfg="Broken config",
 		n_saved="Saved", n_loaded="Loaded", n_no_writefile="No writefile",
@@ -146,7 +146,7 @@ local L = {
 		n_cleared="Cleared", n_addon_added="Addon added",
 		n_url_empty="URL empty", n_loading="Loading", n_started="started",
 		n_error="Error", n_no_fire="No fireproximityprompt/fireclickdetector",
-		n_ucs_loaded="UCS v1.3.0 loaded",
+		n_ucs_loaded="UCS v1.3.1 loaded",
 		n_name_taken="Name taken", n_point_saved="Point saved",
 		n_reload_for_lang="Restart UCS to apply language",
 		n_update="🔔 UCS v",
@@ -154,7 +154,6 @@ local L = {
 		n_addons_updated="Addon list updated",
 		n_addon_fetch_fail="Failed to fetch addon list",
 		n_addon_update="🔔 Update: ",
-		n_clicktp_hint="Click on screen point",
 	},
 }
 local function t(k)
@@ -195,7 +194,7 @@ function S.refreshLang()
 end
 
 -- ===== VERSION / BRAND =====
-S.VERSION = "1.3.0"
+S.VERSION = "1.3.1"
 S.AUTHOR  = "@Chester-pdf"
 S.BRAND   = "UCS"
 S.VERSION_URL   = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/version.txt"
@@ -219,6 +218,7 @@ stealthHidden=false,stealthCorner="TL",
 hideJoystick=false,hideJumpBtn=false,customJumpBtn=false,customJumpX=-120,customJumpY=-220,
 lang="en"}
 S.skipTP=0; S.tasks={}; S.conns={}; S.toggles={}; S.screenButtons={}
+S._setKeyOwners = {}
 
 function S.addScreenBtn(btn,key)
 	if not btn then return end
@@ -356,36 +356,190 @@ for i,n in ipairs(names) do
 	end)
 end
 
-function S.addR(tab,txt,cb,hasS,key)
+-- ============================================================
+-- NUM INPUT POPUP
+-- ============================================================
+function S._openNumInput(setKey, toggleKey)
+	local cur = S.C[setKey]
+	if type(cur) ~= "number" then cur = 0 end
+
+	local popup = Instance.new("Frame", S.SG)
+	popup.Size = UDim2.new(0, 230, 0, 100)
+	popup.Position = UDim2.new(0.5, -115, 0.5, -50)
+	popup.BackgroundColor3 = Color3.fromRGB(35,35,42)
+	popup.BorderSizePixel = 0
+	popup.ZIndex = 500
+	Instance.new("UICorner", popup).CornerRadius = UDim.new(0,8)
+	local ps = Instance.new("UIStroke", popup); ps.Color=Color3.fromRGB(255,140,0); ps.Thickness=1.5
+
+	local title = Instance.new("TextLabel", popup)
+	title.Size = UDim2.new(1, -20, 0, 18)
+	title.Position = UDim2.new(0, 10, 0, 6)
+	title.BackgroundTransparency = 1
+	title.Text = setKey.."  ("..t("num_input_now")..": "..tostring(cur)..")"
+	title.TextColor3 = Color3.fromRGB(255,180,80)
+	title.Font = Enum.Font.SourceSansBold
+	title.TextSize = 11
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.ZIndex = 501
+
+	local box = Instance.new("TextBox", popup)
+	box.Size = UDim2.new(1, -20, 0, 30)
+	box.Position = UDim2.new(0, 10, 0, 28)
+	box.BackgroundColor3 = Color3.fromRGB(50,50,55)
+	box.BorderSizePixel = 0
+	box.Text = tostring(cur)
+	box.TextColor3 = Color3.new(1,1,1)
+	box.PlaceholderText = "number"
+	box.PlaceholderColor3 = Color3.fromRGB(140,140,140)
+	box.Font = Enum.Font.SourceSansBold
+	box.TextSize = 14
+	box.ClearTextOnFocus = false
+	box.ZIndex = 501
+	Instance.new("UICorner", box).CornerRadius = UDim.new(0,4)
+
+	local save = Instance.new("TextButton", popup)
+	save.Size = UDim2.new(0.45, -5, 0, 24)
+	save.Position = UDim2.new(0.05, 0, 1, -30)
+	save.BackgroundColor3 = Color3.fromRGB(0,140,60)
+	save.BorderSizePixel = 0
+	save.Text = t("num_input_ok")
+	save.TextColor3 = Color3.new(1,1,1)
+	save.Font = Enum.Font.SourceSansBold
+	save.TextSize = 11
+	save.ZIndex = 501
+	Instance.new("UICorner", save).CornerRadius = UDim.new(0,4)
+
+	local cancel = Instance.new("TextButton", popup)
+	cancel.Size = UDim2.new(0.45, -5, 0, 24)
+	cancel.Position = UDim2.new(0.5, 0, 1, -30)
+	cancel.BackgroundColor3 = Color3.fromRGB(140,40,40)
+	cancel.BorderSizePixel = 0
+	cancel.Text = "✕"
+	cancel.TextColor3 = Color3.new(1,1,1)
+	cancel.Font = Enum.Font.SourceSansBold
+	cancel.TextSize = 11
+	cancel.ZIndex = 501
+	Instance.new("UICorner", cancel).CornerRadius = UDim.new(0,4)
+
+	local function apply()
+		local val = tonumber(box.Text)
+		if val then
+			S.C[setKey] = val
+			local owners = (S._setKeyOwners or {})[setKey]
+			if owners then
+				for _, o in ipairs(owners) do
+					if o.cb and o.btn and o.btn.Parent then pcall(o.cb, o.btn, "refresh") end
+				end
+			end
+		end
+		popup:Destroy()
+	end
+	save.MouseButton1Click:Connect(apply)
+	cancel.MouseButton1Click:Connect(function() popup:Destroy() end)
+	box.FocusLost:Connect(function(enter) if enter then apply() end end)
+	box:CaptureFocus()
+end
+
+-- ============================================================
+-- addR (with long-press number input + hold-acceleration)
+-- ============================================================
+function S.addR(tab,txt,cb,hasS,key,setKey)
 	local R=Instance.new("Frame",S.Tabs[tab])
 	R.Size=UDim2.new(1,-5,0,32); R.BackgroundTransparency=1
 	local MB=Instance.new("TextButton",R)
-	MB.Size=hasS and UDim2.new(0.68,-5,1,0) or UDim2.new(1,0,1,0)
+	MB.Size=hasS and UDim2.new(0.60,-5,1,0) or UDim2.new(1,0,1,0)
 	MB.BackgroundColor3=Color3.fromRGB(50,50,50); MB.BorderSizePixel=0
 	MB.Text=txt; MB.TextColor3=Color3.new(1,1,1)
 	MB.Font=Enum.Font.SourceSansBold; MB.TextSize=12
 	Instance.new("UICorner",MB).CornerRadius=UDim.new(0,4)
-	local function wrapped(b,a)
+
+	local function wrapped(b,a,val)
 		if key and type(S.C[key])=="boolean" then
 			if a=="on" then if not S.C[key] then cb(b,"toggle") end return
 			elseif a=="off" then if S.C[key] then cb(b,"toggle") end return end
 		end
-		cb(b,a)
+		cb(b,a,val)
 	end
-	MB.MouseButton1Click:Connect(function() wrapped(MB,"toggle") end)
+
+	local pressStart=0
+	local longFired=false
+	local longTask=0
+	MB.InputBegan:Connect(function(i)
+		if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then
+			pressStart=tick()
+			longFired=false
+			if hasS and setKey then
+				longTask=longTask+1
+				local myId=longTask
+				task.spawn(function()
+					task.wait(0.7)
+					if longTask==myId and pressStart>0 and not longFired and (tick()-pressStart)>=0.7 then
+						longFired=true
+						if S._openNumInput then S._openNumInput(setKey,key) end
+					end
+				end)
+			end
+		end
+	end)
+	MB.InputEnded:Connect(function(i)
+		if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then
+			local held=tick()-pressStart
+			local wasLong=longFired
+			pressStart=0
+			longTask=longTask+1
+			if not wasLong and held<0.7 then
+				wrapped(MB,"toggle")
+			end
+		end
+	end)
+
 	if hasS then
-		local function sld(lbl,p,a)
+		local function sld(lbl,pos,a)
 			local btn=Instance.new("TextButton",R)
-			btn.Size=UDim2.new(0,25,1,0); btn.Position=UDim2.new(0.68,p,0,0)
+			btn.Size=UDim2.new(0,25,1,0); btn.Position=UDim2.new(0.60,pos,0,0)
 			btn.BackgroundColor3=Color3.fromRGB(45,45,45); btn.BorderSizePixel=0
 			btn.Text=lbl; btn.TextColor3=Color3.new(1,1,1)
 			btn.Font=Enum.Font.SourceSansBold
+			btn.TextSize=14
 			Instance.new("UICorner",btn).CornerRadius=UDim.new(0,4)
-			btn.MouseButton1Click:Connect(function() wrapped(MB,a) end)
+
+			local active=false
+			local taskId=0
+
+			btn.MouseButton1Down:Connect(function()
+				active=true
+				taskId=taskId+1
+				local myId=taskId
+				local startT=tick()
+				wrapped(MB,a)
+				task.spawn(function()
+					while active and taskId==myId do
+						local elapsed=tick()-startT
+						local interval
+						if elapsed<3 then interval=0.15
+						elseif elapsed<5 then interval=0.07
+						else interval=0.03 end
+						task.wait(interval)
+						if not active or taskId~=myId then break end
+						wrapped(MB,a)
+					end
+				end)
+			end)
+			btn.InputEnded:Connect(function(i)
+				if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then
+					active=false
+				end
+			end)
 		end
-		sld("-",0,"minus"); sld("+",28,"plus")
+		sld("-",0,"minus"); sld("+",27,"plus")
 	end
+
 	if key then S.toggles[key]={btn=MB,cb=wrapped} end
+	if setKey then
+		S._setKeyOwners[setKey] = S._setKeyOwners[setKey] or {}
+		table.insert(S._setKeyOwners[setKey], {btn=MB, cb=wrapped, key=key})
+	end
 	return MB
 end
 local C=S.C
@@ -441,10 +595,10 @@ addR("Main",t("run").." ("..C.tSp..")",function(b,a)
 	if a=="toggle" then C.sEn=not C.sEn
 		if C.sEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); S.addT("Speed",applySpd,0.1); applySpd()
 		else b.BackgroundColor3=Color3.fromRGB(50,50,50); S.delT("Speed"); applySpd(nil,true) end
-	elseif a=="minus" then C.tSp=math.max(16,C.tSp-10); if C.sEn then applySpd() end
-	elseif a=="plus" then C.tSp=math.min(500,C.tSp+10); if C.sEn then applySpd() end end
+	elseif a=="minus" then C.tSp=C.tSp-10; if C.sEn then applySpd() end
+	elseif a=="plus" then C.tSp=C.tSp+10; if C.sEn then applySpd() end end
 	b.Text=t("run")..": "..(C.sEn and t("on") or t("off")).." ("..C.tSp..")"
-end,true,"sEn")
+end,true,"sEn","tSp")
 
 local flyBV
 local function startFly()
@@ -496,9 +650,9 @@ addR("Main",t("fly").." ("..C.fSp..")",function(b,a)
 		if C.fEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); startFly()
 		else b.BackgroundColor3=Color3.fromRGB(50,50,50); stopFly() end
 	elseif a=="minus" then C.fSp=math.max(1,C.fSp-1)
-	elseif a=="plus" then C.fSp=math.min(50,C.fSp+1) end
+	elseif a=="plus" then C.fSp=C.fSp+1 end
 	b.Text=t("fly")..": "..(C.fEn and t("on") or t("off")).." ("..C.fSp..")"
-end,true,"fEn")
+end,true,"fEn","fSp")
 
 addR("Main",t("jump").." ("..C.jPw..")",function(b,a)
 	if a=="toggle" then C.jpEn=not C.jpEn
@@ -506,10 +660,10 @@ addR("Main",t("jump").." ("..C.jPw..")",function(b,a)
 			S.addT("Jump",function() pcall(function() local h=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid"); if h then h.UseJumpPower=true; h.JumpPower=C.jPw end end) end,0.2)
 		else b.BackgroundColor3=Color3.fromRGB(50,50,50); S.delT("Jump")
 			pcall(function() local h=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid"); if h then h.JumpPower=50 end end) end
-	elseif a=="minus" then C.jPw=math.max(30,C.jPw-10)
-	elseif a=="plus" then C.jPw=math.min(1000,C.jPw+10) end
+	elseif a=="minus" then C.jPw=math.max(1,C.jPw-10)
+	elseif a=="plus" then C.jPw=C.jPw+10 end
 	b.Text=t("jump")..": "..(C.jpEn and t("on") or t("off")).." ("..C.jPw..")"
-end,true,"jpEn")
+end,true,"jpEn","jPw")
 
 addR("Main",t("infjump"),function(b,a)
 	if a=="toggle" then
@@ -555,7 +709,7 @@ addR("Main",t("noclip"),function(b,a)
 	end
 end,false,"nEn")
 
--- Click TP
+-- Click TP (PC only)
 local function doClickTP(pos)
 	local root=LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
 	if not root then return end
@@ -730,16 +884,7 @@ addR("Main",t("platform")..": "..t("off"),function(b,a)
 	end
 end,false,"platEn")
 
--- SCREEN BUTTONS — отключены на ПК
-local function makeScreenBtn() return nil end
-
-S.PlatToggleBtn=nil
-S.PlatDownBtn=nil
-S.FlyBtn=nil
-S.NoClipBtn=nil
-S.DashBtn=nil
-S.PanelHideBtn=nil
-
+-- SCREEN BUTTONS disabled on PC
 local function doDash()
 	local char=LP.Character
 	local root=char and char:FindFirstChild("HumanoidRootPart")
@@ -899,10 +1044,10 @@ addR("Func",t("antivoid").." ("..C.voidY..")",function(b,a)
 				end
 			end,0.1)
 		else b.BackgroundColor3=Color3.fromRGB(50,50,50); S.delT("AntiVoid"); voidLastSafe=nil end
-	elseif a=="minus" then C.voidY=math.max(-500,C.voidY-10)
-	elseif a=="plus" then C.voidY=math.min(50,C.voidY+10) end
+	elseif a=="minus" then C.voidY=C.voidY-10
+	elseif a=="plus" then C.voidY=C.voidY+10 end
 	b.Text=t("antivoid")..": "..(C.avEn and t("on") or t("off")).." ("..C.voidY..")"
-end,true,"avEn")
+end,true,"avEn","voidY")
 print("[UCS] Func ok")
 
 -- ============================================================
@@ -1036,7 +1181,7 @@ addR("Visual",t("xray").." ("..C.xrayOpacity.."%)",function(b,a)
 	elseif a=="minus" then C.xrayOpacity=math.max(0,C.xrayOpacity-10); if C.xrayEn then S.applyXrayAll() end
 	elseif a=="plus" then C.xrayOpacity=math.min(100,C.xrayOpacity+10); if C.xrayEn then S.applyXrayAll() end end
 	b.Text=t("xray")..": "..(C.xrayEn and t("on") or t("off")).." ("..C.xrayOpacity.."%)"
-end,true,"xrayEn")
+end,true,"xrayEn","xrayOpacity")
 
 local fbSaved=nil
 addR("Visual",t("fullbright"),function(b,a)
@@ -1126,15 +1271,15 @@ addR("Visual",t("fov").." ("..C.fovValue..")",function(b,a)
 			if fovSaved then Cam.FieldOfView=fovSaved; fovSaved=nil end
 		end
 	elseif a=="minus" then
-		C.fovValue=math.max(40,C.fovValue-5)
+		C.fovValue=math.max(10,C.fovValue-5)
 		if C.fovEn then Cam.FieldOfView=C.fovValue end
 	elseif a=="plus" then
-		C.fovValue=math.min(120,C.fovValue+5)
+		C.fovValue=C.fovValue+5
 		if C.fovEn then Cam.FieldOfView=C.fovValue end
 	end
 	if C.fovEn then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("fov")..": "..t("on").." ("..C.fovValue..")"
 	else b.BackgroundColor3=Color3.fromRGB(50,50,50); b.Text=t("fov")..": "..t("off").." ("..C.fovValue..")" end
-end,true,"fovEn")
+end,true,"fovEn","fovValue")
 print("[UCS] Visual ok")
 
 -- ============================================================
@@ -1691,7 +1836,7 @@ addR("Settings",t("transp").." ("..C.panelTransparency.."%)",function(b,a)
 	elseif a=="plus" then C.panelTransparency=math.min(90,C.panelTransparency+10) end
 	b.Text=t("transp").." ("..C.panelTransparency.."%)"
 	S.applyPanelTransparency(C.panelTransparency)
-end,true,"panelTransparency")
+end,true,"panelTransparency","panelTransparency")
 addR("Settings",t("show_hotkeys"),function(b,a)
 	if a=="toggle" then C.showHotkeys=not C.showHotkeys end
 	if C.showHotkeys then b.BackgroundColor3=Color3.fromRGB(0,120,0); b.Text=t("show_hotkeys")..": "..t("on")
