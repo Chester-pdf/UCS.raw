@@ -1,5 +1,5 @@
 -- ============================================================
--- UCS ADD v1.0 — FULL LOCALIZED (RU + EN)
+-- UCS ADD v1.0 — FULL LOCALIZED (RU + EN) + LIVE LANG
 -- ============================================================
 local S = _G.UCS
 if not S then warn("[UCS add] _G.UCS is empty / _G.UCS пуст"); return end
@@ -7,18 +7,15 @@ if not S then warn("[UCS add] _G.UCS is empty / _G.UCS пуст"); return end
 -- ===== LOCALIZATION =====
 local L = {
 	ru = {
-		-- console
 		loading="[UCS add] загрузка v1.0...",
 		already="[UCS add] уже загружен",
 		freecam_exists="[UCS add] Freecam уже есть",
 		dumper_exists="[UCS add] Game Info Dumper уже есть",
 		search_ready="[UCS add] search+stars готовы, fun-rows: ",
 		done="[UCS add] готово v1.0",
-		-- freecam
 		freecam_name="Freecam",
 		freecam_on="Freecam: ВКЛ",
 		freecam_off="Freecam: ВЫКЛ",
-		-- player info
 		info_title="Инфо игрока",
 		info_name="Имя",
 		info_display="Ник",
@@ -30,7 +27,6 @@ local L = {
 		info_days="дн.",
 		info_studs="студов",
 		info_none="—",
-		-- dumper
 		dumper_title="📊 Game Info Dumper",
 		dumper_copy="КОПИЯ",
 		dumper_rescan="РеСкан",
@@ -41,22 +37,18 @@ local L = {
 		dumper_remotes="=== РЕМОУТЫ",
 		dumper_modules="=== МОДУЛИ",
 		dumper_npc="=== NPC",
-		-- search
 		search_ph="🔍 поиск...",
 	},
 	en = {
-		-- console
 		loading="[UCS add] loading v1.0...",
 		already="[UCS add] already loaded",
 		freecam_exists="[UCS add] Freecam already exists",
 		dumper_exists="[UCS add] Game Info Dumper already exists",
 		search_ready="[UCS add] search+stars ready, fun-rows: ",
 		done="[UCS add] done v1.0",
-		-- freecam
 		freecam_name="Freecam",
 		freecam_on="Freecam: ON",
 		freecam_off="Freecam: OFF",
-		-- player info
 		info_title="Player Info",
 		info_name="Name",
 		info_display="Display",
@@ -68,7 +60,6 @@ local L = {
 		info_days="days",
 		info_studs="studs",
 		info_none="—",
-		-- dumper
 		dumper_title="📊 Game Info Dumper",
 		dumper_copy="COPY",
 		dumper_rescan="ReScan",
@@ -79,7 +70,6 @@ local L = {
 		dumper_remotes="=== REMOTES",
 		dumper_modules="=== MODULES",
 		dumper_npc="=== NPC",
-		-- search
 		search_ph="🔍 search...",
 	},
 }
@@ -89,6 +79,11 @@ local function t(k)
 	return tbl[k] or L.en[k] or k
 end
 S.t_addon = t
+
+-- ===== берём систему слушателей из main.raw =====
+local onLangChange  = S.onLangChange  or function() end
+local fireLangChange = S.fireLangChange or function() end
+-- (S.refreshLang дёргает fireLangChange сам, ручной хук на кнопку языка не нужен)
 
 print(t("loading"))
 
@@ -308,6 +303,15 @@ else
 	addR("Visual", t("freecam_name"), function(b)
 		S._setFreecam(not C.freecam)
 	end, false, "freecam")
+
+	-- LIVE LANG: freecam toggle
+	onLangChange(function()
+		local tog = S.toggles and S.toggles.freecam
+		if tog and tog.btn then
+			if C.freecam then tog.btn.Text = t("freecam_on")
+			else tog.btn.Text = t("freecam_off") end
+		end
+	end)
 end
 
 -- ============================================================
@@ -369,6 +373,11 @@ local function showInfo(p)
 	end)
 end
 S._showPlayerInfo = showInfo
+
+-- LIVE LANG: info panel title
+onLangChange(function()
+	pcall(function() ipTitle.Text = t("info_title") end)
+end)
 
 -- ============================================================
 -- GAME INFO DUMPER
@@ -461,6 +470,16 @@ else
 		if not dumperPanel.Visible then refreshDump(); dumperPanel.Visible = true
 		else dumperPanel.Visible = false end
 	end, false, "gameDumper")
+
+	-- LIVE LANG: dumper labels + toggle button
+	onLangChange(function()
+		pcall(function() dpTitle.Text = t("dumper_title") end)
+		pcall(function() dpCopy.Text = t("dumper_copy") end)
+		pcall(function() dpRescan.Text = t("dumper_rescan") end)
+		pcall(function() if lastDump then dpText.Text = lastDump end end)
+		local tog = S.toggles and S.toggles.gameDumper
+		if tog and tog.btn then tog.btn.Text = t("dumper_title") end
+	end)
 end
 
 -- ============================================================
@@ -614,6 +633,17 @@ task.spawn(function()
 	local n = 0
 	for _ in pairs(funRows) do n = n + 1 end
 	print(t("search_ready")..n)
+end)
+
+-- LIVE LANG: search placeholders
+onLangChange(function()
+	for _, tabName in ipairs({"Main","Func","Visual","WP","Addons","Settings"}) do
+		local tab = S.Tabs[tabName]
+		if tab then
+			local box = tab:FindFirstChild("UCS_SearchBox")
+			if box then box.PlaceholderText = t("search_ph") end
+		end
+	end
 end)
 
 S._extrasCleanup = function()
