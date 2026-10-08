@@ -3,16 +3,16 @@
   "addons": [
     {
       "name": "AIMBOT",
-      "url": "https://gist.githubusercontent.com/Chester-pdf/f62fbfb2869e9357bf3bc3f87d9936f8/raw/465518c8949a5a9c57b698ab673045e25ee338cc/AimBotAddOn.lua",
+      "url": "https://gist.githubusercontent.com/Chester-pdf/997938a7c83992cac6e54770e56f6336/raw/eaf0cae5955a003ccc3a586bb658fbd69f0c0c50/AimBot.raw",
       "desc": "Aim + Trigger + NoRecoil",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "author": "Chester-pdf"
     },
     {
       "name": "EXTRA",
-      "url": "https://gist.githubusercontent.com/Chester-pdf/34f7e467c46fb11010076008258d9197/raw/cf36908d79b09c996bf793a913b6a322f72cb726/ExtraFuncAddOn",
+      "url": "https://gist.githubusercontent.com/Chester-pdf/d5202ca9100d4023e25dc6b77940612e/raw/0f780965461df5c57172ba40cb45fead3d428ee1/Extra.raw",
       "desc": "AutoClicker + Vehicle",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "author": "Chester-pdf"
     }
   ]
