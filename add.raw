@@ -1,16 +1,16 @@
 -- ============================================================
--- UCS ADD v1.3.3 — Freecam + Player Info + Device/Hotkeys + Scale
+-- UCS ADD v1.3.4 — Freecam + Player Info + Device/Hotkeys + Scale
 -- ============================================================
 local S = _G.UCS
 if not S then warn("[UCS add] _G.UCS is empty"); return end
 
 local L = {
 	ru = {
-		loading="[UCS add] загрузка v1.3.3...",
+		loading="[UCS add] загрузка v1.3.4...",
 		already="[UCS add] уже загружен",
 		freecam_exists="[UCS add] Freecam уже есть",
 		search_ready="[UCS add] search+stars готовы, fun-rows: ",
-		done="[UCS add] готово v1.3.3",
+		done="[UCS add] готово v1.3.4",
 		freecam_name="Freecam",
 		freecam_on="Freecam: ВКЛ",
 		freecam_off="Freecam: ВЫКЛ",
@@ -28,11 +28,11 @@ local L = {
 		on="ВКЛ", off="ВЫКЛ",
 	},
 	en = {
-		loading="[UCS add] loading v1.3.3...",
+		loading="[UCS add] loading v1.3.4...",
 		already="[UCS add] already loaded",
 		freecam_exists="[UCS add] Freecam already exists",
 		search_ready="[UCS add] search+stars ready, fun-rows: ",
-		done="[UCS add] done v1.3.3",
+		done="[UCS add] done v1.3.4",
 		freecam_name="Freecam",
 		freecam_on="Freecam: ON",
 		freecam_off="Freecam: OFF",
@@ -514,10 +514,12 @@ onLangChange(function()
 end)
 
 -- ============================================================
--- SCALE (resize character) v3 — multi-method
+-- SCALE (resize character) v4 — save/restore original
 -- ============================================================
 C.scaleEn = false
 C.scaleValue = 1.0
+C._scaleOriginalDesc = nil
+C._lastScaleToValue = nil
 
 local SCALE_NV = {
 	"BodyHeightScale",
@@ -531,7 +533,20 @@ local function getScaleHum()
 	return LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
 end
 
--- Method 1: HumanoidDescription
+local function saveOriginalDesc(hum)
+	if not hum or C._scaleOriginalDesc then return end
+	local ok, desc = pcall(function() return hum:GetAppliedDescription() end)
+	if ok and desc then
+		C._scaleOriginalDesc = desc
+	end
+end
+
+local function applyOriginalDesc(hum)
+	if not hum or not C._scaleOriginalDesc then return false end
+	local ok = pcall(function() hum:ApplyDescription(C._scaleOriginalDesc) end)
+	return ok
+end
+
 local function tryApplyDescription(hum, s)
 	if not hum then return false end
 	local ok = pcall(function()
@@ -546,7 +561,6 @@ local function tryApplyDescription(hum, s)
 	return ok
 end
 
--- Method 2: direct NumberValues
 local function tryNumberValues(hum, s)
 	if not hum then return false end
 	local applied = false
@@ -564,7 +578,6 @@ local function tryNumberValues(hum, s)
 	return applied
 end
 
--- Method 3: Model:ScaleTo
 local function tryScaleTo(hum, s)
 	local char = hum and hum.Parent
 	if not char or not char:IsA("Model") then return false end
@@ -579,15 +592,46 @@ end
 local function applyScale()
 	local hum = getScaleHum()
 	if not hum then return end
-	local s = C.scaleEn and C.scaleValue or 1.0
-	pcall(function() hum.AutomaticScalingEnabled = false end)
-	local ok1 = tryApplyDescription(hum, s)
-	if not ok1 then
-		local ok2 = tryNumberValues(hum, s)
-		if not ok2 then
-			tryScaleTo(hum, s)
+	if C.scaleEn then
+		saveOriginalDesc(hum)
+		local s = C.scaleValue
+		pcall(function() hum.AutomaticScalingEnabled = false end)
+		local ok1 = tryApplyDescription(hum, s)
+		if not ok1 then
+			local ok2 = tryNumberValues(hum, s)
+			if not ok2 then
+				tryScaleTo(hum, s)
+			end
 		end
 	end
+end
+
+local function resetScale()
+	local hum = getScaleHum()
+	if not hum then
+		C._scaleOriginalDesc = nil
+		C._lastScaleToValue = nil
+		return
+	end
+	pcall(function() hum.AutomaticScalingEnabled = true end)
+
+	-- Method 3 rollback (ScaleTo)
+	local char = hum.Parent
+	local prev = C._lastScaleToValue
+	if char and prev and math.abs(prev - 1) > 0.05 and char:IsA("Model") then
+		pcall(function() char:ScaleTo(1 / prev) end)
+	end
+
+	-- Method 1: restore original description
+	local ok = applyOriginalDesc(hum)
+
+	-- Method 2 fallback
+	if not ok then
+		tryNumberValues(hum, 1)
+	end
+
+	C._scaleOriginalDesc = nil
+	C._lastScaleToValue = nil
 end
 
 local function scaleSyncLoop()
@@ -620,26 +664,13 @@ addR("Visual",
 				task.defer(applyScale)
 			else
 				S.delT("UCS_ScaleSync")
-				task.defer(function()
-					local hum = getScaleHum()
-					if hum then
-						pcall(function() hum.AutomaticScalingEnabled = true end)
-						tryApplyDescription(hum, 1)
-						tryNumberValues(hum, 1)
-						local char = hum.Parent
-						local prev = C._lastScaleToValue
-						if char and prev and prev ~= 1 and char:IsA("Model") then
-							pcall(function() char:ScaleTo(1 / prev) end)
-						end
-						C._lastScaleToValue = nil
-					end
-				end)
+				task.defer(resetScale)
 			end
 		elseif a == "minus" then
-			C.scaleValue = math.max(0.5, C.scaleValue - 0.1)
+			C.scaleValue = math.max(0.1, C.scaleValue - 0.1)
 			if C.scaleEn then applyScale() end
 		elseif a == "plus" then
-			C.scaleValue = math.min(2.0, C.scaleValue + 0.1)
+			C.scaleValue = C.scaleValue + 0.1
 			if C.scaleEn then applyScale() end
 		end
 		b.Text = t("scale")..": "..(C.scaleEn and t("on") or t("off")).." ("..string.format("%.1f", C.scaleValue)..")"
@@ -650,20 +681,18 @@ addR("Visual",
 S._resetScale = function()
 	C.scaleEn = false
 	S.delT("UCS_ScaleSync")
-	C._lastScaleToValue = nil
-	local hum = getScaleHum()
-	if hum then
-		pcall(function() hum.AutomaticScalingEnabled = true end)
-		tryApplyDescription(hum, 1)
-		tryNumberValues(hum, 1)
-	end
+	resetScale()
 end
 
 LP.CharacterAdded:Connect(function(c)
 	task.wait(1.2)
 	if C.scaleEn then
 		local hum = c:WaitForChild("Humanoid", 5)
-		if hum then task.defer(applyScale) end
+		if hum then
+			C._scaleOriginalDesc = nil
+			C._lastScaleToValue = nil
+			task.defer(applyScale)
+		end
 	end
 end)
 
