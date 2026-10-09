@@ -1,16 +1,16 @@
 -- ============================================================
--- UCS ADD v1.3.4 — Freecam + Player Info + Device/Hotkeys + Scale
+-- UCS ADD v1.3.5 — Freecam + Player Info + Device/Hotkeys + Scale
 -- ============================================================
 local S = _G.UCS
 if not S then warn("[UCS add] _G.UCS is empty"); return end
 
 local L = {
 	ru = {
-		loading="[UCS add] загрузка v1.3.4...",
+		loading="[UCS add] загрузка v1.3.5...",
 		already="[UCS add] уже загружен",
 		freecam_exists="[UCS add] Freecam уже есть",
 		search_ready="[UCS add] search+stars готовы, fun-rows: ",
-		done="[UCS add] готово v1.3.4",
+		done="[UCS add] готово v1.3.5",
 		freecam_name="Freecam",
 		freecam_on="Freecam: ВКЛ",
 		freecam_off="Freecam: ВЫКЛ",
@@ -25,14 +25,15 @@ local L = {
 		device_switched="Устройство: ",
 		search_ph="🔍 поиск...",
 		scale="Рост",
+		scale_srv="Рост: серверные методы",
 		on="ВКЛ", off="ВЫКЛ",
 	},
 	en = {
-		loading="[UCS add] loading v1.3.4...",
+		loading="[UCS add] loading v1.3.5...",
 		already="[UCS add] already loaded",
 		freecam_exists="[UCS add] Freecam already exists",
 		search_ready="[UCS add] search+stars ready, fun-rows: ",
-		done="[UCS add] done v1.3.4",
+		done="[UCS add] done v1.3.5",
 		freecam_name="Freecam",
 		freecam_on="Freecam: ON",
 		freecam_off="Freecam: OFF",
@@ -47,6 +48,7 @@ local L = {
 		device_switched="Device: ",
 		search_ph="🔍 search...",
 		scale="Scale",
+		scale_srv="Scale: server methods",
 		on="ON", off="OFF",
 	},
 }
@@ -73,6 +75,7 @@ local addR = S.addR
 local RS = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 local Players = game:GetService("Players")
+local Http = game:GetService("HttpService")
 local LP = Players.LocalPlayer
 local SG = S.SG
 
@@ -514,42 +517,81 @@ onLangChange(function()
 end)
 
 -- ============================================================
--- SCALE (resize character) v4 — save/restore original
+-- SCALE (resize character) v5 — all-in-one
 -- ============================================================
 C.scaleEn = false
 C.scaleValue = 1.0
+C.scaleUseServer = false
 C._scaleOriginalDesc = nil
 C._lastScaleToValue = nil
+C._scaleFoundRemotes = nil
 
 local SCALE_NV = {
-	"BodyHeightScale",
-	"BodyWidthScale",
-	"BodyDepthScale",
-	"HeadScale",
-	"BodyProportionScale",
+	"BodyHeightScale","BodyWidthScale","BodyDepthScale","HeadScale","BodyProportionScale",
+}
+
+-- ===== Remote / Module search names =====
+local REMOTE_NAMES = {
+	-- direct scale/size
+	"SetScale","ChangeScale","UpdateScale","Resize","SetSize","ChangeSize",
+	"ScaleRemote","SizeEvent","ApplyScale","SetCharacterScale",
+	"UpdateCharacterScale","ChangeCharacterSize","ResizeCharacter",
+	"SetBodyScale","UpdateBodyScale","BodyScale","CharacterSize",
+	"SetAvatarScale","UpdateAvatarScale","SetPlayerScale","ChangePlayerSize",
+	"SetHeight","ChangeHeight","UpdateHeight","SetWidth","ChangeWidth",
+	-- character/avatar
+	"SetCharacter","UpdateCharacter","ChangeCharacter","CharacterEvent",
+	"ApplyDescription","SetDescription","UpdateDescription","ChangeDescription",
+	"ApplyHumanoidDescription","SetHumanoidDescription","UpdateHumanoid",
+	"Avatar","AvatarEvent","SetAvatar","UpdateAvatar","ChangeAvatar",
+	-- verbs
+	"CreateCharacter","ModifyCharacter","Transform","TransformCharacter",
+	"Modify","ModifyPlayer","ModifyAvatar","ModifyBody",
+	"SetProperty","UpdateProperty","ChangeProperty",
+	-- admin
+	"RunCommand","ExecuteCommand","Command","AdminCommand",
+	"SetPlayerProperty","AdminSet","AdminChange",
+	-- game-specific
+	"ScaleCharacter","SetScaleRemote","ChangeScaleRequest",
+	"ResizeCharacter","SetCharacterSize","SetPlayerSize",
+	"UpdateCharacterRequest","ResizePlayer",
+	-- suffix variants
+	"SetScale_Server","ScaleEvent","ScaleRequest","ScaleSync",
+	"SizeChange","SizeUpdate","SizeRequest",
+	"CharacterScale","PlayerScale","HumanoidScale",
+	"ResizeEvent","ResizeRequest","ResizeServer",
+}
+
+local MODULE_NAMES = {
+	"CharacterScale","ScaleManager","SizeManager","CharacterAPI",
+	"PlayerAPI","AvatarAPI","BodyAPI","HumanoidAPI",
+	"CharacterService","PlayerService","AvatarService",
+	"ResizeService","ScaleService","HeightService",
+}
+
+local ATTR_KEYS = {
+	"Scale","Size","HeightScale","WidthScale","DepthScale","HeadScale","BodyScale",
 }
 
 local function getScaleHum()
 	return LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
 end
 
+-- ===== Local methods =====
 local function saveOriginalDesc(hum)
 	if not hum or C._scaleOriginalDesc then return end
 	local ok, desc = pcall(function() return hum:GetAppliedDescription() end)
-	if ok and desc then
-		C._scaleOriginalDesc = desc
-	end
+	if ok and desc then C._scaleOriginalDesc = desc end
 end
 
 local function applyOriginalDesc(hum)
 	if not hum or not C._scaleOriginalDesc then return false end
-	local ok = pcall(function() hum:ApplyDescription(C._scaleOriginalDesc) end)
-	return ok
+	return pcall(function() hum:ApplyDescription(C._scaleOriginalDesc) end)
 end
 
 local function tryApplyDescription(hum, s)
 	if not hum then return false end
-	local ok = pcall(function()
+	return pcall(function()
 		local desc = hum:GetAppliedDescription()
 		if not desc then error("no desc") end
 		desc.HeightScale = s
@@ -558,7 +600,6 @@ local function tryApplyDescription(hum, s)
 		desc.HeadScale = s
 		hum:ApplyDescription(desc)
 	end)
-	return ok
 end
 
 local function tryNumberValues(hum, s)
@@ -567,8 +608,7 @@ local function tryNumberValues(hum, s)
 	for _, key in ipairs(SCALE_NV) do
 		local nv = hum:FindFirstChild(key)
 		if nv and nv:IsA("NumberValue") then
-			local ok = pcall(function() nv.Value = s end)
-			if ok then applied = true end
+			if pcall(function() nv.Value = s end) then applied = true end
 		end
 	end
 	pcall(function() hum.BodyHeightScale = s end)
@@ -589,6 +629,126 @@ local function tryScaleTo(hum, s)
 	return ok
 end
 
+-- ===== Attributes method =====
+local function tryAttributes(s)
+	local char = LP.Character
+	local hum = getScaleHum()
+	local applied = false
+	if char then
+		for _, k in ipairs(ATTR_KEYS) do
+			if pcall(function() char:SetAttribute(k, s) end) then applied = true end
+		end
+	end
+	if hum then
+		for _, k in ipairs(ATTR_KEYS) do
+			if pcall(function() hum:SetAttribute(k, s) end) then applied = true end
+		end
+	end
+	return applied
+end
+
+-- ===== Character child values =====
+local function tryChildValues(s)
+	local char = LP.Character
+	if not char then return false end
+	local applied = false
+	for _, o in ipairs(char:GetDescendants()) do
+		if o:IsA("NumberValue") or o:IsA("StringValue") then
+			local ln = o.Name:lower()
+			if ln:find("scale") or ln:find("size") or ln:find("height") or ln:find("width") then
+				local ok = pcall(function()
+					if o:IsA("NumberValue") then o.Value = s
+					else o.Value = tostring(s) end
+				end)
+				if ok then applied = true end
+			end
+		end
+	end
+	return applied
+end
+
+-- ===== Remote method =====
+local function findRemoteDeep(root, name)
+	local found = root:FindFirstChild(name)
+	if found then return found end
+	return root:FindFirstChild(name, true)
+end
+
+local function tryRemoteScale(s, verbose)
+	if not C.scaleUseServer then return false end
+	local rs = game:GetService("ReplicatedStorage")
+	local foundAny = false
+	for _, name in ipairs(REMOTE_NAMES) do
+		local remote = findRemoteDeep(rs, name)
+		if remote and (remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction")) then
+			foundAny = true
+			if verbose then
+				print("[UCS-Scale] Found remote:", remote:GetFullName(), remote.ClassName)
+			end
+			local hum = getScaleHum()
+			local char = LP.Character
+			if remote:IsA("RemoteEvent") then
+				pcall(function() remote:FireServer(s) end)
+				pcall(function() remote:FireServer(char, s) end)
+				pcall(function() remote:FireServer(LP, s) end)
+				pcall(function() remote:FireServer("SetScale", s) end)
+				pcall(function() remote:FireServer("Scale", s) end)
+				pcall(function() remote:FireServer("Resize", s) end)
+				pcall(function() remote:FireServer({Scale=s, HeightScale=s, WidthScale=s, DepthScale=s, HeadScale=s}) end)
+				pcall(function() remote:FireServer(hum, s) end)
+			elseif remote:IsA("RemoteFunction") then
+				pcall(function() remote:InvokeServer(s) end)
+				pcall(function() remote:InvokeServer(char, s) end)
+				pcall(function() remote:InvokeServer({Scale=s}) end)
+			end
+		end
+	end
+	return foundAny
+end
+
+-- ===== Module method =====
+local function tryModuleScale(s)
+	if not C.scaleUseServer then return false end
+	local rs = game:GetService("ReplicatedStorage")
+	for _, modName in ipairs(MODULE_NAMES) do
+		local mod = findRemoteDeep(rs, modName)
+		if mod and mod:IsA("ModuleScript") then
+			local ok, api = pcall(require, mod)
+			if ok and type(api) == "table" then
+				for name, fn in pairs(api) do
+					local ln = tostring(name):lower()
+					if type(fn) == "function" and (ln:find("scale") or ln:find("size") or ln:find("resize")) then
+						pcall(fn, s)
+						pcall(fn, LP, s)
+						pcall(fn, LP.Character, s)
+					end
+				end
+				return true
+			end
+		end
+	end
+	return false
+end
+
+-- ===== Scan utility (для диагностики) =====
+local function scanRemotes()
+	local rs = game:GetService("ReplicatedStorage")
+	local found = {}
+	for _, name in ipairs(REMOTE_NAMES) do
+		local r = findRemoteDeep(rs, name)
+		if r then
+			table.insert(found, r:GetFullName().." ("..r.ClassName..")")
+		end
+	end
+	C._scaleFoundRemotes = found
+	local msg = (S.lang=="ru" and "Найдено remote: " or "Remotes found: ")..#found
+	S.notify(msg, #found > 0 and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,120,0))
+	if #found > 0 then
+		for _, f in ipairs(found) do print("[UCS-Scale] "..f) end
+	end
+end
+
+-- ===== Apply / Reset =====
 local function applyScale()
 	local hum = getScaleHum()
 	if not hum then return end
@@ -596,6 +756,7 @@ local function applyScale()
 		saveOriginalDesc(hum)
 		local s = C.scaleValue
 		pcall(function() hum.AutomaticScalingEnabled = false end)
+
 		local ok1 = tryApplyDescription(hum, s)
 		if not ok1 then
 			local ok2 = tryNumberValues(hum, s)
@@ -603,6 +764,12 @@ local function applyScale()
 				tryScaleTo(hum, s)
 			end
 		end
+
+		-- Additional layers (only if server mode enabled)
+		tryChildValues(s)
+		tryAttributes(s)
+		tryRemoteScale(s, false)
+		tryModuleScale(s)
 	end
 end
 
@@ -615,19 +782,26 @@ local function resetScale()
 	end
 	pcall(function() hum.AutomaticScalingEnabled = true end)
 
-	-- Method 3 rollback (ScaleTo)
 	local char = hum.Parent
 	local prev = C._lastScaleToValue
 	if char and prev and math.abs(prev - 1) > 0.05 and char:IsA("Model") then
 		pcall(function() char:ScaleTo(1 / prev) end)
 	end
 
-	-- Method 1: restore original description
 	local ok = applyOriginalDesc(hum)
+	if not ok then tryNumberValues(hum, 1) end
 
-	-- Method 2 fallback
-	if not ok then
-		tryNumberValues(hum, 1)
+	-- Reset attributes
+	if LP.Character then
+		for _, k in ipairs(ATTR_KEYS) do
+			pcall(function() LP.Character:SetAttribute(k, nil) end)
+		end
+	end
+	pcall(function() hum:SetAttribute("Scale", nil) end)
+
+	-- Notify server if enabled
+	if C.scaleUseServer then
+		tryRemoteScale(1, false)
 	end
 
 	C._scaleOriginalDesc = nil
@@ -651,9 +825,13 @@ local function scaleSyncLoop()
 	pcall(function() check = hum.BodyHeightScale end)
 	if math.abs(check - C.scaleValue) > 0.05 then
 		tryApplyDescription(hum, C.scaleValue)
+		if C.scaleUseServer then
+			tryRemoteScale(C.scaleValue, false)
+		end
 	end
 end
 
+-- ===== UI =====
 addR("Visual",
 	t("scale").." ("..string.format("%.1f", C.scaleValue)..")",
 	function(b, a)
@@ -678,11 +856,33 @@ addR("Visual",
 	end,
 	true, "scaleEn", "scaleValue")
 
+addR("Visual",
+	t("scale_srv"),
+	function(b, a)
+		if a == "toggle" then
+			C.scaleUseServer = not C.scaleUseServer
+			if C.scaleUseServer then
+				S.notify((S.lang=="ru" and "Серверные методы ВКЛ — эксперимент" or "Server methods ON — experimental"),
+					Color3.fromRGB(255,180,80))
+			end
+		end
+		if C.scaleUseServer then
+			b.BackgroundColor3 = Color3.fromRGB(200,80,0)
+			b.Text = t("scale_srv")..": "..t("on")
+		else
+			b.BackgroundColor3 = Color3.fromRGB(50,50,50)
+			b.Text = t("scale_srv")..": "..t("off")
+		end
+	end,
+	false, "scaleUseServer")
+
 S._resetScale = function()
 	C.scaleEn = false
 	S.delT("UCS_ScaleSync")
 	resetScale()
 end
+
+S._scanScaleRemotes = scanRemotes
 
 LP.CharacterAdded:Connect(function(c)
 	task.wait(1.2)
@@ -700,6 +900,10 @@ onLangChange(function()
 	local tb = S.toggles.scaleEn and S.toggles.scaleEn.btn
 	if tb and tb.Parent then
 		tb.Text = t("scale")..": "..(C.scaleEn and t("on") or t("off")).." ("..string.format("%.1f", C.scaleValue)..")"
+	end
+	local tb2 = S.toggles.scaleUseServer and S.toggles.scaleUseServer.btn
+	if tb2 and tb2.Parent then
+		tb2.Text = t("scale_srv")..": "..(C.scaleUseServer and t("on") or t("off"))
 	end
 end)
 
