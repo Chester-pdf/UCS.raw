@@ -1,4 +1,4 @@
-print("[UCS] mainM start v1.3.1")
+print("[UCS] mainM start v1.3.6")
 if _G.UCS_Unload then pcall(_G.UCS_Unload) end
 _G.UCS = nil
 _G._UCS_AddLoaded = nil
@@ -75,7 +75,7 @@ local L = {
 		n_cleared="Очищено", n_addon_added="Аддон добавлен",
 		n_url_empty="URL пустой", n_loading="Загрузка", n_started="запущен",
 		n_error="Ошибка", n_no_fire="Нет fireproximityprompt/fireclickdetector",
-		n_ucs_loaded="UCS v1.3.1 загружен",
+		n_ucs_loaded="UCS v1.3.6 загружен",
 		n_name_taken="Имя занято", n_point_saved="Точка сохранена",
 		n_reload_for_lang="Перезапусти UCS чтобы применить язык",
 		n_update="🔔 Доступна UCS v",
@@ -140,7 +140,7 @@ local L = {
 		n_cleared="Cleared", n_addon_added="Addon added",
 		n_url_empty="URL empty", n_loading="Loading", n_started="started",
 		n_error="Error", n_no_fire="No fireproximityprompt/fireclickdetector",
-		n_ucs_loaded="UCS v1.3.1 loaded",
+		n_ucs_loaded="UCS v1.3.6 loaded",
 		n_name_taken="Name taken", n_point_saved="Point saved",
 		n_reload_for_lang="Restart UCS to apply language",
 		n_update="🔔 UCS v",
@@ -188,7 +188,7 @@ function S.refreshLang()
 end
 
 -- ===== VERSION / BRAND =====
-S.VERSION = "1.3.1"
+S.VERSION = "1.3.6"
 S.AUTHOR  = "@Chester-pdf"
 S.BRAND   = "UCS"
 S.VERSION_URL   = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/version.txt"
@@ -449,7 +449,7 @@ function S._openNumInput(setKey, toggleKey)
 end
 
 -- ============================================================
--- addR (with long-press number input + hold-acceleration)
+-- addR
 -- ============================================================
 function S.addR(tab,txt,cb,hasS,key,setKey)
 	local R=Instance.new("Frame",S.Tabs[tab])
@@ -1474,7 +1474,7 @@ Players.PlayerRemoving:Connect(function(p) task.wait(0.1); hidden[p]=nil; if hid
 print("[UCS] Players ok")
 
 -- ============================================================
--- ADDONS v3
+-- ADDONS v4 — place-scoped auto-load
 -- ============================================================
 local ADDON_FILE="UCS_Addons.json"
 local addonStore = {remote={version="0", addons={}}, localVersion={}, hidden={}, custom={}, autoLoad={}}
@@ -1483,6 +1483,7 @@ local runningAddons = {}
 local function saveAddonStore()
 	pcall(function() writefile(ADDON_FILE, Http:JSONEncode(addonStore)) end)
 end
+
 local function loadAddonStore()
 	pcall(function()
 		if isfile and isfile(ADDON_FILE) then
@@ -1496,7 +1497,17 @@ local function loadAddonStore()
 					if type(d.localVersion)=="table" then addonStore.localVersion=d.localVersion end
 					if type(d.hidden)=="table" then addonStore.hidden=d.hidden end
 					if type(d.custom)=="table" then addonStore.custom=d.custom end
-					if type(d.autoLoad)=="table" then addonStore.autoLoad=d.autoLoad end
+					if type(d.autoLoad)=="table" then
+						for k,v in pairs(d.autoLoad) do
+							if v == true then
+								d.autoLoad[k] = { places = {}, universes = {} }
+							elseif type(v) == "table" then
+								v.places = v.places or {}
+								v.universes = v.universes or {}
+							end
+						end
+						addonStore.autoLoad = d.autoLoad
+					end
 				end
 			end
 		end
@@ -1544,6 +1555,7 @@ local function snapshotUnloadFns()
 	end
 	return set
 end
+
 local function detectNewUnload(before)
 	for k,v in pairs(_G) do
 		if type(k)=="string" and k:match("^UCS_.+_Unload$") and type(v)=="function" and not before[k] then
@@ -1552,6 +1564,7 @@ local function detectNewUnload(before)
 	end
 	return nil
 end
+
 local function runAddon(url, name, version, source)
 	if runningAddons[url] then return false, "already running" end
 	local before = snapshotUnloadFns()
@@ -1590,6 +1603,7 @@ addBox.Text=""; addBox.PlaceholderText=t("addon_url_ph")
 addBox.TextColor3=Color3.new(1,1,1); addBox.PlaceholderColor3=Color3.fromRGB(140,140,140)
 addBox.Font=Enum.Font.SourceSansBold; addBox.TextSize=11; addBox.ClearTextOnFocus=false
 Instance.new("UICorner",addBox).CornerRadius=UDim.new(0,4)
+
 local nameBox=Instance.new("TextBox",S.Tabs.Addons)
 nameBox.Size=UDim2.new(1,-5,0,30); nameBox.LayoutOrder=2
 nameBox.BackgroundColor3=Color3.fromRGB(45,45,45); nameBox.BorderSizePixel=0
@@ -1597,12 +1611,14 @@ nameBox.Text=""; nameBox.PlaceholderText=t("addon_name_ph")
 nameBox.TextColor3=Color3.new(1,1,1); nameBox.PlaceholderColor3=Color3.fromRGB(140,140,140)
 nameBox.Font=Enum.Font.SourceSansBold; nameBox.TextSize=11; nameBox.ClearTextOnFocus=false
 Instance.new("UICorner",nameBox).CornerRadius=UDim.new(0,4)
+
 local addBtn=Instance.new("TextButton",S.Tabs.Addons)
 addBtn.Size=UDim2.new(1,-5,0,30); addBtn.LayoutOrder=3
 addBtn.BackgroundColor3=Color3.fromRGB(0,120,180); addBtn.BorderSizePixel=0
 addBtn.Text=t("addon_add"); addBtn.TextColor3=Color3.new(1,1,1)
 addBtn.Font=Enum.Font.SourceSansBold; addBtn.TextSize=12
 Instance.new("UICorner",addBtn).CornerRadius=UDim.new(0,4)
+
 local clearBtn=Instance.new("TextButton",S.Tabs.Addons)
 clearBtn.Size=UDim2.new(1,-5,0,28); clearBtn.LayoutOrder=4
 clearBtn.BackgroundColor3=Color3.fromRGB(120,40,40); clearBtn.BorderSizePixel=0
@@ -1623,9 +1639,18 @@ local function refreshAddons()
 	for i,a in ipairs(list) do
 		local isRunning = runningAddons[a.url] ~= nil
 		local upd = (not isRunning) and (a.source=="remote") and hasUpdate(a.url, a.version)
+		local remembered = false
+		do
+			local info = addonStore.autoLoad and addonStore.autoLoad[a.url]
+			if type(info)=="table" and info.places and info.places[game.PlaceId] then
+				remembered = true
+			end
+		end
+
 		local row=Instance.new("Frame",ALf); row.Size=UDim2.new(1,0,0,52)
 		row.BackgroundColor3=Color3.fromRGB(45,45,45); row.BorderSizePixel=0
 		Instance.new("UICorner",row).CornerRadius=UDim.new(0,4)
+
 		if upd then
 			local bar=Instance.new("Frame",row)
 			bar.Size=UDim2.new(0,3,1,-8); bar.Position=UDim2.new(0,4,0,4)
@@ -1636,26 +1661,43 @@ local function refreshAddons()
 			bar.Size=UDim2.new(0,3,1,-8); bar.Position=UDim2.new(0,4,0,4)
 			bar.BackgroundColor3=Color3.fromRGB(80,200,80); bar.BorderSizePixel=0
 			Instance.new("UICorner",bar).CornerRadius=UDim.new(0,2)
+		elseif remembered then
+			local bar=Instance.new("Frame",row)
+			bar.Size=UDim2.new(0,3,1,-8); bar.Position=UDim2.new(0,4,0,4)
+			bar.BackgroundColor3=Color3.fromRGB(100,150,255); bar.BorderSizePixel=0
+			Instance.new("UICorner",bar).CornerRadius=UDim.new(0,2)
 		end
-		local leftOffset = (upd or isRunning) and 12 or 6
+
+		local leftOffset = (upd or isRunning or remembered) and 12 or 6
+
 		local name=Instance.new("TextLabel",row)
 		name.Size=UDim2.new(1,-92,0,18); name.Position=UDim2.new(0,leftOffset,0,2)
-		name.BackgroundTransparency=1; name.Text=a.name; name.TextColor3=Color3.new(1,1,1)
+		name.BackgroundTransparency=1
+		if remembered and not isRunning then
+			name.Text = a.name.."  📌"
+		else
+			name.Text = a.name
+		end
+		name.TextColor3=Color3.new(1,1,1)
 		name.Font=Enum.Font.SourceSansBold; name.TextSize=12
 		name.TextXAlignment=Enum.TextXAlignment.Left; name.TextTruncate=Enum.TextTruncate.AtEnd
+
 		local versionLine = t("addon_version")..a.version
 		if upd then
 			local localV = addonStore.localVersion[a.url]
 			versionLine = t("addon_version")..tostring(localV).."  →  "..t("addon_version")..a.version
 		end
 		if a.author ~= "" then versionLine = versionLine .. "  ·  "..t("addon_author").." "..a.author end
+		if remembered then versionLine = versionLine .. "  ·  📌" end
+
 		local desc=Instance.new("TextLabel",row)
 		desc.Size=UDim2.new(1,-92,0,14); desc.Position=UDim2.new(0,leftOffset,0,20)
 		desc.BackgroundTransparency=1
 		desc.Text = versionLine.."   "..(a.desc~="" and ("— "..a.desc) or "")
-		desc.TextColor3 = upd and Color3.fromRGB(255,210,80) or (isRunning and Color3.fromRGB(120,220,120) or Color3.fromRGB(150,150,150))
+		desc.TextColor3 = upd and Color3.fromRGB(255,210,80) or (isRunning and Color3.fromRGB(120,220,120) or (remembered and Color3.fromRGB(140,180,255) or Color3.fromRGB(150,150,150)))
 		desc.Font=Enum.Font.SourceSans; desc.TextSize=9
 		desc.TextXAlignment=Enum.TextXAlignment.Left; desc.TextTruncate=Enum.TextTruncate.AtEnd
+
 		local status=Instance.new("TextLabel",row)
 		status.Size=UDim2.new(0,90,0,12); status.Position=UDim2.new(0,leftOffset,0,36)
 		status.BackgroundTransparency=1
@@ -1663,6 +1705,7 @@ local function refreshAddons()
 		status.TextColor3 = isRunning and Color3.fromRGB(80,200,80) or Color3.fromRGB(180,180,180)
 		status.Font=Enum.Font.SourceSansBold; status.TextSize=8
 		status.TextXAlignment=Enum.TextXAlignment.Left
+
 		local runBtn=Instance.new("TextButton",row)
 		runBtn.Size=UDim2.new(0,50,1,-8); runBtn.Position=UDim2.new(1,-84,0,4)
 		if isRunning then
@@ -1675,11 +1718,13 @@ local function refreshAddons()
 		runBtn.BorderSizePixel=0
 		runBtn.TextColor3=Color3.new(1,1,1); runBtn.Font=Enum.Font.SourceSansBold
 		Instance.new("UICorner",runBtn).CornerRadius=UDim.new(0,3)
+
 		local delBtn=Instance.new("TextButton",row)
 		delBtn.Size=UDim2.new(0,28,1,-8); delBtn.Position=UDim2.new(1,-32,0,4)
 		delBtn.BackgroundColor3=Color3.fromRGB(140,40,40); delBtn.BorderSizePixel=0
 		delBtn.Text="X"; delBtn.TextColor3=Color3.new(1,1,1); delBtn.Font=Enum.Font.SourceSansBold; delBtn.TextSize=12
 		Instance.new("UICorner",delBtn).CornerRadius=UDim.new(0,3)
+
 		runBtn.MouseButton1Click:Connect(function()
 			if runningAddons[a.url] then
 				local info = runningAddons[a.url]
@@ -1701,13 +1746,15 @@ local function refreshAddons()
 					status.TextColor3=Color3.fromRGB(255,80,80)
 					row.BackgroundColor3=Color3.fromRGB(60,30,30)
 				else
-					addonStore.autoLoad[a.url] = true
+					addonStore.autoLoad[a.url] = addonStore.autoLoad[a.url] or { places = {}, universes = {} }
+					addonStore.autoLoad[a.url].places[game.PlaceId] = true
 					saveAddonStore()
 					S.notify(a.name.." "..t("n_started"),Color3.fromRGB(0,180,0))
 					refreshAddons()
 				end
 			end)
 		end)
+
 		delBtn.MouseButton1Click:Connect(function()
 			local info = runningAddons[a.url]
 			if info and info.unload then pcall(info.unload) end
@@ -1747,6 +1794,7 @@ addBtn.MouseButton1Click:Connect(function()
 	saveAddonStore(); refreshAddons()
 	S.notify(t("n_addon_added"),Color3.fromRGB(0,180,0))
 end)
+
 clearBtn.MouseButton1Click:Connect(function()
 	for url, info in pairs(runningAddons) do
 		if info and info.unload then pcall(info.unload) end
@@ -1773,6 +1821,22 @@ restoreBtn.MouseButton1Click:Connect(function()
 	S.notify((S.lang=="ru") and ("Восстановлено: "..count) or ("Restored: "..count), Color3.fromRGB(0,180,0))
 end)
 
+local clearAutoBtn=Instance.new("TextButton",S.Tabs.Addons)
+clearAutoBtn.Size=UDim2.new(1,-5,0,26); clearAutoBtn.LayoutOrder=6
+clearAutoBtn.BackgroundColor3=Color3.fromRGB(140,70,40); clearAutoBtn.BorderSizePixel=0
+clearAutoBtn.Text=(S.lang=="ru" and "🧹 Очистить список авто-запуска" or "🧹 Clear auto-load list")
+clearAutoBtn.TextColor3=Color3.new(1,1,1)
+clearAutoBtn.Font=Enum.Font.SourceSansBold; clearAutoBtn.TextSize=10
+Instance.new("UICorner",clearAutoBtn).CornerRadius=UDim.new(0,4)
+clearAutoBtn.MouseButton1Click:Connect(function()
+	local cnt=0
+	for _ in pairs(addonStore.autoLoad or {}) do cnt=cnt+1 end
+	addonStore.autoLoad={}
+	saveAddonStore()
+	refreshAddons()
+	S.notify((S.lang=="ru" and ("Авто-запуск очищен: "..cnt) or ("Auto-load cleared: "..cnt)), Color3.fromRGB(0,180,0))
+end)
+
 S.refreshAddons=refreshAddons
 refreshAddons()
 
@@ -1784,15 +1848,24 @@ end)
 
 task.spawn(function()
 	task.wait(2.5)
+	local placeId = game.PlaceId
+	local universeId = game.GameId
 	local started = {}
-	for url, _ in pairs(addonStore.autoLoad or {}) do
-		local found = nil
-		for _, a in ipairs(getMergedAddons()) do
-			if a.url == url then found = a; break end
-		end
-		if found then
-			local ok = runAddon(found.url, found.name, found.version, found.source)
-			if ok then table.insert(started, found.name) end
+	for url, info in pairs(addonStore.autoLoad or {}) do
+		if type(info) == "table" then
+			local matches = false
+			if info.places and info.places[placeId] then matches = true end
+			if info.universes and info.universes[universeId] then matches = true end
+			if matches then
+				local found = nil
+				for _, a in ipairs(getMergedAddons()) do
+					if a.url == url then found = a; break end
+				end
+				if found then
+					local ok = runAddon(found.url, found.name, found.version, found.source)
+					if ok then table.insert(started, found.name) end
+				end
+			end
 		end
 	end
 	if #started > 0 then
@@ -1800,7 +1873,7 @@ task.spawn(function()
 		S.notify((S.lang=="ru" and "Автозапуск: " or "Auto-loaded: ")..table.concat(started, ", "), Color3.fromRGB(0,200,0))
 	end
 end)
-print("[UCS] Addons v3 ok")
+print("[UCS] Addons v4 ok")
 
 -- ============================================================
 -- SETTINGS
@@ -2105,7 +2178,6 @@ refreshProfiles()
 print("[UCS] Settings ok")
 print("[UCS] Profiles ok")
 
--- ===== LANG REFS =====
 S.langRef(searchBox, "PlaceholderText", "search_players")
 S.langRef(wpName, "PlaceholderText", "wp_name_ph")
 S.langRef(addBox, "PlaceholderText", "addon_url_ph")
@@ -2124,7 +2196,6 @@ S.onLangChange(function() if S.refreshPlayers then S.refreshPlayers() end end)
 S.onLangChange(function() if S.refreshAddons then S.refreshAddons() end end)
 S.onLangChange(function() if S.refreshProfiles then S.refreshProfiles() end end)
 
--- RESPAWN
 S.conns.Respawn=LP.CharacterAdded:Connect(function(ch)
 	task.wait(1)
 	if C.nEn then task.spawn(function() while C.nEn and ch.Parent do S.col(ch,false); task.wait() end end) end
@@ -2160,9 +2231,7 @@ task.spawn(function()
 	end
 end)
 
--- ============================================================
 -- CHANGELOG
--- ============================================================
 do
 	local CHANGELOG_FILE = "UCS_ChangelogCache.json"
 	local CHANGELOG_SEEN = "UCS_ChangelogSeen.json"
