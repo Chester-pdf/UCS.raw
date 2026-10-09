@@ -1,16 +1,16 @@
 -- ============================================================
--- UCS ADD v1.3.1 — Freecam + Player Info + Device/Hotkeys
+-- UCS ADD v1.3.2 — Freecam + Player Info + Device/Hotkeys + Scale
 -- ============================================================
 local S = _G.UCS
 if not S then warn("[UCS add] _G.UCS is empty"); return end
 
 local L = {
 	ru = {
-		loading="[UCS add] загрузка v1.3.1...",
+		loading="[UCS add] загрузка v1.3.2...",
 		already="[UCS add] уже загружен",
 		freecam_exists="[UCS add] Freecam уже есть",
 		search_ready="[UCS add] search+stars готовы, fun-rows: ",
-		done="[UCS add] готово v1.3.1",
+		done="[UCS add] готово v1.3.2",
 		freecam_name="Freecam",
 		freecam_on="Freecam: ВКЛ",
 		freecam_off="Freecam: ВЫКЛ",
@@ -24,13 +24,15 @@ local L = {
 		hotkeys_hint="Актуально только для ПК-версии",
 		device_switched="Устройство: ",
 		search_ph="🔍 поиск...",
+		scale="Рост",
+		on="ВКЛ", off="ВЫКЛ",
 	},
 	en = {
-		loading="[UCS add] loading v1.3.1...",
+		loading="[UCS add] loading v1.3.2...",
 		already="[UCS add] already loaded",
 		freecam_exists="[UCS add] Freecam already exists",
 		search_ready="[UCS add] search+stars ready, fun-rows: ",
-		done="[UCS add] done v1.3.1",
+		done="[UCS add] done v1.3.2",
 		freecam_name="Freecam",
 		freecam_on="Freecam: ON",
 		freecam_off="Freecam: OFF",
@@ -44,6 +46,8 @@ local L = {
 		hotkeys_hint="Only for PC build",
 		device_switched="Device: ",
 		search_ph="🔍 search...",
+		scale="Scale",
+		on="ON", off="OFF",
 	},
 }
 local function t(k)
@@ -510,6 +514,97 @@ onLangChange(function()
 end)
 
 -- ============================================================
+-- SCALE (resize character)
+-- ============================================================
+C.scaleEn = false
+C.scaleValue = 1.0
+
+local function getScaleHum()
+	return LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+end
+
+local function applyScale()
+	local hum = getScaleHum()
+	if not hum then return end
+	local s = C.scaleEn and C.scaleValue or 1.0
+	local ok, desc = pcall(function() return hum:GetAppliedDescription() end)
+	if not ok or not desc then return end
+	desc.HeightScale = s
+	desc.WidthScale = s
+	desc.DepthScale = s
+	desc.HeadScale = s
+	pcall(function() hum:ApplyDescription(desc) end)
+end
+
+local function scaleSyncLoop()
+	if not C.scaleEn then return end
+	local hum = getScaleHum()
+	if not hum then return end
+	local ok, desc = pcall(function() return hum:GetAppliedDescription() end)
+	if not ok or not desc then return end
+	local cur = desc.HeightScale or 1
+	if math.abs(cur - C.scaleValue) > 0.02 then
+		desc.HeightScale = C.scaleValue
+		desc.WidthScale = C.scaleValue
+		desc.DepthScale = C.scaleValue
+		desc.HeadScale = C.scaleValue
+		pcall(function() hum:ApplyDescription(desc) end)
+	end
+end
+
+addR("Visual",
+	t("scale").." ("..string.format("%.1f", C.scaleValue)..")",
+	function(b, a)
+		if a == "toggle" then
+			C.scaleEn = not C.scaleEn
+			if C.scaleEn then
+				S.addT("UCS_ScaleSync", scaleSyncLoop, 0.5)
+			else
+				S.delT("UCS_ScaleSync")
+			end
+			task.defer(applyScale)
+		elseif a == "minus" then
+			C.scaleValue = math.max(0.3, C.scaleValue - 0.1)
+			if C.scaleEn then applyScale() end
+		elseif a == "plus" then
+			C.scaleValue = C.scaleValue + 0.1
+			if C.scaleEn then applyScale() end
+		end
+		b.Text = t("scale")..": "..(C.scaleEn and t("on") or t("off")).." ("..string.format("%.1f", C.scaleValue)..")"
+		b.BackgroundColor3 = C.scaleEn and Color3.fromRGB(0,120,0) or Color3.fromRGB(50,50,50)
+	end,
+	true, "scaleEn", "scaleValue")
+
+S._resetScale = function()
+	C.scaleEn = false
+	S.delT("UCS_ScaleSync")
+	local hum = getScaleHum()
+	if hum then
+		local ok, desc = pcall(function() return hum:GetAppliedDescription() end)
+		if ok and desc then
+			desc.HeightScale = 1
+			desc.WidthScale = 1
+			desc.DepthScale = 1
+			desc.HeadScale = 1
+			pcall(function() hum:ApplyDescription(desc) end)
+		end
+	end
+end
+
+-- Re-apply scale on respawn
+LP.CharacterAdded:Connect(function()
+	task.wait(1.2)
+	if C.scaleEn then applyScale() end
+end)
+
+onLangChange(function()
+	local tb = S.toggles.scaleEn and S.toggles.scaleEn.btn
+	if tb and tb.Parent then
+		tb.Text = t("scale")..": "..(C.scaleEn and t("on") or t("off")).." ("..string.format("%.1f", C.scaleValue)..")"
+	end
+end)
+
+-- ============================================================
 -- SEARCH + STARS
 -- ============================================================
 local funRows = {}
@@ -674,6 +769,7 @@ end)
 
 S._extrasCleanup = function()
 	if S._setFreecam and C.freecam then S._setFreecam(false) end
+	if S._resetScale then pcall(S._resetScale) end
 	if ipConn then ipConn:Disconnect() end
 	if S._freeButtons then
 		for _,b in ipairs(S._freeButtons) do pcall(function() b:Destroy() end) end
