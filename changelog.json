@@ -1,26 +1,106 @@
 {
   "entries": [
     {
+      "version": "1.3.6",
+      "date": "2026-10-09",
+      "changes": {
+        "ru": [
+          "🎯 Авто-запуск аддонов теперь привязан к игре (PlaceId) — запускается только там, где ты жал RUN",
+          "📌 В списке аддонов показывается иконка 📌 для запомненных в этой игре",
+          "🧹 Кнопка «Очистить список авто-запуска» в разделе ADDONS",
+          "📐 Рост (Scale) v6 — 6 методов сразу: HumanoidDescription, NumberValue, Model:ScaleTo, атрибуты, дочерние значения, Remote/Module",
+          "🪝 Тогл «Рост: HOOK» — перехват FireServer/InvokeServer через hookmetamethod (эксперимент)",
+          "🔓 Убран верхний лимит у Роста",
+          "💾 Рост корректно восстанавливается при выключении (сохраняется оригинальное описание)",
+          "🔗 Обновлены ссылки аддонов AIMBOT и EXTRA"
+        ],
+        "en": [
+          "🎯 Addon auto-load is now scoped to the PlaceId — runs only where you pressed RUN",
+          "📌 📌 marker in the addon list for addons remembered in this game",
+          "🧹 'Clear auto-load list' button in ADDONS tab",
+          "📐 Scale v6 — 6 methods at once: HumanoidDescription, NumberValue, Model:ScaleTo, attributes, child values, Remote/Module",
+          "🪝 'Scale: HOOK' toggle — intercepts FireServer/InvokeServer via hookmetamethod (experimental)",
+          "🔓 Removed upper limit on Scale",
+          "💾 Scale properly restores original description on toggle off",
+          "🔗 Updated AIMBOT and EXTRA addon links"
+        ]
+      }
+    },
+    {
+      "version": "1.3.5",
+      "date": "2026-10-09",
+      "changes": {
+        "ru": [
+          "📐 Рост: много-методная система (HumanoidDescription + NumberValue + Model:ScaleTo + атрибуты + Remote)",
+          "🔧 Диапазон 0.5–2.0 для безопасности (потом убран в 1.3.6)"
+        ],
+        "en": [
+          "📐 Scale: multi-method system (HumanoidDescription + NumberValue + Model:ScaleTo + attributes + Remote)",
+          "🔧 0.5–2.0 range for safety (removed in 1.3.6)"
+        ]
+      }
+    },
+    {
+      "version": "1.3.4",
+      "date": "2026-10-09",
+      "changes": {
+        "ru": [
+          "📐 Рост v4 — сохраняет и восстанавливает оригинальное описание",
+          "🔓 Убран лимит 2.0 (нижний 0.1 остался)"
+        ],
+        "en": [
+          "📐 Scale v4 — saves and restores original description",
+          "🔓 Removed 2.0 upper limit (lower 0.1 kept)"
+        ]
+      }
+    },
+    {
+      "version": "1.3.3",
+      "date": "2026-10-08",
+      "changes": {
+        "ru": [
+          "📐 Рост v3 — тройной метод (Description + NumberValue + ScaleTo)",
+          "🐛 Фикс: не откатывается играми с AutomaticScalingEnabled=false"
+        ],
+        "en": [
+          "📐 Scale v3 — triple method (Description + NumberValue + ScaleTo)",
+          "🐛 Fix: not rolled back by games with AutomaticScalingEnabled=false"
+        ]
+      }
+    },
+    {
+      "version": "1.3.2",
+      "date": "2026-10-08",
+      "changes": {
+        "ru": [
+          "✨ Новая функция: Рост персонажа (визуальный, локальный)",
+          "🔧 Рост: автоматом применяется после респавна"
+        ],
+        "en": [
+          "✨ New feature: Character Scale (visual, local)",
+          "🔧 Scale: auto-reapplies after respawn"
+        ]
+      }
+    },
+    {
       "version": "1.3.1",
       "date": "2026-10-08",
       "changes": {
         "ru": [
-          "✨ Самоввод чисел в тоглах — зажми имя тогла 0.7 сек → откроется окно ввода",
-          "⚡ Зажатие + / − ускоряется со временем (0.15с → 0.07с → 0.03с)",
-          "🔓 Убраны лимиты на значения в тоглах (можно вписать любое число)",
-          "🖥 Переключатель Mobile/PC в Настройках — меняет сборку на лету",
-          "⌨ Кнопка «Список хоткеев» — показывает все горячие клавиши",
-          "🧹 Убран Click TP с мобильной версии (был неудобен на тач)",
-          "🔗 Обновлены ссылки аддонов AIMBOT и EXTRA"
+          "✨ Самоввод чисел в тоглах — зажми имя тогла 0.7 сек",
+          "⚡ Зажатие + / − ускоряется со временем",
+          "🔓 Убраны лимиты на значения в тоглах",
+          "🖥 Переключатель Mobile/PC в Настройках",
+          "⌨ Кнопка «Список хоткеев»",
+          "🧹 Убран Click TP с мобильной версии"
         ],
         "en": [
-          "✨ Manual number input in toggles — hold toggle name 0.7s → input window",
-          "⚡ Holding + / − accelerates over time (0.15s → 0.07s → 0.03s)",
-          "🔓 Removed upper limits on toggle values (type any number)",
-          "🖥 Mobile/PC switcher in Settings — swaps build on the fly",
-          "⌨ 'Hotkeys list' button — shows all keyboard shortcuts",
-          "🧹 Removed Click TP from mobile build (awkward on touch)",
-          "🔗 Updated AIMBOT and EXTRA addon links"
+          "✨ Manual number input in toggles — hold toggle name 0.7s",
+          "⚡ Holding + / − accelerates over time",
+          "🔓 Removed upper limits on toggle values",
+          "🖥 Mobile/PC switcher in Settings",
+          "⌨ 'Hotkeys list' button",
+          "🧹 Removed Click TP from mobile build"
         ]
       }
     },
@@ -30,25 +110,15 @@
       "changes": {
         "ru": [
           "🎉 Welcome Screen при первом запуске",
-          "🌐 Выбор языка: Русский / English",
-          "📱💻 Выбор устройства: Компьютер / Телефон",
-          "📦 Две отдельные сборки: mainM.raw и mainPC.raw",
-          "💻 ПК-версия без экранных кнопок, только хоткеи",
-          "⌨ Новые хоткеи на ПК: F (Fly), N (Noclip), C (Platform), V (Freeze Player), B (Freeze Camera)",
-          "🧊 FreezeCam: заморозить игрока (камера летает) / заморозить камеру (игрок ходит)",
-          "🖥 Автозагрузка нужной сборки при следующих запусках",
-          "💾 Настройки устройства сохраняются в файл UCS_Device.json"
+          "📱💻 Две сборки: mainM.raw и mainPC.raw",
+          "🧊 FreezeCam: заморозить игрока / камеру",
+          "⌨ ПК-хоткеи: F (Fly), N (Noclip), C (Platform), V (Freeze Player), B (Freeze Camera)"
         ],
         "en": [
           "🎉 Welcome Screen on first launch",
-          "🌐 Language pick: Russian / English",
-          "📱💻 Device pick: PC / Phone",
-          "📦 Two separate builds: mainM.raw and mainPC.raw",
-          "💻 PC build without on-screen buttons, hotkeys only",
-          "⌨ New PC hotkeys: F (Fly), N (Noclip), C (Platform), V (Freeze Player), B (Freeze Camera)",
-          "🧊 FreezeCam: freeze player (camera flies) / freeze camera (player walks)",
-          "🖥 Auto-load correct build next time",
-          "💾 Device settings saved to UCS_Device.json"
+          "📱💻 Two builds: mainM.raw and mainPC.raw",
+          "🧊 FreezeCam: freeze player / camera",
+          "⌨ PC hotkeys: F (Fly), N (Noclip), C (Platform), V (Freeze Player), B (Freeze Camera)"
         ]
       }
     },
@@ -59,20 +129,14 @@
         "ru": [
           "🧹 Убраны Anti-KB, Anti-Fling, Anti-AFK, Auto Rejoin, AntiTP",
           "✨ Добавлены Auto Jump, Click TP, No Fog, FOV Changer",
-          "🐛 Фикс: Anti-Fling и Anti-Knockback конфликтовали с Fly и Speed",
-          "🐛 OneShot+ вынесен в отдельный аддон",
-          "🔧 AntiVoid v2 (last-safe-position)",
-          "🔧 FastInteract Safe mode",
-          "🔧 Кнопка ♻ Восстановить скрытые аддоны"
+          "🐛 Фикс: Anti-Fling конфликтовал с Fly и Speed",
+          "🔧 AntiVoid v2 (last-safe-position)"
         ],
         "en": [
           "🧹 Removed Anti-KB, Anti-Fling, Anti-AFK, Auto Rejoin, AntiTP",
           "✨ Added Auto Jump, Click TP, No Fog, FOV Changer",
-          "🐛 Fix: Anti-Fling and Anti-Knockback conflicted with Fly and Speed",
-          "🐛 OneShot+ moved to separate addon",
-          "🔧 AntiVoid v2 (last-safe-position)",
-          "🔧 FastInteract Safe mode",
-          "🔧 Button ♻ Restore hidden addons"
+          "🐛 Fix: Anti-Fling conflicted with Fly and Speed",
+          "🔧 AntiVoid v2 (last-safe-position)"
         ]
       }
     },
@@ -80,56 +144,24 @@
       "version": "1.1.0",
       "date": "2026-10-08",
       "changes": {
-        "ru": [
-          "OneShot+ вынесен в отдельный аддон",
-          "AntiTP удалён",
-          "AntiVoid v2",
-          "FastInteract Safe mode",
-          "Addon Manager v3: RUN → STOP"
-        ],
-        "en": [
-          "OneShot+ moved to separate addon",
-          "AntiTP removed",
-          "AntiVoid v2",
-          "FastInteract Safe mode",
-          "Addon Manager v3: RUN → STOP"
-        ]
+        "ru": ["OneShot+ вынесен в аддон", "AntiTP удалён", "AntiVoid v2", "FastInteract Safe"],
+        "en": ["OneShot+ moved to addon", "AntiTP removed", "AntiVoid v2", "FastInteract Safe"]
       }
     },
     {
       "version": "1.0.5",
       "date": "2026-10-08",
       "changes": {
-        "ru": [
-          "Changelog в UI",
-          "Addon Manager v3: RUN → STOP когда аддон запущен",
-          "Автопроверка версий аддонов",
-          "Watermark в подвале панели",
-          "Меньше размер уведомлений"
-        ],
-        "en": [
-          "Changelog UI",
-          "Addon Manager v3: RUN → STOP when addon is running",
-          "Auto-check for addon versions",
-          "Watermark in panel footer",
-          "Smaller notification size"
-        ]
+        "ru": ["Changelog в UI", "Addon Manager v3", "Автопроверка аддонов", "Watermark"],
+        "en": ["Changelog UI", "Addon Manager v3", "Auto-check addons", "Watermark"]
       }
     },
     {
       "version": "1.0.4",
       "date": "2026-10-05",
       "changes": {
-        "ru": [
-          "Полная локализация RU + EN",
-          "Watermark и авто-проверка версий",
-          "Fix: при смене языка не запускаются функции"
-        ],
-        "en": [
-          "Full RU + EN localization",
-          "Watermark and auto version check",
-          "Fix: functions no longer trigger on language switch"
-        ]
+        "ru": ["Полная локализация RU + EN", "Watermark + авто-проверка версий"],
+        "en": ["Full RU + EN localization", "Watermark + auto version check"]
       }
     }
   ]
