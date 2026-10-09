@@ -582,7 +582,6 @@ local function getScaleHum()
 	return LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
 end
 
--- ===== Local methods =====
 local function saveOriginalDesc(hum)
 	if not hum or C._scaleOriginalDesc then return end
 	local ok, desc = pcall(function() return hum:GetAppliedDescription() end)
@@ -731,7 +730,6 @@ local function tryModuleScale(s)
 	return false
 end
 
--- ===== Hook method =====
 local function hookAvailable()
 	return (hookmetamethod and getnamecallmethod and newcclosure and getrawmetatable and setreadonly) ~= nil
 end
@@ -748,7 +746,6 @@ local function enableHook()
 
 		setreadonly(mt, false)
 
-		-- Hook __namecall: перехватываем FireServer/InvokeServer
 		mt.__namecall = newcclosure(function(self, ...)
 			local method = getnamecallmethod()
 			if C.scaleEn and (method == "FireServer" or method == "InvokeServer") then
@@ -785,7 +782,6 @@ local function enableHook()
 			return C._origNameCall(self, ...)
 		end)
 
-		-- Hook __index: спуфим чтение scale-свойств
 		mt.__index = newcclosure(function(self, key)
 			if C.scaleEn and typeof(self) == "Instance" then
 				local ok2, isHum = pcall(function() return self:IsA("Humanoid") end)
@@ -820,7 +816,6 @@ local function disableHook()
 	C._hookActive = false
 end
 
--- ===== Apply / Reset =====
 local function applyScale()
 	local hum = getScaleHum()
 	if not hum then return end
@@ -900,7 +895,6 @@ local function scaleSyncLoop()
 	end
 end
 
--- ===== UI =====
 addR("Visual",
 	t("scale").." ("..string.format("%.1f", C.scaleValue)..")",
 	function(b, a)
