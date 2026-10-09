@@ -1,5 +1,5 @@
 {
-  "version": "3",
+  "version": "4",
   "addons": [
     {
       "name": "AIMBOT",
@@ -12,6 +12,13 @@
       "name": "EXTRA",
       "url": "https://gist.githubusercontent.com/Chester-pdf/d5202ca9100d4023e25dc6b77940612e/raw/0f780965461df5c57172ba40cb45fead3d428ee1/Extra.raw",
       "desc": "Autoclicker + Vehicle Tools",
+      "version": "1.1.0",
+      "author": "Chester-pdf"
+    },
+    {
+      "name": "ONESHOT",
+      "url": "https://gist.githubusercontent.com/Chester-pdf/9ffb124121294c47c11fd30bde2bd3e8/raw/eb3a6da36505a9c9512ff719add541e5481d455c/OneShot+.raw",
+      "desc": "OneShot+ (Killer+Remote) — Blade Ball & similar",
       "version": "1.1.0",
       "author": "Chester-pdf"
     }
