@@ -1,16 +1,16 @@
 -- ============================================================
--- UCS ADD v1.3.2 — Freecam + Player Info + Device/Hotkeys + Scale
+-- UCS ADD v1.3.3 — Freecam + Player Info + Device/Hotkeys + Scale
 -- ============================================================
 local S = _G.UCS
 if not S then warn("[UCS add] _G.UCS is empty"); return end
 
 local L = {
 	ru = {
-		loading="[UCS add] загрузка v1.3.2...",
+		loading="[UCS add] загрузка v1.3.3...",
 		already="[UCS add] уже загружен",
 		freecam_exists="[UCS add] Freecam уже есть",
 		search_ready="[UCS add] search+stars готовы, fun-rows: ",
-		done="[UCS add] готово v1.3.2",
+		done="[UCS add] готово v1.3.3",
 		freecam_name="Freecam",
 		freecam_on="Freecam: ВКЛ",
 		freecam_off="Freecam: ВЫКЛ",
@@ -28,11 +28,11 @@ local L = {
 		on="ВКЛ", off="ВЫКЛ",
 	},
 	en = {
-		loading="[UCS add] loading v1.3.2...",
+		loading="[UCS add] loading v1.3.3...",
 		already="[UCS add] already loaded",
 		freecam_exists="[UCS add] Freecam already exists",
 		search_ready="[UCS add] search+stars ready, fun-rows: ",
-		done="[UCS add] done v1.3.2",
+		done="[UCS add] done v1.3.3",
 		freecam_name="Freecam",
 		freecam_on="Freecam: ON",
 		freecam_off="Freecam: OFF",
@@ -514,12 +514,12 @@ onLangChange(function()
 end)
 
 -- ============================================================
--- SCALE (resize character) v2 — NumberValue-based
+-- SCALE (resize character) v3 — multi-method
 -- ============================================================
 C.scaleEn = false
 C.scaleValue = 1.0
 
-local SCALE_KEYS = {
+local SCALE_NV = {
 	"BodyHeightScale",
 	"BodyWidthScale",
 	"BodyDepthScale",
@@ -531,36 +531,82 @@ local function getScaleHum()
 	return LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
 end
 
-local function applyScaleToHum(hum)
-	if not hum then return end
-	local s = C.scaleEn and C.scaleValue or 1.0
-	for _, key in ipairs(SCALE_KEYS) do
+-- Method 1: HumanoidDescription
+local function tryApplyDescription(hum, s)
+	if not hum then return false end
+	local ok = pcall(function()
+		local desc = hum:GetAppliedDescription()
+		if not desc then error("no desc") end
+		desc.HeightScale = s
+		desc.WidthScale = s
+		desc.DepthScale = s
+		desc.HeadScale = s
+		hum:ApplyDescription(desc)
+	end)
+	return ok
+end
+
+-- Method 2: direct NumberValues
+local function tryNumberValues(hum, s)
+	if not hum then return false end
+	local applied = false
+	for _, key in ipairs(SCALE_NV) do
 		local nv = hum:FindFirstChild(key)
 		if nv and nv:IsA("NumberValue") then
-			pcall(function() nv.Value = s end)
+			local ok = pcall(function() nv.Value = s end)
+			if ok then applied = true end
 		end
 	end
 	pcall(function() hum.BodyHeightScale = s end)
 	pcall(function() hum.BodyWidthScale = s end)
 	pcall(function() hum.BodyDepthScale = s end)
 	pcall(function() hum.HeadScale = s end)
+	return applied
+end
+
+-- Method 3: Model:ScaleTo
+local function tryScaleTo(hum, s)
+	local char = hum and hum.Parent
+	if not char or not char:IsA("Model") then return false end
+	local prev = C._lastScaleToValue or 1
+	local target = s / prev
+	if math.abs(target - 1) < 0.05 then return false end
+	local ok = pcall(function() char:ScaleTo(target) end)
+	if ok then C._lastScaleToValue = s end
+	return ok
 end
 
 local function applyScale()
-	applyScaleToHum(getScaleHum())
+	local hum = getScaleHum()
+	if not hum then return end
+	local s = C.scaleEn and C.scaleValue or 1.0
+	pcall(function() hum.AutomaticScalingEnabled = false end)
+	local ok1 = tryApplyDescription(hum, s)
+	if not ok1 then
+		local ok2 = tryNumberValues(hum, s)
+		if not ok2 then
+			tryScaleTo(hum, s)
+		end
+	end
 end
 
 local function scaleSyncLoop()
-	if not C.scaleEn then return end
+	if not C.scaleEn then
+		pcall(function()
+			local hum = getScaleHum()
+			if hum then hum.AutomaticScalingEnabled = true end
+		end)
+		return
+	end
 	local hum = getScaleHum()
 	if not hum then return end
-	for _, key in ipairs(SCALE_KEYS) do
-		local nv = hum:FindFirstChild(key)
-		if nv and nv:IsA("NumberValue") then
-			if math.abs(nv.Value - C.scaleValue) > 0.02 then
-				pcall(function() nv.Value = C.scaleValue end)
-			end
-		end
+	local cur = false
+	pcall(function() cur = hum.AutomaticScalingEnabled end)
+	if cur then pcall(function() hum.AutomaticScalingEnabled = false end) end
+	local check = 0
+	pcall(function() check = hum.BodyHeightScale end)
+	if math.abs(check - C.scaleValue) > 0.05 then
+		tryApplyDescription(hum, C.scaleValue)
 	end
 end
 
@@ -570,17 +616,30 @@ addR("Visual",
 		if a == "toggle" then
 			C.scaleEn = not C.scaleEn
 			if C.scaleEn then
-				S.addT("UCS_ScaleSync", scaleSyncLoop, 0.5)
+				S.addT("UCS_ScaleSync", scaleSyncLoop, 0.8)
 				task.defer(applyScale)
 			else
 				S.delT("UCS_ScaleSync")
-				task.defer(applyScale)
+				task.defer(function()
+					local hum = getScaleHum()
+					if hum then
+						pcall(function() hum.AutomaticScalingEnabled = true end)
+						tryApplyDescription(hum, 1)
+						tryNumberValues(hum, 1)
+						local char = hum.Parent
+						local prev = C._lastScaleToValue
+						if char and prev and prev ~= 1 and char:IsA("Model") then
+							pcall(function() char:ScaleTo(1 / prev) end)
+						end
+						C._lastScaleToValue = nil
+					end
+				end)
 			end
 		elseif a == "minus" then
-			C.scaleValue = math.max(0.1, C.scaleValue - 0.1)
+			C.scaleValue = math.max(0.5, C.scaleValue - 0.1)
 			if C.scaleEn then applyScale() end
 		elseif a == "plus" then
-			C.scaleValue = C.scaleValue + 0.1
+			C.scaleValue = math.min(2.0, C.scaleValue + 0.1)
 			if C.scaleEn then applyScale() end
 		end
 		b.Text = t("scale")..": "..(C.scaleEn and t("on") or t("off")).." ("..string.format("%.1f", C.scaleValue)..")"
@@ -591,26 +650,20 @@ addR("Visual",
 S._resetScale = function()
 	C.scaleEn = false
 	S.delT("UCS_ScaleSync")
+	C._lastScaleToValue = nil
 	local hum = getScaleHum()
 	if hum then
-		for _, key in ipairs(SCALE_KEYS) do
-			local nv = hum:FindFirstChild(key)
-			if nv and nv:IsA("NumberValue") then
-				pcall(function() nv.Value = 1 end)
-			end
-		end
-		pcall(function() hum.BodyHeightScale = 1 end)
-		pcall(function() hum.BodyWidthScale = 1 end)
-		pcall(function() hum.BodyDepthScale = 1 end)
-		pcall(function() hum.HeadScale = 1 end)
+		pcall(function() hum.AutomaticScalingEnabled = true end)
+		tryApplyDescription(hum, 1)
+		tryNumberValues(hum, 1)
 	end
 end
 
 LP.CharacterAdded:Connect(function(c)
-	task.wait(1)
+	task.wait(1.2)
 	if C.scaleEn then
 		local hum = c:WaitForChild("Humanoid", 5)
-		if hum then applyScaleToHum(hum) end
+		if hum then task.defer(applyScale) end
 	end
 end)
 
