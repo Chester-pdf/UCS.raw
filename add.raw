@@ -1,16 +1,16 @@
 -- ============================================================
--- UCS ADD v1.3.5 — Freecam + Player Info + Device/Hotkeys + Scale
+-- UCS ADD v1.3.6 — Freecam + Player Info + Device/Hotkeys + Scale + Hook
 -- ============================================================
 local S = _G.UCS
 if not S then warn("[UCS add] _G.UCS is empty"); return end
 
 local L = {
 	ru = {
-		loading="[UCS add] загрузка v1.3.5...",
+		loading="[UCS add] загрузка v1.3.6...",
 		already="[UCS add] уже загружен",
 		freecam_exists="[UCS add] Freecam уже есть",
 		search_ready="[UCS add] search+stars готовы, fun-rows: ",
-		done="[UCS add] готово v1.3.5",
+		done="[UCS add] готово v1.3.6",
 		freecam_name="Freecam",
 		freecam_on="Freecam: ВКЛ",
 		freecam_off="Freecam: ВЫКЛ",
@@ -26,14 +26,18 @@ local L = {
 		search_ph="🔍 поиск...",
 		scale="Рост",
 		scale_srv="Рост: серверные методы",
+		scale_hook="Рост: HOOK (эксперимент)",
+		hook_no_support="Executor не поддерживает hookmetamethod",
+		hook_on="Hook включён — эксперимент",
+		hook_off="Hook выключен",
 		on="ВКЛ", off="ВЫКЛ",
 	},
 	en = {
-		loading="[UCS add] loading v1.3.5...",
+		loading="[UCS add] loading v1.3.6...",
 		already="[UCS add] already loaded",
 		freecam_exists="[UCS add] Freecam already exists",
 		search_ready="[UCS add] search+stars ready, fun-rows: ",
-		done="[UCS add] done v1.3.5",
+		done="[UCS add] done v1.3.6",
 		freecam_name="Freecam",
 		freecam_on="Freecam: ON",
 		freecam_off="Freecam: OFF",
@@ -49,6 +53,10 @@ local L = {
 		search_ph="🔍 search...",
 		scale="Scale",
 		scale_srv="Scale: server methods",
+		scale_hook="Scale: HOOK (experimental)",
+		hook_no_support="Executor does not support hookmetamethod",
+		hook_on="Hook enabled — experimental",
+		hook_off="Hook disabled",
 		on="ON", off="OFF",
 	},
 }
@@ -517,45 +525,42 @@ onLangChange(function()
 end)
 
 -- ============================================================
--- SCALE (resize character) v5 — all-in-one
+-- SCALE (resize character) v6 — all methods + hook
 -- ============================================================
 C.scaleEn = false
 C.scaleValue = 1.0
 C.scaleUseServer = false
+C.scaleUseHook = false
 C._scaleOriginalDesc = nil
 C._lastScaleToValue = nil
-C._scaleFoundRemotes = nil
+C._hookActive = false
+C._origNameCall = nil
+C._origIndex = nil
+C._origNewIndex = nil
 
 local SCALE_NV = {
 	"BodyHeightScale","BodyWidthScale","BodyDepthScale","HeadScale","BodyProportionScale",
 }
 
--- ===== Remote / Module search names =====
 local REMOTE_NAMES = {
-	-- direct scale/size
 	"SetScale","ChangeScale","UpdateScale","Resize","SetSize","ChangeSize",
 	"ScaleRemote","SizeEvent","ApplyScale","SetCharacterScale",
 	"UpdateCharacterScale","ChangeCharacterSize","ResizeCharacter",
 	"SetBodyScale","UpdateBodyScale","BodyScale","CharacterSize",
 	"SetAvatarScale","UpdateAvatarScale","SetPlayerScale","ChangePlayerSize",
 	"SetHeight","ChangeHeight","UpdateHeight","SetWidth","ChangeWidth",
-	-- character/avatar
 	"SetCharacter","UpdateCharacter","ChangeCharacter","CharacterEvent",
 	"ApplyDescription","SetDescription","UpdateDescription","ChangeDescription",
 	"ApplyHumanoidDescription","SetHumanoidDescription","UpdateHumanoid",
 	"Avatar","AvatarEvent","SetAvatar","UpdateAvatar","ChangeAvatar",
-	-- verbs
 	"CreateCharacter","ModifyCharacter","Transform","TransformCharacter",
 	"Modify","ModifyPlayer","ModifyAvatar","ModifyBody",
 	"SetProperty","UpdateProperty","ChangeProperty",
-	-- admin
 	"RunCommand","ExecuteCommand","Command","AdminCommand",
 	"SetPlayerProperty","AdminSet","AdminChange",
-	-- game-specific
 	"ScaleCharacter","SetScaleRemote","ChangeScaleRequest",
 	"ResizeCharacter","SetCharacterSize","SetPlayerSize",
 	"UpdateCharacterRequest","ResizePlayer",
-	-- suffix variants
 	"SetScale_Server","ScaleEvent","ScaleRequest","ScaleSync",
 	"SizeChange","SizeUpdate","SizeRequest",
 	"CharacterScale","PlayerScale","HumanoidScale",
@@ -629,7 +634,6 @@ local function tryScaleTo(hum, s)
 	return ok
 end
 
--- ===== Attributes method =====
 local function tryAttributes(s)
 	local char = LP.Character
 	local hum = getScaleHum()
@@ -647,7 +651,6 @@ local function tryAttributes(s)
 	return applied
 end
 
--- ===== Character child values =====
 local function tryChildValues(s)
 	local char = LP.Character
 	if not char then return false end
@@ -667,7 +670,6 @@ local function tryChildValues(s)
 	return applied
 end
 
--- ===== Remote method =====
 local function findRemoteDeep(root, name)
 	local found = root:FindFirstChild(name)
 	if found then return found end
@@ -706,7 +708,6 @@ local function tryRemoteScale(s, verbose)
 	return foundAny
 end
 
--- ===== Module method =====
 local function tryModuleScale(s)
 	if not C.scaleUseServer then return false end
 	local rs = game:GetService("ReplicatedStorage")
@@ -730,22 +731,93 @@ local function tryModuleScale(s)
 	return false
 end
 
--- ===== Scan utility (для диагностики) =====
-local function scanRemotes()
-	local rs = game:GetService("ReplicatedStorage")
-	local found = {}
-	for _, name in ipairs(REMOTE_NAMES) do
-		local r = findRemoteDeep(rs, name)
-		if r then
-			table.insert(found, r:GetFullName().." ("..r.ClassName..")")
-		end
-	end
-	C._scaleFoundRemotes = found
-	local msg = (S.lang=="ru" and "Найдено remote: " or "Remotes found: ")..#found
-	S.notify(msg, #found > 0 and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,120,0))
-	if #found > 0 then
-		for _, f in ipairs(found) do print("[UCS-Scale] "..f) end
-	end
+-- ===== Hook method =====
+local function hookAvailable()
+	return (hookmetamethod and getnamecallmethod and newcclosure and getrawmetatable and setreadonly) ~= nil
+end
+
+local function enableHook()
+	if C._hookActive then return false end
+	if not hookAvailable() then return false end
+
+	local ok = pcall(function()
+		local mt = getrawmetatable(game)
+		C._origNameCall = mt.__namecall
+		C._origIndex    = mt.__index
+		C._origNewIndex = mt.__newindex
+
+		setreadonly(mt, false)
+
+		-- Hook __namecall: перехватываем FireServer/InvokeServer
+		mt.__namecall = newcclosure(function(self, ...)
+			local method = getnamecallmethod()
+			if C.scaleEn and (method == "FireServer" or method == "InvokeServer") then
+				local args = {...}
+				local modified = false
+				for i = 1, #args do
+					local arg = args[i]
+					if type(arg) == "table" then
+						local keyFound = false
+						for _, k in ipairs({"HeightScale","WidthScale","DepthScale","HeadScale","Scale","Size"}) do
+							if rawget(arg, k) ~= nil then keyFound = true; break end
+						end
+						if keyFound then
+							args[i].HeightScale = C.scaleValue
+							args[i].WidthScale  = C.scaleValue
+							args[i].DepthScale  = C.scaleValue
+							args[i].HeadScale   = C.scaleValue
+							args[i].Scale       = C.scaleValue
+							args[i].Size        = C.scaleValue
+							modified = true
+						end
+					elseif type(arg) == "number" then
+						local sn = self.Name and string.lower(self.Name) or ""
+						if sn:find("scale") or sn:find("size") or sn:find("height") or sn:find("resize") then
+							args[i] = C.scaleValue
+							modified = true
+						end
+					end
+				end
+				if modified then
+					return C._origNameCall(self, table.unpack(args))
+				end
+			end
+			return C._origNameCall(self, ...)
+		end)
+
+		-- Hook __index: спуфим чтение scale-свойств
+		mt.__index = newcclosure(function(self, key)
+			if C.scaleEn and typeof(self) == "Instance" then
+				local ok2, isHum = pcall(function() return self:IsA("Humanoid") end)
+				if ok2 and isHum and self == getScaleHum() then
+					if key == "BodyHeightScale" or key == "BodyWidthScale" or key == "BodyDepthScale" or key == "HeadScale" then
+						return C.scaleValue
+					end
+				end
+			end
+			return C._origIndex(self, key)
+		end)
+
+		setreadonly(mt, true)
+		C._hookActive = true
+	end)
+
+	return ok
+end
+
+local function disableHook()
+	if not C._hookActive then return end
+	pcall(function()
+		local mt = getrawmetatable(game)
+		setreadonly(mt, false)
+		if C._origNameCall then mt.__namecall = C._origNameCall end
+		if C._origIndex    then mt.__index    = C._origIndex end
+		setreadonly(mt, true)
+	end)
+	C._origNameCall = nil
+	C._origIndex = nil
+	C._origNewIndex = nil
+	C._hookActive = false
 end
 
 -- ===== Apply / Reset =====
@@ -765,7 +837,6 @@ local function applyScale()
 			end
 		end
 
-		-- Additional layers (only if server mode enabled)
 		tryChildValues(s)
 		tryAttributes(s)
 		tryRemoteScale(s, false)
@@ -791,7 +862,6 @@ local function resetScale()
 	local ok = applyOriginalDesc(hum)
 	if not ok then tryNumberValues(hum, 1) end
 
-	-- Reset attributes
 	if LP.Character then
 		for _, k in ipairs(ATTR_KEYS) do
 			pcall(function() LP.Character:SetAttribute(k, nil) end)
@@ -799,7 +869,6 @@ local function resetScale()
 	end
 	pcall(function() hum:SetAttribute("Scale", nil) end)
 
-	-- Notify server if enabled
 	if C.scaleUseServer then
 		tryRemoteScale(1, false)
 	end
@@ -876,13 +945,44 @@ addR("Visual",
 	end,
 	false, "scaleUseServer")
 
+addR("Visual",
+	t("scale_hook"),
+	function(b, a)
+		if a == "toggle" then
+			if not hookAvailable() then
+				S.notify(t("hook_no_support"), Color3.fromRGB(255,80,80))
+			else
+				C.scaleUseHook = not C.scaleUseHook
+				if C.scaleUseHook then
+					local ok = enableHook()
+					if ok then
+						S.notify(t("hook_on"), Color3.fromRGB(255,180,80))
+					else
+						C.scaleUseHook = false
+						S.notify(t("hook_no_support"), Color3.fromRGB(255,80,80))
+					end
+				else
+					disableHook()
+					S.notify(t("hook_off"), Color3.fromRGB(120,180,255))
+				end
+			end
+		end
+		if C.scaleUseHook then
+			b.BackgroundColor3 = Color3.fromRGB(180,0,120)
+			b.Text = t("scale_hook")..": "..t("on")
+		else
+			b.BackgroundColor3 = Color3.fromRGB(50,50,50)
+			b.Text = t("scale_hook")..": "..t("off")
+		end
+	end,
+	false, "scaleUseHook")
+
 S._resetScale = function()
 	C.scaleEn = false
 	S.delT("UCS_ScaleSync")
 	resetScale()
+	if C._hookActive then disableHook() end
 end
-
-S._scanScaleRemotes = scanRemotes
 
 LP.CharacterAdded:Connect(function(c)
 	task.wait(1.2)
@@ -904,6 +1004,10 @@ onLangChange(function()
 	local tb2 = S.toggles.scaleUseServer and S.toggles.scaleUseServer.btn
 	if tb2 and tb2.Parent then
 		tb2.Text = t("scale_srv")..": "..(C.scaleUseServer and t("on") or t("off"))
+	end
+	local tb3 = S.toggles.scaleUseHook and S.toggles.scaleUseHook.btn
+	if tb3 and tb3.Parent then
+		tb3.Text = t("scale_hook")..": "..(C.scaleUseHook and t("on") or t("off"))
 	end
 end)
 
@@ -1073,6 +1177,7 @@ end)
 S._extrasCleanup = function()
 	if S._setFreecam and C.freecam then S._setFreecam(false) end
 	if S._resetScale then pcall(S._resetScale) end
+	if C._hookActive then disableHook() end
 	if ipConn then ipConn:Disconnect() end
 	if S._freeButtons then
 		for _,b in ipairs(S._freeButtons) do pcall(function() b:Destroy() end) end
