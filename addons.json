@@ -14,6 +14,13 @@
       "desc": "Autoclicker + Vehicle Tools",
       "version": "1.1.0",
       "author": "Chester-pdf"
+    },
+    {
+      "name": "OneShot+",
+      "url": "https://gist.githubusercontent.com/Chester-pdf/9ffb124121294c47c11fd30bde2bd3e8/raw/eb3a6da36505a9c9512ff719add541e5481d455c/OneShot+.raw",
+      "desc": "Продвинутый кил за один удар",
+      "version": "1.1.0",
+      "author": "Chester-pdf"
     }
   ]
 }
