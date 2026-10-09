@@ -514,41 +514,53 @@ onLangChange(function()
 end)
 
 -- ============================================================
--- SCALE (resize character)
+-- SCALE (resize character) v2 — NumberValue-based
 -- ============================================================
 C.scaleEn = false
 C.scaleValue = 1.0
+
+local SCALE_KEYS = {
+	"BodyHeightScale",
+	"BodyWidthScale",
+	"BodyDepthScale",
+	"HeadScale",
+	"BodyProportionScale",
+}
 
 local function getScaleHum()
 	return LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
 end
 
-local function applyScale()
-	local hum = getScaleHum()
+local function applyScaleToHum(hum)
 	if not hum then return end
 	local s = C.scaleEn and C.scaleValue or 1.0
-	local ok, desc = pcall(function() return hum:GetAppliedDescription() end)
-	if not ok or not desc then return end
-	desc.HeightScale = s
-	desc.WidthScale = s
-	desc.DepthScale = s
-	desc.HeadScale = s
-	pcall(function() hum:ApplyDescription(desc) end)
+	for _, key in ipairs(SCALE_KEYS) do
+		local nv = hum:FindFirstChild(key)
+		if nv and nv:IsA("NumberValue") then
+			pcall(function() nv.Value = s end)
+		end
+	end
+	pcall(function() hum.BodyHeightScale = s end)
+	pcall(function() hum.BodyWidthScale = s end)
+	pcall(function() hum.BodyDepthScale = s end)
+	pcall(function() hum.HeadScale = s end)
+end
+
+local function applyScale()
+	applyScaleToHum(getScaleHum())
 end
 
 local function scaleSyncLoop()
 	if not C.scaleEn then return end
 	local hum = getScaleHum()
 	if not hum then return end
-	local ok, desc = pcall(function() return hum:GetAppliedDescription() end)
-	if not ok or not desc then return end
-	local cur = desc.HeightScale or 1
-	if math.abs(cur - C.scaleValue) > 0.02 then
-		desc.HeightScale = C.scaleValue
-		desc.WidthScale = C.scaleValue
-		desc.DepthScale = C.scaleValue
-		desc.HeadScale = C.scaleValue
-		pcall(function() hum:ApplyDescription(desc) end)
+	for _, key in ipairs(SCALE_KEYS) do
+		local nv = hum:FindFirstChild(key)
+		if nv and nv:IsA("NumberValue") then
+			if math.abs(nv.Value - C.scaleValue) > 0.02 then
+				pcall(function() nv.Value = C.scaleValue end)
+			end
+		end
 	end
 end
 
@@ -559,12 +571,13 @@ addR("Visual",
 			C.scaleEn = not C.scaleEn
 			if C.scaleEn then
 				S.addT("UCS_ScaleSync", scaleSyncLoop, 0.5)
+				task.defer(applyScale)
 			else
 				S.delT("UCS_ScaleSync")
+				task.defer(applyScale)
 			end
-			task.defer(applyScale)
 		elseif a == "minus" then
-			C.scaleValue = math.max(0.3, C.scaleValue - 0.1)
+			C.scaleValue = math.max(0.1, C.scaleValue - 0.1)
 			if C.scaleEn then applyScale() end
 		elseif a == "plus" then
 			C.scaleValue = C.scaleValue + 0.1
@@ -580,21 +593,25 @@ S._resetScale = function()
 	S.delT("UCS_ScaleSync")
 	local hum = getScaleHum()
 	if hum then
-		local ok, desc = pcall(function() return hum:GetAppliedDescription() end)
-		if ok and desc then
-			desc.HeightScale = 1
-			desc.WidthScale = 1
-			desc.DepthScale = 1
-			desc.HeadScale = 1
-			pcall(function() hum:ApplyDescription(desc) end)
+		for _, key in ipairs(SCALE_KEYS) do
+			local nv = hum:FindFirstChild(key)
+			if nv and nv:IsA("NumberValue") then
+				pcall(function() nv.Value = 1 end)
+			end
 		end
+		pcall(function() hum.BodyHeightScale = 1 end)
+		pcall(function() hum.BodyWidthScale = 1 end)
+		pcall(function() hum.BodyDepthScale = 1 end)
+		pcall(function() hum.HeadScale = 1 end)
 	end
 end
 
--- Re-apply scale on respawn
-LP.CharacterAdded:Connect(function()
-	task.wait(1.2)
-	if C.scaleEn then applyScale() end
+LP.CharacterAdded:Connect(function(c)
+	task.wait(1)
+	if C.scaleEn then
+		local hum = c:WaitForChild("Humanoid", 5)
+		if hum then applyScaleToHum(hum) end
+	end
 end)
 
 onLangChange(function()
