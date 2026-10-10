@@ -1,7 +1,7 @@
 -- ============================================================
--- UCS LOADER v1.3.6
+-- UCS LOADER v1.4.0
 -- ============================================================
-print("[UCS] loader v1.3.6")
+print("[UCS] loader v1.4.0")
 
 if _G.UCS_Unload then pcall(_G.UCS_Unload) end
 _G.UCS = nil
@@ -26,7 +26,7 @@ end)
 
 local function loadCore(device, lang)
 	local file = (device == "mobile") and "mainM.raw" or "mainPC.raw"
-	local url = BASE .. file .. "?t=" .. tostring(tick())
+	local url = BASE .. file .. "?t=" .. tostring(os.time())
 	print("[UCS] loading "..file.." lang="..lang)
 	_G.UCS_PresetLang = lang
 	_G.UCS_Device = device
@@ -125,7 +125,7 @@ local wm = Instance.new("TextLabel", WP)
 wm.Size = UDim2.new(0,120,0,14)
 wm.Position = corners[math.random(1,4)]
 wm.BackgroundTransparency = 1
-wm.Text = "UCS v1.3.6 · @Chester-pdf"
+wm.Text = "UCS v1.4.0 · @Chester-pdf"
 wm.TextColor3 = Color3.fromRGB(255,140,0)
 wm.TextTransparency = 0.4
 wm.Font = Enum.Font.SourceSans
