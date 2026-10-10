@@ -1,16 +1,16 @@
 -- ============================================================
--- UCS ADD v1.3.6 — Freecam + Player Info + Device/Hotkeys + Scale + Hook
+-- UCS ADD v1.4.0 — Freecam + Player Info + Hotkeys + Scale (learn/replay) + Search
 -- ============================================================
 local S = _G.UCS
 if not S then warn("[UCS add] _G.UCS is empty"); return end
 
 local L = {
 	ru = {
-		loading="[UCS add] загрузка v1.3.6...",
+		loading="[UCS add] загрузка v1.4.0...",
 		already="[UCS add] уже загружен",
 		freecam_exists="[UCS add] Freecam уже есть",
 		search_ready="[UCS add] search+stars готовы, fun-rows: ",
-		done="[UCS add] готово v1.3.6",
+		done="[UCS add] готово v1.4.0",
 		freecam_name="Freecam",
 		freecam_on="Freecam: ВКЛ",
 		freecam_off="Freecam: ВЫКЛ",
@@ -25,19 +25,22 @@ local L = {
 		device_switched="Устройство: ",
 		search_ph="🔍 поиск...",
 		scale="Рост",
-		scale_srv="Рост: серверные методы",
-		scale_hook="Рост: HOOK (эксперимент)",
-		hook_no_support="Executor не поддерживает hookmetamethod",
-		hook_on="Hook включён — эксперимент",
-		hook_off="Hook выключен",
+		scale_learn="Рост: учиться у игры",
+		scale_learn_on="Рост: слушаю ремоуты...",
+		scale_server="Рост: серверно (replay)",
+		hook_no_support="Executor без hookmetamethod",
+		learn_done="Выучено: ",
+		learn_nothing="Ничего не выучено",
+		learn_need_learn="Сначала выучи ремоут",
+		learn_listen="Слушаю. Включи рост в игре — UCS запомнит.",
 		on="ВКЛ", off="ВЫКЛ",
 	},
 	en = {
-		loading="[UCS add] loading v1.3.6...",
+		loading="[UCS add] loading v1.4.0...",
 		already="[UCS add] already loaded",
 		freecam_exists="[UCS add] Freecam already exists",
 		search_ready="[UCS add] search+stars ready, fun-rows: ",
-		done="[UCS add] done v1.3.6",
+		done="[UCS add] done v1.4.0",
 		freecam_name="Freecam",
 		freecam_on="Freecam: ON",
 		freecam_off="Freecam: OFF",
@@ -52,11 +55,14 @@ local L = {
 		device_switched="Device: ",
 		search_ph="🔍 search...",
 		scale="Scale",
-		scale_srv="Scale: server methods",
-		scale_hook="Scale: HOOK (experimental)",
-		hook_no_support="Executor does not support hookmetamethod",
-		hook_on="Hook enabled — experimental",
-		hook_off="Hook disabled",
+		scale_learn="Scale: learn from game",
+		scale_learn_on="Scale: listening remotes...",
+		scale_server="Scale: server (replay)",
+		hook_no_support="Executor without hookmetamethod",
+		learn_done="Learned: ",
+		learn_nothing="Nothing learned",
+		learn_need_learn="Learn a remote first",
+		learn_listen="Listening. Trigger scale in game — UCS remembers.",
 		on="ON", off="OFF",
 	},
 }
@@ -67,7 +73,7 @@ local function t(k)
 end
 S.t_addon = t
 
-local onLangChange  = S.onLangChange  or function() end
+local onLangChange = S.onLangChange or function() end
 local fireLangChange = S.fireLangChange or function() end
 
 print(t("loading"))
@@ -90,6 +96,10 @@ local SG = S.SG
 C.freecam = C.freecam or false
 C.freecamSpeed = C.freecamSpeed or 15
 C.favKeys = C.favKeys or ""
+C.scaleLearn = false
+C.scaleServerEn = false
+C.scaleLearned = nil
+C.scaleValue = C.scaleValue or 1.0
 
 -- FAVORITES
 local function getFavs()
@@ -127,7 +137,7 @@ else
 		if S._customJumpBtn and S._customJumpBtn.Parent then S._customJumpBtn.Visible = false end
 	end
 	local function restoreHotkeys()
-		S.refreshScreenButtons()
+		if S.refreshScreenButtons then S.refreshScreenButtons() end
 		if S._customJumpBtn and S._customJumpBtn.Parent then
 			S._customJumpBtn.Visible = not S.C.stealthHidden
 		end
@@ -366,26 +376,19 @@ local function showInfo(p)
 	end)
 end
 S._showPlayerInfo = showInfo
-
-onLangChange(function()
-	pcall(function() ipTitle.Text = t("info_title") end)
-end)
+onLangChange(function() pcall(function() ipTitle.Text = t("info_title") end) end)
 
 -- ============================================================
 -- DEVICE SWITCH
 -- ============================================================
 local DEVICE_FILE = "UCS_Device.json"
-
-local function currentDevice()
-	return _G.UCS_Device or "pc"
-end
+local function currentDevice() return _G.UCS_Device or "pc" end
 local function saveDevice(dev)
 	pcall(function()
 		writefile(DEVICE_FILE, Http:JSONEncode({device=dev, lang=S.lang, ts=os.time()}))
 	end)
 	_G.UCS_Device = dev
 end
-
 local function reloadMain(newDev)
 	saveDevice(newDev)
 	local name = (newDev=="pc") and "PC" or "Mobile"
@@ -393,14 +396,13 @@ local function reloadMain(newDev)
 	task.wait(0.8)
 	pcall(function() if _G.UCS_Unload then _G.UCS_Unload() end end)
 	task.wait(0.5)
-	local url = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/main.raw?t="..tostring(tick())
+	local url = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/main.raw?t="..tostring(os.time())
 	local ok, src = pcall(game.HttpGet, game, url)
 	if ok and src then
 		local fn = loadstring(src)
 		if fn then pcall(fn) end
 	end
 end
-
 addR("Settings", t("device"), function(b,a)
 	if a~="toggle" then
 		local d = currentDevice()
@@ -425,9 +427,7 @@ local HK_ROWS = {
 	{"V","Заморозить игрока","Freeze player"},
 	{"B","Заморозить камеру","Freeze camera"},
 }
-
 local hkPanel = Instance.new("Frame", SG)
-hkPanel.Name = "UCS_HotkeysPanel"
 hkPanel.Size = UDim2.new(0, 320, 0, 380)
 hkPanel.Position = UDim2.new(0.5, -160, 0.5, -190)
 hkPanel.BackgroundColor3 = Color3.fromRGB(22,22,28)
@@ -436,7 +436,6 @@ hkPanel.Visible = false
 hkPanel.ZIndex = 100
 Instance.new("UICorner", hkPanel).CornerRadius = UDim.new(0,8)
 Instance.new("UIStroke", hkPanel).Color = Color3.fromRGB(120,200,255)
-
 local hkTitle = Instance.new("TextLabel", hkPanel)
 hkTitle.Size = UDim2.new(1,0,0,28)
 hkTitle.BackgroundColor3 = Color3.fromRGB(42,42,42)
@@ -446,7 +445,6 @@ hkTitle.TextColor3 = Color3.fromRGB(120,200,255)
 hkTitle.Font = Enum.Font.SourceSansBold
 hkTitle.TextSize = 12
 Instance.new("UICorner", hkTitle).CornerRadius = UDim.new(0,8)
-
 local hkClose = Instance.new("TextButton", hkPanel)
 hkClose.Size = UDim2.new(0,28,0,28)
 hkClose.Position = UDim2.new(1,-28,0,0)
@@ -455,7 +453,6 @@ hkClose.Text = "×"
 hkClose.TextColor3 = Color3.new(1,1,1)
 hkClose.Font = Enum.Font.SourceSansBold
 hkClose.TextSize = 16
-
 local hkScroll = Instance.new("ScrollingFrame", hkPanel)
 hkScroll.Size = UDim2.new(1,-16,1,-44)
 hkScroll.Position = UDim2.new(0,8,0,36)
@@ -466,7 +463,6 @@ hkScroll.ScrollBarImageColor3 = Color3.fromRGB(120,200,255)
 hkScroll.CanvasSize = UDim2.new(0,0,0,0)
 hkScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 Instance.new("UIListLayout", hkScroll).Padding = UDim.new(0,4)
-
 local hkLabels = {}
 for i, row in ipairs(HK_ROWS) do
 	local r = Instance.new("Frame", hkScroll)
@@ -475,7 +471,6 @@ for i, row in ipairs(HK_ROWS) do
 	r.BorderSizePixel = 0
 	r.LayoutOrder = i
 	Instance.new("UICorner", r).CornerRadius = UDim.new(0,4)
-
 	local kb = Instance.new("TextLabel", r)
 	kb.Size = UDim2.new(0,90,1,0)
 	kb.Position = UDim2.new(0,6,0,0)
@@ -486,7 +481,6 @@ for i, row in ipairs(HK_ROWS) do
 	kb.Font = Enum.Font.Code
 	kb.TextSize = 12
 	Instance.new("UICorner", kb).CornerRadius = UDim.new(0,4)
-
 	local desc = Instance.new("TextLabel", r)
 	desc.Size = UDim2.new(1,-108,1,0)
 	desc.Position = UDim2.new(0,104,0,0)
@@ -498,7 +492,6 @@ for i, row in ipairs(HK_ROWS) do
 	desc.TextXAlignment = Enum.TextXAlignment.Left
 	table.insert(hkLabels, {lbl=desc, ru=row[2], en=row[3]})
 end
-
 local hkHint = Instance.new("TextLabel", hkPanel)
 hkHint.Size = UDim2.new(1,-16,0,14)
 hkHint.Position = UDim2.new(0,8,1,-20)
@@ -508,14 +501,11 @@ hkHint.TextColor3 = Color3.fromRGB(140,140,140)
 hkHint.Font = Enum.Font.SourceSans
 hkHint.TextSize = 10
 hkHint.TextXAlignment = Enum.TextXAlignment.Center
-
 hkClose.MouseButton1Click:Connect(function() hkPanel.Visible = false end)
-
 addR("Settings", t("hotkeys_list"), function(b,a)
 	if a~="toggle" then return end
 	hkPanel.Visible = not hkPanel.Visible
 end, false, "hotkeysBtn")
-
 onLangChange(function()
 	pcall(function() hkTitle.Text = t("hotkeys_title") end)
 	pcall(function() hkHint.Text = t("hotkeys_hint") end)
@@ -525,485 +515,138 @@ onLangChange(function()
 end)
 
 -- ============================================================
--- SCALE (resize character) v6 — all methods + hook
+-- SCALE — SERVER VIA LEARN/REPLAY
 -- ============================================================
-C.scaleEn = false
-C.scaleValue = 1.0
-C.scaleUseServer = false
-C.scaleUseHook = false
-C._scaleOriginalDesc = nil
-C._lastScaleToValue = nil
-C._hookActive = false
-C._origNameCall = nil
-C._origIndex = nil
-C._origNewIndex = nil
-
-local SCALE_NV = {
-	"BodyHeightScale","BodyWidthScale","BodyDepthScale","HeadScale","BodyProportionScale",
-}
-
-local REMOTE_NAMES = {
-	"SetScale","ChangeScale","UpdateScale","Resize","SetSize","ChangeSize",
-	"ScaleRemote","SizeEvent","ApplyScale","SetCharacterScale",
-	"UpdateCharacterScale","ChangeCharacterSize","ResizeCharacter",
-	"SetBodyScale","UpdateBodyScale","BodyScale","CharacterSize",
-	"SetAvatarScale","UpdateAvatarScale","SetPlayerScale","ChangePlayerSize",
-	"SetHeight","ChangeHeight","UpdateHeight","SetWidth","ChangeWidth",
-	"SetCharacter","UpdateCharacter","ChangeCharacter","CharacterEvent",
-	"ApplyDescription","SetDescription","UpdateDescription","ChangeDescription",
-	"ApplyHumanoidDescription","SetHumanoidDescription","UpdateHumanoid",
-	"Avatar","AvatarEvent","SetAvatar","UpdateAvatar","ChangeAvatar",
-	"CreateCharacter","ModifyCharacter","Transform","TransformCharacter",
-	"Modify","ModifyPlayer","ModifyAvatar","ModifyBody",
-	"SetProperty","UpdateProperty","ChangeProperty",
-	"RunCommand","ExecuteCommand","Command","AdminCommand",
-	"SetPlayerProperty","AdminSet","AdminChange",
-	"ScaleCharacter","SetScaleRemote","ChangeScaleRequest",
-	"ResizeCharacter","SetCharacterSize","SetPlayerSize",
-	"UpdateCharacterRequest","ResizePlayer",
-	"SetScale_Server","ScaleEvent","ScaleRequest","ScaleSync",
-	"SizeChange","SizeUpdate","SizeRequest",
-	"CharacterScale","PlayerScale","HumanoidScale",
-	"ResizeEvent","ResizeRequest","ResizeServer",
-}
-
-local MODULE_NAMES = {
-	"CharacterScale","ScaleManager","SizeManager","CharacterAPI",
-	"PlayerAPI","AvatarAPI","BodyAPI","HumanoidAPI",
-	"CharacterService","PlayerService","AvatarService",
-	"ResizeService","ScaleService","HeightService",
-}
-
-local ATTR_KEYS = {
-	"Scale","Size","HeightScale","WidthScale","DepthScale","HeadScale","BodyScale",
-}
-
-local function getScaleHum()
-	return LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+local function hookOK()
+	return hookmetamethod and getnamecallmethod and newcclosure
+	   and getrawmetatable and setreadonly
 end
 
-local function saveOriginalDesc(hum)
-	if not hum or C._scaleOriginalDesc then return end
-	local ok, desc = pcall(function() return hum:GetAppliedDescription() end)
-	if ok and desc then C._scaleOriginalDesc = desc end
-end
-
-local function applyOriginalDesc(hum)
-	if not hum or not C._scaleOriginalDesc then return false end
-	return pcall(function() hum:ApplyDescription(C._scaleOriginalDesc) end)
-end
-
-local function tryApplyDescription(hum, s)
-	if not hum then return false end
-	return pcall(function()
-		local desc = hum:GetAppliedDescription()
-		if not desc then error("no desc") end
-		desc.HeightScale = s
-		desc.WidthScale = s
-		desc.DepthScale = s
-		desc.HeadScale = s
-		hum:ApplyDescription(desc)
-	end)
-end
-
-local function tryNumberValues(hum, s)
-	if not hum then return false end
-	local applied = false
-	for _, key in ipairs(SCALE_NV) do
-		local nv = hum:FindFirstChild(key)
-		if nv and nv:IsA("NumberValue") then
-			if pcall(function() nv.Value = s end) then applied = true end
-		end
+local function startScaleLearning()
+	if not hookOK() then
+		S.notify(t("hook_no_support"), Color3.fromRGB(255,80,80))
+		return false
 	end
-	pcall(function() hum.BodyHeightScale = s end)
-	pcall(function() hum.BodyWidthScale = s end)
-	pcall(function() hum.BodyDepthScale = s end)
-	pcall(function() hum.HeadScale = s end)
-	return applied
-end
+	if C._learnHook then return true end
 
-local function tryScaleTo(hum, s)
-	local char = hum and hum.Parent
-	if not char or not char:IsA("Model") then return false end
-	local prev = C._lastScaleToValue or 1
-	local target = s / prev
-	if math.abs(target - 1) < 0.05 then return false end
-	local ok = pcall(function() char:ScaleTo(target) end)
-	if ok then C._lastScaleToValue = s end
-	return ok
-end
+	local mt = getrawmetatable(game)
+	local orig = mt.__namecall
+	setreadonly(mt, false)
 
-local function tryAttributes(s)
-	local char = LP.Character
-	local hum = getScaleHum()
-	local applied = false
-	if char then
-		for _, k in ipairs(ATTR_KEYS) do
-			if pcall(function() char:SetAttribute(k, s) end) then applied = true end
-		end
-	end
-	if hum then
-		for _, k in ipairs(ATTR_KEYS) do
-			if pcall(function() hum:SetAttribute(k, s) end) then applied = true end
-		end
-	end
-	return applied
-end
-
-local function tryChildValues(s)
-	local char = LP.Character
-	if not char then return false end
-	local applied = false
-	for _, o in ipairs(char:GetDescendants()) do
-		if o:IsA("NumberValue") or o:IsA("StringValue") then
-			local ln = o.Name:lower()
-			if ln:find("scale") or ln:find("size") or ln:find("height") or ln:find("width") then
-				local ok = pcall(function()
-					if o:IsA("NumberValue") then o.Value = s
-					else o.Value = tostring(s) end
-				end)
-				if ok then applied = true end
-			end
-		end
-	end
-	return applied
-end
-
-local function findRemoteDeep(root, name)
-	local found = root:FindFirstChild(name)
-	if found then return found end
-	return root:FindFirstChild(name, true)
-end
-
-local function tryRemoteScale(s, verbose)
-	if not C.scaleUseServer then return false end
-	local rs = game:GetService("ReplicatedStorage")
-	local foundAny = false
-	for _, name in ipairs(REMOTE_NAMES) do
-		local remote = findRemoteDeep(rs, name)
-		if remote and (remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction")) then
-			foundAny = true
-			if verbose then
-				print("[UCS-Scale] Found remote:", remote:GetFullName(), remote.ClassName)
-			end
-			local hum = getScaleHum()
-			local char = LP.Character
-			if remote:IsA("RemoteEvent") then
-				pcall(function() remote:FireServer(s) end)
-				pcall(function() remote:FireServer(char, s) end)
-				pcall(function() remote:FireServer(LP, s) end)
-				pcall(function() remote:FireServer("SetScale", s) end)
-				pcall(function() remote:FireServer("Scale", s) end)
-				pcall(function() remote:FireServer("Resize", s) end)
-				pcall(function() remote:FireServer({Scale=s, HeightScale=s, WidthScale=s, DepthScale=s, HeadScale=s}) end)
-				pcall(function() remote:FireServer(hum, s) end)
-			elseif remote:IsA("RemoteFunction") then
-				pcall(function() remote:InvokeServer(s) end)
-				pcall(function() remote:InvokeServer(char, s) end)
-				pcall(function() remote:InvokeServer({Scale=s}) end)
-			end
-		end
-	end
-	return foundAny
-end
-
-local function tryModuleScale(s)
-	if not C.scaleUseServer then return false end
-	local rs = game:GetService("ReplicatedStorage")
-	for _, modName in ipairs(MODULE_NAMES) do
-		local mod = findRemoteDeep(rs, modName)
-		if mod and mod:IsA("ModuleScript") then
-			local ok, api = pcall(require, mod)
-			if ok and type(api) == "table" then
-				for name, fn in pairs(api) do
-					local ln = tostring(name):lower()
-					if type(fn) == "function" and (ln:find("scale") or ln:find("size") or ln:find("resize")) then
-						pcall(fn, s)
-						pcall(fn, LP, s)
-						pcall(fn, LP.Character, s)
-					end
-				end
-				return true
-			end
-		end
-	end
-	return false
-end
-
-local function hookAvailable()
-	return (hookmetamethod and getnamecallmethod and newcclosure and getrawmetatable and setreadonly) ~= nil
-end
-
-local function enableHook()
-	if C._hookActive then return false end
-	if not hookAvailable() then return false end
-
-	local ok = pcall(function()
-		local mt = getrawmetatable(game)
-		C._origNameCall = mt.__namecall
-		C._origIndex    = mt.__index
-		C._origNewIndex = mt.__newindex
-
-		setreadonly(mt, false)
-
-		mt.__namecall = newcclosure(function(self, ...)
-			local method = getnamecallmethod()
-			if C.scaleEn and (method == "FireServer" or method == "InvokeServer") then
-				local args = {...}
-				local modified = false
-				for i = 1, #args do
-					local arg = args[i]
-					if type(arg) == "table" then
-						local keyFound = false
-						for _, k in ipairs({"HeightScale","WidthScale","DepthScale","HeadScale","Scale","Size"}) do
-							if rawget(arg, k) ~= nil then keyFound = true; break end
-						end
-						if keyFound then
-							args[i].HeightScale = C.scaleValue
-							args[i].WidthScale  = C.scaleValue
-							args[i].DepthScale  = C.scaleValue
-							args[i].HeadScale   = C.scaleValue
-							args[i].Scale       = C.scaleValue
-							args[i].Size        = C.scaleValue
-							modified = true
-						end
-					elseif type(arg) == "number" then
-						local sn = self.Name and string.lower(self.Name) or ""
-						if sn:find("scale") or sn:find("size") or sn:find("height") or sn:find("resize") then
-							args[i] = C.scaleValue
-							modified = true
-						end
-					end
-				end
-				if modified then
-					return C._origNameCall(self, table.unpack(args))
+	mt.__namecall = newcclosure(function(self, ...)
+		local method = getnamecallmethod()
+		if C.scaleLearn and (method == "FireServer" or method == "InvokeServer") then
+			if typeof(self) == "Instance"
+			   and (self:IsA("RemoteEvent") or self:IsA("RemoteFunction")) then
+				local n = self.Name:lower()
+				if n:find("scale") or n:find("size") or n:find("resize")
+				   or n:find("height") or n:find("avatar") or n:find("body")
+				   or n:find("character") then
+					local args = table.pack(...)
+					C.scaleLearned = {
+						remote = self,
+						method = method,
+						argsTemplate = args,
+						path = self:GetFullName(),
+					}
+					print("[UCS-Scale] learned:", self:GetFullName(), method, "args:", #args)
+					S.notify(t("learn_done")..self.Name, Color3.fromRGB(0,180,0))
 				end
 			end
-			return C._origNameCall(self, ...)
-		end)
-
-		mt.__index = newcclosure(function(self, key)
-			if C.scaleEn and typeof(self) == "Instance" then
-				local ok2, isHum = pcall(function() return self:IsA("Humanoid") end)
-				if ok2 and isHum and self == getScaleHum() then
-					if key == "BodyHeightScale" or key == "BodyWidthScale" or key == "BodyDepthScale" or key == "HeadScale" then
-						return C.scaleValue
-					end
-				end
-			end
-			return C._origIndex(self, key)
-		end)
-
-		setreadonly(mt, true)
-		C._hookActive = true
+		end
+		return orig(self, ...)
 	end)
 
-	return ok
+	C._learnHook = {mt = mt, orig = orig}
+	return true
 end
 
-local function disableHook()
-	if not C._hookActive then return end
+local function stopScaleLearning()
+	if not C._learnHook then return end
 	pcall(function()
-		local mt = getrawmetatable(game)
+		local mt = C._learnHook.mt
 		setreadonly(mt, false)
-		if C._origNameCall then mt.__namecall = C._origNameCall end
-		if C._origIndex    then mt.__index    = C._origIndex end
+		mt.__namecall = C._learnHook.orig
 		setreadonly(mt, true)
 	end)
-	C._origNameCall = nil
-	C._origIndex = nil
-	C._origNewIndex = nil
-	C._hookActive = false
+	C._learnHook = nil
 end
 
-local function applyScale()
-	local hum = getScaleHum()
-	if not hum then return end
-	if C.scaleEn then
-		saveOriginalDesc(hum)
-		local s = C.scaleValue
-		pcall(function() hum.AutomaticScalingEnabled = false end)
-
-		local ok1 = tryApplyDescription(hum, s)
-		if not ok1 then
-			local ok2 = tryNumberValues(hum, s)
-			if not ok2 then
-				tryScaleTo(hum, s)
-			end
-		end
-
-		tryChildValues(s)
-		tryAttributes(s)
-		tryRemoteScale(s, false)
-		tryModuleScale(s)
-	end
-end
-
-local function resetScale()
-	local hum = getScaleHum()
-	if not hum then
-		C._scaleOriginalDesc = nil
-		C._lastScaleToValue = nil
-		return
-	end
-	pcall(function() hum.AutomaticScalingEnabled = true end)
-
-	local char = hum.Parent
-	local prev = C._lastScaleToValue
-	if char and prev and math.abs(prev - 1) > 0.05 and char:IsA("Model") then
-		pcall(function() char:ScaleTo(1 / prev) end)
-	end
-
-	local ok = applyOriginalDesc(hum)
-	if not ok then tryNumberValues(hum, 1) end
-
-	if LP.Character then
-		for _, k in ipairs(ATTR_KEYS) do
-			pcall(function() LP.Character:SetAttribute(k, nil) end)
-		end
-	end
-	pcall(function() hum:SetAttribute("Scale", nil) end)
-
-	if C.scaleUseServer then
-		tryRemoteScale(1, false)
-	end
-
-	C._scaleOriginalDesc = nil
-	C._lastScaleToValue = nil
-end
-
-local function scaleSyncLoop()
-	if not C.scaleEn then
-		pcall(function()
-			local hum = getScaleHum()
-			if hum then hum.AutomaticScalingEnabled = true end
-		end)
-		return
-	end
-	local hum = getScaleHum()
-	if not hum then return end
-	local cur = false
-	pcall(function() cur = hum.AutomaticScalingEnabled end)
-	if cur then pcall(function() hum.AutomaticScalingEnabled = false end) end
-	local check = 0
-	pcall(function() check = hum.BodyHeightScale end)
-	if math.abs(check - C.scaleValue) > 0.05 then
-		tryApplyDescription(hum, C.scaleValue)
-		if C.scaleUseServer then
-			tryRemoteScale(C.scaleValue, false)
-		end
-	end
-end
-
-addR("Visual",
-	t("scale").." ("..string.format("%.1f", C.scaleValue)..")",
-	function(b, a)
-		if a == "toggle" then
-			C.scaleEn = not C.scaleEn
-			if C.scaleEn then
-				S.addT("UCS_ScaleSync", scaleSyncLoop, 0.8)
-				task.defer(applyScale)
-			else
-				S.delT("UCS_ScaleSync")
-				task.defer(resetScale)
-			end
-		elseif a == "minus" then
-			C.scaleValue = math.max(0.1, C.scaleValue - 0.1)
-			if C.scaleEn then applyScale() end
-		elseif a == "plus" then
-			C.scaleValue = C.scaleValue + 0.1
-			if C.scaleEn then applyScale() end
-		end
-		b.Text = t("scale")..": "..(C.scaleEn and t("on") or t("off")).." ("..string.format("%.1f", C.scaleValue)..")"
-		b.BackgroundColor3 = C.scaleEn and Color3.fromRGB(0,120,0) or Color3.fromRGB(50,50,50)
-	end,
-	true, "scaleEn", "scaleValue")
-
-addR("Visual",
-	t("scale_srv"),
-	function(b, a)
-		if a == "toggle" then
-			C.scaleUseServer = not C.scaleUseServer
-			if C.scaleUseServer then
-				S.notify((S.lang=="ru" and "Серверные методы ВКЛ — эксперимент" or "Server methods ON — experimental"),
-					Color3.fromRGB(255,180,80))
-			end
-		end
-		if C.scaleUseServer then
-			b.BackgroundColor3 = Color3.fromRGB(200,80,0)
-			b.Text = t("scale_srv")..": "..t("on")
-		else
-			b.BackgroundColor3 = Color3.fromRGB(50,50,50)
-			b.Text = t("scale_srv")..": "..t("off")
-		end
-	end,
-	false, "scaleUseServer")
-
-addR("Visual",
-	t("scale_hook"),
-	function(b, a)
-		if a == "toggle" then
-			if not hookAvailable() then
-				S.notify(t("hook_no_support"), Color3.fromRGB(255,80,80))
-			else
-				C.scaleUseHook = not C.scaleUseHook
-				if C.scaleUseHook then
-					local ok = enableHook()
-					if ok then
-						S.notify(t("hook_on"), Color3.fromRGB(255,180,80))
-					else
-						C.scaleUseHook = false
-						S.notify(t("hook_no_support"), Color3.fromRGB(255,80,80))
-					end
+local function replayLearned(scale)
+	local l = C.scaleLearned
+	if not l or not l.remote or not l.remote.Parent then return false end
+	local args = {}
+	for i = 1, #l.argsTemplate do
+		local v = l.argsTemplate[i]
+		local tv = type(v)
+		if tv == "number" then
+			args[i] = scale
+		elseif tv == "table" then
+			local copy = {}
+			for k, vv in pairs(v) do
+				if type(vv) == "number" then
+					copy[k] = scale
 				else
-					disableHook()
-					S.notify(t("hook_off"), Color3.fromRGB(120,180,255))
+					copy[k] = vv
 				end
 			end
-		end
-		if C.scaleUseHook then
-			b.BackgroundColor3 = Color3.fromRGB(180,0,120)
-			b.Text = t("scale_hook")..": "..t("on")
+			args[i] = copy
 		else
-			b.BackgroundColor3 = Color3.fromRGB(50,50,50)
-			b.Text = t("scale_hook")..": "..t("off")
+			args[i] = v
 		end
-	end,
-	false, "scaleUseHook")
-
-S._resetScale = function()
-	C.scaleEn = false
-	S.delT("UCS_ScaleSync")
-	resetScale()
-	if C._hookActive then disableHook() end
+	end
+	local ok = pcall(function()
+		if l.remote:IsA("RemoteEvent") then
+			l.remote:FireServer(table.unpack(args, 1, #l.argsTemplate))
+		else
+			l.remote:InvokeServer(table.unpack(args, 1, #l.argsTemplate))
+		end
+	end)
+	if ok then print("[UCS-Scale] replay ->", l.path, "scale=", scale) end
+	return ok
 end
 
-LP.CharacterAdded:Connect(function(c)
-	task.wait(1.2)
-	if C.scaleEn then
-		local hum = c:WaitForChild("Humanoid", 5)
-		if hum then
-			C._scaleOriginalDesc = nil
-			C._lastScaleToValue = nil
-			task.defer(applyScale)
+addR("Visual", t("scale_learn"), function(b, a)
+	if a ~= "toggle" then
+		if C.scaleLearn then
+			b.BackgroundColor3 = Color3.fromRGB(180,120,0)
+			b.Text = t("scale_learn_on")
+		else
+			b.BackgroundColor3 = Color3.fromRGB(50,50,50)
+			b.Text = t("scale_learn")
 		end
+		return
 	end
-end)
+	C.scaleLearn = not C.scaleLearn
+	if C.scaleLearn then
+		if startScaleLearning() then
+			C.scaleLearned = nil
+			S.notify(t("learn_listen"), Color3.fromRGB(255,180,80))
+		else
+			C.scaleLearn = false
+		end
+	else
+		stopScaleLearning()
+		S.notify(C.scaleLearned and (t("learn_done")..C.scaleLearned.path) or t("learn_nothing"),
+			C.scaleLearned and Color3.fromRGB(0,180,0) or Color3.fromRGB(255,80,80))
+	end
+	b.BackgroundColor3 = C.scaleLearn and Color3.fromRGB(180,120,0) or Color3.fromRGB(50,50,50)
+	b.Text = C.scaleLearn and t("scale_learn_on") or t("scale_learn")
+end, false, "scaleLearn")
 
-onLangChange(function()
-	local tb = S.toggles.scaleEn and S.toggles.scaleEn.btn
-	if tb and tb.Parent then
-		tb.Text = t("scale")..": "..(C.scaleEn and t("on") or t("off")).." ("..string.format("%.1f", C.scaleValue)..")"
+addR("Visual", t("scale_server"), function(b, a)
+	if a == "toggle" then
+		if not C.scaleLearned then
+			S.notify(t("learn_need_learn"), Color3.fromRGB(255,80,80))
+			return
+		end
+		C.scaleServerEn = not C.scaleServerEn
 	end
-	local tb2 = S.toggles.scaleUseServer and S.toggles.scaleUseServer.btn
-	if tb2 and tb2.Parent then
-		tb2.Text = t("scale_srv")..": "..(C.scaleUseServer and t("on") or t("off"))
-	end
-	local tb3 = S.toggles.scaleUseHook and S.toggles.scaleUseHook.btn
-	if tb3 and tb3.Parent then
-		tb3.Text = t("scale_hook")..": "..(C.scaleUseHook and t("on") or t("off"))
-	end
-end)
+	b.Text = t("scale_server")..": "..(C.scaleServerEn and t("on") or t("off"))
+	b.BackgroundColor3 = C.scaleServerEn and Color3.fromRGB(180,0,120) or Color3.fromRGB(50,50,50)
+end, false, "scaleServerEn")
+
+S._scaleReplay = replayLearned
 
 -- ============================================================
 -- SEARCH + STARS
@@ -1016,7 +659,7 @@ local function fixTabOrder(tab)
 	if lay then lay.SortOrder = Enum.SortOrder.LayoutOrder end
 	local idx = 0
 	for _, child in ipairs(tab:GetChildren()) do
-		if child.Name ~= "UCS_SearchBox" and child.Name ~= "ACE_SearchBox" and child:IsA("GuiObject") then
+		if child.Name ~= "UCS_SearchBox" and child:IsA("GuiObject") then
 			local ok = pcall(function() return child.LayoutOrder end)
 			if ok then
 				idx = idx + 1
@@ -1074,7 +717,6 @@ local function addStar(row, key)
 		end
 	end
 	if not mainBtn then return end
-
 	if sldPlus then
 		mainBtn.Size = UDim2.new(1, -88, 1, 0)
 		sldMinus.Size = UDim2.new(0, 25, 1, 0); sldMinus.Position = UDim2.new(1, -86, 0, 0)
@@ -1082,7 +724,6 @@ local function addStar(row, key)
 	else
 		mainBtn.Size = UDim2.new(1, -32, 1, 0)
 	end
-
 	local star = Instance.new("TextButton", row)
 	star.Name = "UCS_FavStar"
 	star.Size = UDim2.new(0, 26, 1, 0)
@@ -1168,10 +809,19 @@ onLangChange(function()
 	end
 end)
 
+-- Перехват Player Info: заменяем _showPlayerInfo на реальный (в main в Players row был вызов)
+-- мы уже определили S._showPlayerInfo выше, main сам вызовет его если захочет
+-- если хочется привязать к правому клику по игроку — раскомментируй ниже и добавь в players row
+--[[
+local origRefreshP = S.refreshPlayers
+if origRefreshP then
+	-- в main при клике на ник уже вызывается S._showPlayerInfo(p) — здесь ничего не надо
+end
+]]
+
 S._extrasCleanup = function()
 	if S._setFreecam and C.freecam then S._setFreecam(false) end
-	if S._resetScale then pcall(S._resetScale) end
-	if C._hookActive then disableHook() end
+	if C._learnHook then stopScaleLearning() end
 	if ipConn then ipConn:Disconnect() end
 	if S._freeButtons then
 		for _,b in ipairs(S._freeButtons) do pcall(function() b:Destroy() end) end
