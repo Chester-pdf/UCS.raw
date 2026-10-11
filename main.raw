@@ -1,7 +1,7 @@
 -- ============================================================
--- UCS LOADER v1.4.0
+-- UCS LOADER v1.4.1
 -- ============================================================
-print("[UCS] loader v1.4.0")
+print("[UCS] loader v1.4.1")
 
 if _G.UCS_Unload then pcall(_G.UCS_Unload) end
 _G.UCS = nil
@@ -125,7 +125,7 @@ local wm = Instance.new("TextLabel", WP)
 wm.Size = UDim2.new(0,120,0,14)
 wm.Position = corners[math.random(1,4)]
 wm.BackgroundTransparency = 1
-wm.Text = "UCS v1.4.0 · @Chester-pdf"
+wm.Text = "UCS v1.4.1 · @Chester-pdf"
 wm.TextColor3 = Color3.fromRGB(255,140,0)
 wm.TextTransparency = 0.4
 wm.Font = Enum.Font.SourceSans
@@ -235,38 +235,4 @@ Instance.new("UICorner", cont).CornerRadius=UDim.new(0,6)
 local function refreshUI()
 	title.Text = wt("title")
 	langLbl.Text = wt("choose_lang")
-	devLbl.Text = wt("choose_dev")
-	pcBtn.Text = wt("dev_pc").."\n"..wt("dev_pc_desc")
-	mobBtn.Text = wt("dev_mob").."\n"..wt("dev_mob_desc")
-	kbHead.Text = wt("kb_head")
-	for _, e in ipairs(kbLbls) do e.lbl.Text = wt(e.key) end
-	ruBtn.BackgroundColor3 = (curLang=="ru") and Color3.fromRGB(0,120,0) or Color3.fromRGB(45,45,45)
-	enBtn.BackgroundColor3 = (curLang=="en") and Color3.fromRGB(0,120,0) or Color3.fromRGB(45,45,45)
-	pcBtn.BackgroundColor3 = (curDev=="pc") and Color3.fromRGB(0,120,0) or Color3.fromRGB(45,45,45)
-	mobBtn.BackgroundColor3 = (curDev=="mobile") and Color3.fromRGB(0,120,0) or Color3.fromRGB(45,45,45)
-	if curDev then
-		cont.BackgroundColor3 = Color3.fromRGB(255,140,0)
-		cont.Text = wt("cont")
-		cont.AutoButtonColor = true
-	else
-		cont.BackgroundColor3 = Color3.fromRGB(80,80,80)
-		cont.Text = wt("cont_wait")
-		cont.AutoButtonColor = false
-	end
-end
-
-ruBtn.MouseButton1Click:Connect(function() curLang="ru"; refreshUI() end)
-enBtn.MouseButton1Click:Connect(function() curLang="en"; refreshUI() end)
-pcBtn.MouseButton1Click:Connect(function() curDev="pc"; refreshUI() end)
-mobBtn.MouseButton1Click:Connect(function() curDev="mobile"; refreshUI() end)
-
-cont.MouseButton1Click:Connect(function()
-	if not curDev then return end
-	pcall(function()
-		writefile(DEVICE_FILE, Http:JSONEncode({device=curDev, lang=curLang, ts=os.time()}))
-	end)
-	SG:Destroy()
-	task.defer(function() loadCore(curDev, curLang) end)
-end)
-
-refreshUI()
+	devLbl.Text = wt("choo
