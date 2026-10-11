@@ -1,16 +1,16 @@
 -- ============================================================
--- UCS ADD v1.4.0 — Freecam + Player Info + Hotkeys + Scale (learn/replay) + Search
+-- UCS ADD v1.4.1 — Freecam + Player Info + Hotkeys + Scale (learn/replay) + Search
 -- ============================================================
 local S = _G.UCS
 if not S then warn("[UCS add] _G.UCS is empty"); return end
 
 local L = {
 	ru = {
-		loading="[UCS add] загрузка v1.4.0...",
+		loading="[UCS add] загрузка v1.4.1...",
 		already="[UCS add] уже загружен",
 		freecam_exists="[UCS add] Freecam уже есть",
 		search_ready="[UCS add] search+stars готовы, fun-rows: ",
-		done="[UCS add] готово v1.4.0",
+		done="[UCS add] готово v1.4.1",
 		freecam_name="Freecam",
 		freecam_on="Freecam: ВКЛ",
 		freecam_off="Freecam: ВЫКЛ",
@@ -36,11 +36,11 @@ local L = {
 		on="ВКЛ", off="ВЫКЛ",
 	},
 	en = {
-		loading="[UCS add] loading v1.4.0...",
+		loading="[UCS add] loading v1.4.1...",
 		already="[UCS add] already loaded",
 		freecam_exists="[UCS add] Freecam already exists",
 		search_ready="[UCS add] search+stars ready, fun-rows: ",
-		done="[UCS add] done v1.4.0",
+		done="[UCS add] done v1.4.1",
 		freecam_name="Freecam",
 		freecam_on="Freecam: ON",
 		freecam_off="Freecam: OFF",
@@ -393,15 +393,20 @@ local function reloadMain(newDev)
 	saveDevice(newDev)
 	local name = (newDev=="pc") and "PC" or "Mobile"
 	S.notify(t("device_switched")..name, Color3.fromRGB(120,200,255))
-	task.wait(0.8)
-	pcall(function() if _G.UCS_Unload then _G.UCS_Unload() end end)
-	task.wait(0.5)
 	local url = "https://raw.githubusercontent.com/Chester-pdf/USC.raw/main/main.raw?t="..tostring(os.time())
 	local ok, src = pcall(game.HttpGet, game, url)
-	if ok and src then
-		local fn = loadstring(src)
-		if fn then pcall(fn) end
+	if not ok or not src or #src < 500 then
+		S.notify("Reload failed", Color3.fromRGB(255,80,80))
+		return
 	end
+	local fn = loadstring(src)
+	if not fn then
+		S.notify("Reload syntax error", Color3.fromRGB(255,80,80))
+		return
+	end
+	pcall(function() if _G.UCS_Unload then _G.UCS_Unload() end end)
+	task.wait(0.5)
+	pcall(fn)
 end
 addR("Settings", t("device"), function(b,a)
 	if a~="toggle" then
@@ -808,16 +813,6 @@ onLangChange(function()
 		end
 	end
 end)
-
--- Перехват Player Info: заменяем _showPlayerInfo на реальный (в main в Players row был вызов)
--- мы уже определили S._showPlayerInfo выше, main сам вызовет его если захочет
--- если хочется привязать к правому клику по игроку — раскомментируй ниже и добавь в players row
---[[
-local origRefreshP = S.refreshPlayers
-if origRefreshP then
-	-- в main при клике на ник уже вызывается S._showPlayerInfo(p) — здесь ничего не надо
-end
-]]
 
 S._extrasCleanup = function()
 	if S._setFreecam and C.freecam then S._setFreecam(false) end
