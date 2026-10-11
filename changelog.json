@@ -1,44 +1,20 @@
 {
-  "entries": [
-    {
-      "version": "1.4.0",
-      "date": "2026-10-10",
-      "changes": {
-        "ru": [
-          "📐 Рост: серверный режим через обучение — UCS ловит нужный ремоут когда ты сам включаешь рост в игре, потом повторяет его с твоим значением",
-          "🎓 Кнопки «Рост: учиться у игры» и «Рост: серверно» в VISUAL",
-          "🗂 Аддоны v5 — sandbox через setfenv, hash-проверка, категории (combat/movement/visual/utility/custom), TTL авто-загрузки 30 дней",
-          "🔢 Хэш fetch'а ловит обновления аддонов даже без бампа версии",
-          "🛑 Корректная остановка всех аддонов при Unload — больше нет висящих соединений",
-          "🐛 Мелкие фиксы: tick() → os.time() в URL, где нужен обход кеша"
-        ],
-        "en": [
-          "📐 Scale: server mode via learning — UCS catches the right remote when you trigger scale in game, then replays it with your value",
-          "🎓 Buttons 'Scale: learn from game' and 'Scale: server (replay)' in VISUAL",
-          "🗂 Addons v5 — sandbox via setfenv, hash checks, categories (combat/movement/visual/utility/custom), 30-day auto-load TTL",
-          "🔢 Fetch hash catches addon updates even without version bump",
-          "🛑 Proper stop of all addons on Unload — no more hanging connections",
-          "🐛 Minor fixes: tick() → os.time() in URLs where cache bypass matters"
-        ]
-      }
-    },
-    {
-      "version": "1.3.6",
-      "date": "2026-10-09",
-      "changes": {
-        "ru": [
-          "🎯 Авто-запуск аддонов привязан к PlaceId",
-          "📌 Иконка 📌 для запомненных в игре аддонов",
-          "📐 Рост v6 — 6 методов, HOOK-режим",
-          "🔓 Убран верхний лимит Роста"
-        ],
-        "en": [
-          "🎯 Addon auto-load scoped to PlaceId",
-          "📌 📌 marker for addons remembered in this game",
-          "📐 Scale v6 — 6 methods, HOOK mode",
-          "🔓 Removed upper limit on Scale"
-        ]
-      }
-    }
-  ]
+  "version": "1.4.1",
+  "date": "2026-10-11",
+  "changes": {
+    "ru": [
+      "🔌 Глобальные подписки отслеживаются и отключаются при Unload, повторная загрузка не плодит дубликаты",
+      "🎯 STOP аддона в одном плейсе не стирает авто-запуск в других",
+      "🗑 Удаление аддона чистит его авто-запуск целиком",
+      "🧹 ESP-записи чистятся при выходе игрока всегда",
+      "🔁 Смена устройства: новый скрипт скачивается до выгрузки старого"
+    ],
+    "en": [
+      "🔌 Global hooks are tracked and disconnected on Unload, reloading no longer stacks duplicates",
+      "🎯 Stopping an addon in one place no longer clears its auto-load elsewhere",
+      "🗑 Deleting an addon clears its auto-load entirely",
+      "🧹 ESP records are cleared on player exit regardless of ESP state",
+      "🔁 Device switch: new script downloads before the old one unloads"
+    ]
+  }
 }
